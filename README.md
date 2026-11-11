@@ -31,13 +31,14 @@ npm install
 npm run dev           # el sitio y el Dojo, con recarga en caliente
 ```
 
-| Comando                 | Qué hace                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------- |
-| `npm run dev`           | El sitio en http://localhost:4321/Manifold_Gaming/                                        |
-| `npm run verificar`     | Tipos, linter, formato y pruebas sin pantalla                                             |
-| `npm run pruebas:mirar` | Las pruebas, que se vuelven a correr al guardar                                           |
-| `npm run e2e`           | Arma el sitio y lo prueba en Chromium (la primera vez: `npx playwright install chromium`) |
-| `npm run build`         | El sitio listo para publicar, en `sitio/dist`                                             |
+| Comando                    | Qué hace                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `npm run dev`              | El sitio en http://localhost:4321/Manifold_Gaming/                                        |
+| `npm run verificar`        | Tipos, linter, formato y pruebas sin pantalla                                             |
+| `npm run pruebas:mirar`    | Las pruebas, que se vuelven a correr al guardar                                           |
+| `npm run e2e`              | Arma el sitio y lo prueba en Chromium (la primera vez: `npx playwright install chromium`) |
+| `npm run build`            | El sitio listo para publicar, en `sitio/dist`                                             |
+| `npm run dibujar -w sitio` | Vuelve a generar los dibujos del sitio (fondo, marca, engranajes) con su geometría        |
 
 Cómo se trabaja (ramas, PR, commits, etiquetas por paso): [decisión 0005](docs/decisiones/0005-forma-de-trabajo.md). Todas las decisiones: [docs/decisiones](docs/decisiones/README.md).
 

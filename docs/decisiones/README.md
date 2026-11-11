@@ -14,3 +14,4 @@ Cada una tiene: **contexto** (qué problema había), **decisión**, **consecuenc
 | [0005](0005-forma-de-trabajo.md)        | Cómo se trabaja: ramas, PR, commits, etiquetas, idioma             | Aceptada                            |
 | [0006](0006-el-nombre.md)               | El nombre: Manifold Gaming                                         | Aceptada                            |
 | [0007](0007-tutorial-ejecutable.md)     | El tutorial ejecutable y la bitácora                               | Aceptada                            |
+| [0008](0008-la-estetica-del-taller.md)  | La estética del sitio: el taller                                   | Aceptada                            |
