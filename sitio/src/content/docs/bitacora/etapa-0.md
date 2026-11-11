@@ -1,13 +1,15 @@
 ---
-title: '0. Antes de empezar'
-description: Qué vamos a construir, cómo está organizado el proyecto, cómo se trabaja con git, y el primer código del motor.
+title: 'Etapa 0: cimientos'
+description: 'Informe de la etapa 0: el repositorio, las herramientas, el sitio, las decisiones y el primer código del motor. Lo que hicimos, lo que encontramos y lo que medimos.'
 sidebar:
   order: 0
 ---
 
 ## Qué construimos y qué vas a entender
 
-Este es el capítulo cero: todavía no hay física ni personajes. Hay **cimientos**, que son lo que más cuesta cambiar después:
+> Este es el **informe** de la etapa 0: el detalle de lo que hicimos, con sus hallazgos y mediciones. Para aprender las ideas tocando código, está el [tutorial de la etapa 0](../../tutorial/etapa-0/01-primer-cubo/).
+
+En la etapa 0 todavía no hay física ni personajes. Hay **cimientos**, que son lo que más cuesta cambiar después:
 
 - un **repositorio** en GitHub, organizado en capas (un _monorepo_);
 - las **herramientas** que revisan todo en cada cambio: tipos, linter, formato, pruebas sin pantalla, pruebas en un navegador;

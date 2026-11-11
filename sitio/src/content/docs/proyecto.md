@@ -3,7 +3,7 @@ title: El proyecto
 description: Qué es Manifold Gaming, de dónde viene y cómo está pensado.
 ---
 
-**Manifold Gaming** es un laboratorio de mundos físicos en 3D para la web: un motor propio escrito en TypeScript (con [Three.js](https://threejs.org) para dibujar y [Rapier](https://rapier.rs) para la física), un **Dojo** donde experimentar con él, **juegos** construidos encima y un **tutorial** que se escribe a medida que el motor crece.
+**Manifold Gaming** es un laboratorio de mundos físicos en 3D para la web: un motor propio escrito en TypeScript (con [Three.js](https://threejs.org) para dibujar y [Rapier](https://rapier.rs) para la física), un **Dojo** donde experimentar con él, **juegos** construidos encima, un **tutorial** con código que se ejecuta en la página y una **bitácora** con el informe de cada etapa.
 
 El nombre viene de la matemática: una _manifold_ (en castellano, _variedad_) es un espacio que, mirado de cerca, parece plano, aunque en grande sea curvo, retorcido o tenga una sola cara, como la cinta de Möbius. Es lo que este motor quiere tratar como caso normal: que el "abajo" cambie de lugar en lugar. Y **Gaming**, porque es una plataforma para hacer y jugar juegos: no es un motor de física ni de dibujo (eso lo hacen [Rapier](https://rapier.rs) y [Three.js](https://threejs.org), sobre los que está construido), ni una herramienta de diseño.
 
