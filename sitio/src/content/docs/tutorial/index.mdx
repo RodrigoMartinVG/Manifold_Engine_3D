@@ -8,7 +8,7 @@ sidebar:
 
 import CodigoVivo from '../../../components/CodigoVivo.astro';
 
-Este tutorial enseña a hacer **mundos físicos en 3D que corren en el navegador**: cosas que caen, giran, chocan y que, si se las vuelve a correr, hacen exactamente lo mismo.
+Este tutorial enseña a hacer **mundos físicos en 3D que corren en el navegador, y juegos sobre ellos**. Primero, cosas que caen, giran y chocan, y que si se las vuelve a correr hacen exactamente lo mismo. Encima de eso, lo que hace a un juego: **personajes que se manejan** con el teclado, el mouse o un joystick, **bots** que patrullan, ven y persiguen, y **reglas**: objetivos, puntajes, ganar y perder.
 
 Avanza a la par de [Manifold Gaming](../proyecto/), el motor que se construye en este mismo sitio, pero por un camino más corto. Cada lección toma **una** idea y la muestra con un programa chico, que se edita y se ejecuta **aquí mismo**. No hace falta instalar nada.
 
@@ -22,12 +22,17 @@ Avanza a la par de [Manifold Gaming](../proyecto/), el motor que se construye en
 
 El tutorial sigue las etapas del motor ([el plan completo](../proyecto/)). Cada etapa trae sus lecciones cuando el motor llega a ella. Hoy está la etapa 0.
 
-| Etapa                    | Las ideas                                                                                                                                                                                                       | Estado         |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| **0. Cimientos**         | Cómo se dibuja en 3D. La escena, la cámara y el bucle. Orientar las cosas sin que se traben. Por qué la física avanza de a pasos fijos. Un azar que se puede repetir. Separar la simulación del dibujo.         | **Disponible** |
-| **1. Física y gravedad** | Cuerpos que chocan, con un motor de física. Una gravedad que cambia de lugar en lugar, como la de un planeta. Un personaje cuyo "arriba" cambia mientras camina. Repetir una partida y comprobar que dio igual. | La próxima     |
-| **2. Capacidades**       | Trepar, volar, agarrar: comportamientos que se combinan.                                                                                                                                                        | Después        |
-| **3 en adelante**        | Un mundo que responde (mecanismos, cosas que se rompen, luz), enemigos que piensan, juegos completos y partidas en red.                                                                                         | Más adelante   |
+El orden va de abajo hacia arriba: primero los cimientos (dibujar, el tiempo, el azar), después la física, y encima lo que se juega. Un personaje que se maneja aparece en la etapa 1, y los bots, en la 4. Los ejemplos son interactivos desde la primera lección; a partir de la etapa 1, además, se juegan.
+
+| Etapa                        | Las ideas                                                                                                                                                                                                                                                                                                 | Estado         |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| **0. Cimientos**             | Cómo se dibuja en 3D. La escena, la cámara y el bucle. Orientar las cosas sin que se traben. Por qué la física avanza de a pasos fijos. Un azar que se puede repetir. Separar la simulación del dibujo.                                                                                                   | **Disponible** |
+| **1. Física y un personaje** | Cuerpos que chocan, con un motor de física. Una gravedad que cambia de lugar en lugar, como la de un planeta. **Un personaje que se maneja** con el teclado, el mouse o un joystick, y una cámara que lo sigue, aunque su "arriba" cambie mientras camina. Repetir una partida y comprobar que dio igual. | La próxima     |
+| **2. Capacidades**           | Trepar, volar, agarrar: lo que un personaje sabe hacer, como piezas que se combinan.                                                                                                                                                                                                                      | Después        |
+| **3. Un mundo que responde** | Mecanismos (puertas, ascensores, botones), cosas que se rompen, luces que se apagan.                                                                                                                                                                                                                      | Más adelante   |
+| **4. Combate y bots**        | Armas, y **bots**: personajes que maneja la computadora. Patrullan, ven y oyen, persiguen, y usan el mundo; por ejemplo, un guardia que llama al ascensor.                                                                                                                                                | Más adelante   |
+| **5. Juegos**                | Juegos completos sobre el motor: reglas, objetivos, puntajes, niveles. Se juegan en este sitio.                                                                                                                                                                                                           | Más adelante   |
+| **6. Red y niveles**         | Jugar con otros por la red, y un editor para armar niveles.                                                                                                                                                                                                                                               | Más adelante   |
 
 ## Con qué se trabaja
 
@@ -71,7 +76,7 @@ Este es el programa más chico posible: escribe en la consola con `console.log`,
 - **No es un curso de programación.** Supone que ya sabés lo básico (más arriba dice qué).
 - **No es la documentación de Three.js ni la de Rapier.** Muestra lo mínimo para cada idea y deja enlaces a las documentaciones oficiales, que tienen todo lo demás.
 - **No es el motor.** Los ejemplos simplifican a propósito. El motor de verdad reparte todo en paquetes, tiene pruebas y cuida casos que aquí no importan. Cada lección enlaza a ese código, y la **Bitácora** cuenta cómo se hizo cada etapa, con sus mediciones.
-- **No cubre todo el 3D.** No hay modelado, que es hacer personajes o escenarios en programas como Blender. Tampoco _shaders_ escritos a mano (los programas que corren dentro de la placa de video), ni arte, ni sonido, al menos por ahora. El foco es la **simulación**: que las cosas se muevan bien y que se puedan repetir.
+- **No cubre el arte ni el sonido.** No hay modelado, que es hacer personajes o escenarios en programas como Blender. Tampoco _shaders_ escritos a mano (los programas que corren dentro de la placa de video), ni música, al menos por ahora: los personajes y los escenarios son formas simples. El foco es **lo que hace funcionar un juego**. Por debajo, que las cosas se muevan bien y que se puedan repetir. Por encima, que se puedan jugar: controles, personajes, bots y reglas.
 - **Necesita un navegador con WebGL**, que tiene cualquier navegador actual, en computadora o en celular. En un celular los ejemplos andan, pero editar código es incómodo: conviene una computadora.
 
 ## Etapa 0: cimientos
