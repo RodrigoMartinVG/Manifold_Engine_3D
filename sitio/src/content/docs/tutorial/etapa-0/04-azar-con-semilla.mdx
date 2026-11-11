@@ -40,6 +40,29 @@ El ejemplo arma un "nivel": 60 cubos con lugar, tamaño, color y giro sacados de
 - **Misma semilla, mismo nivel.** Y con el nivel, la misma partida, el mismo experimento, la misma prueba.
 - **Separar el generador del que lo usa** permite cambiarlo sin tocar nada más.
 
+## Más a fondo
+
+<details>
+<summary>Por qué estos números: 1664525 y 1013904223</summary>
+
+Un generador `estado = a · estado + c` (módulo 2³²) puede caer en un ciclo corto y repetirse enseguida. Pero recorre **los 4.294.967.296 estados posibles** antes de repetir si se cumplen dos condiciones, que demostraron Hull y Dobell en 1962:
+
+- `c` es impar: 1013904223 lo es.
+- `a − 1` es múltiplo de 4: 1664525 − 1 = 1664524 = 4 × 416131.
+
+Con números elegidos al azar, en cambio, el período puede ser mucho más corto.
+
+</details>
+
+<details>
+<summary>El defecto de los bits bajos</summary>
+
+Mirá solo el último bit del estado: como `a` y `c` son impares, en cada paso cambia. La secuencia del último bit es 0, 1, 0, 1… Los dos últimos bits se repiten cada 4 números, y en general el bit número `k` (contando desde 0) se repite cada `2^(k+1)` números.
+
+Por eso el código divide el estado entero por 2³²: así mandan los bits altos, que son los que mejor se mezclan. Por eso también conviene no hacer `estado % 2` para tirar una moneda: saldría cara, ceca, cara, ceca…
+
+</details>
+
 :::caution[Sutilezas]
 
 - **`Math.imul` multiplica como un procesador de 32 bits.** Una multiplicación común de JavaScript usa números con decimales de 64 bits: con números tan grandes, pierde los dígitos del final, justo los que la cuenta necesita.

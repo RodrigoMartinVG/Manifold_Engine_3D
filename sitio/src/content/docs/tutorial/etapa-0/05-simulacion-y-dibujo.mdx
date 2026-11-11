@@ -52,6 +52,21 @@ Pensalo como un partido de fútbol y su transmisión por televisión. El partido
 - **Misma semilla, mismos pasos, mismo resultado, número por número.** Eso es el **determinismo**, y es lo que permite repeticiones, pruebas y juego en red.
 - **Por eso se puede probar sin navegador y correr en un servidor:** es la misma simulación, sin la vista.
 
+## Más a fondo
+
+<details>
+<summary>Por qué "casi igual" no alcanza</summary>
+
+Los números de JavaScript guardan unos 16 dígitos significativos, así que casi ninguna cuenta da exacta:
+
+`0.1 + 0.2 = 0.30000000000000004`
+
+Además, el orden importa. `(0.1 + 0.2) + 0.3` da `0.6000000000000001`, pero `0.1 + (0.2 + 0.3)` da `0.6`. Por eso dos simulaciones dan igual solo si hacen **exactamente las mismas cuentas, en el mismo orden**.
+
+Y una diferencia mínima no se queda mínima. En un mundo con choques, una pelota que llega una millonésima de metro antes rebota con un ángulo apenas distinto. Eso cambia dónde choca la vez siguiente, y la diferencia crece choque tras choque. En matemática se llama **sensibilidad a las condiciones iniciales**, y es la base de lo que se conoce como caos. Por eso el motor no compara "más o menos": compara número por número, y si en algún paso difiere, quiere saber en cuál.
+
+</details>
+
 :::caution[Sutilezas]
 
 - **La vista lee y nunca escribe.** Si la vista moviera una pelota, la simulación y la pantalla dejarían de estar de acuerdo, y la repetición ya no daría igual.

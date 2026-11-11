@@ -41,7 +41,7 @@ Con el detalle en 3, la "esfera" parece un trompo: tiene muy pocos triángulos. 
 
 Para saber qué píxel le toca a cada triángulo hace falta un punto de vista: la **cámara**. Como una de fotos, está en un lugar, mira hacia un lado y tiene un **campo de visión**: cuánto abarca, en grados. La cámara de este ejemplo tiene **perspectiva**, así que lo lejano se ve más chico, como en una foto.
 
-Con 15° funciona como un teleobjetivo: abarca poco y todo se ve aplanado. Con 110° es un gran angular: abarca mucho y los bordes se deforman. Nuestros ojos ven más o menos como una cámara de 50° a 60°.
+Con 15° funciona como un teleobjetivo: abarca poco, y lo que abarca se ve grande, como con un zoom. Con 110° es un gran angular: abarca mucho y los bordes se deforman. Nuestros ojos ven más o menos como una cámara de 50° a 60°.
 
 ## 4. La luz: de qué color es cada triángulo
 
@@ -62,6 +62,27 @@ Si algo cambia entre un cuadro y el siguiente, como la cámara cuando la arrastr
 - **Las formas son mallas de triángulos.** Más triángulos dan más detalle y más trabajo.
 - **La cámara decide desde dónde y cuánto se ve.** La luz decide de qué tono es cada cara.
 - **Todo se vuelve a hacer en cada cuadro**, unas 60 veces por segundo.
+
+## Más a fondo
+
+<details>
+<summary>Cómo proyecta la cámara: la perspectiva en una cuenta</summary>
+
+Imaginá que el ojo está en el origen y mira hacia adelante, y que la pantalla es una ventana puesta a una distancia `d` del ojo. Cada punto del mundo se dibuja donde la recta que lo une con el ojo atraviesa esa ventana.
+
+Por triángulos semejantes, un punto que está a una distancia `z` hacia adelante y a una altura `y` aparece en la ventana a la altura:
+
+`y′ = d · y / z`
+
+De ahí sale la perspectiva: **lo que está al doble de distancia se ve de la mitad del tamaño**, porque `z` divide.
+
+El campo de visión decide `d`. Si la ventana mide 2 de alto (de −1 a 1), entonces `d = 1 / tan(campo / 2)`. Con 50°, `d ≈ 2,14`; con 15°, `d ≈ 7,6`; con 110°, `d ≈ 0,70`.
+
+Fijate que `d` multiplica a todos los puntos por igual: con la cámara quieta, cambiar el campo de visión agranda o achica la foto entera, como un zoom, pero no cambia cuánto más chico se ve lo lejano que lo cercano. Eso depende solo de las distancias (`y / z`). El "aplanado" de las fotos con teleobjetivo aparece porque, para encuadrar lo mismo con poco campo, hay que alejarse, y desde lejos las distancias de adelante y de atrás se parecen.
+
+Three.js hace esta cuenta con una **matriz de proyección**: `updateProjectionMatrix()` la recalcula cuando cambia el campo o la forma de la ventana.
+
+</details>
 
 :::caution[Sutilezas]
 

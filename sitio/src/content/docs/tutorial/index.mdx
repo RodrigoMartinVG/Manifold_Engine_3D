@@ -16,7 +16,26 @@ Avanza a la par de [Manifold Gaming](../proyecto/), el motor que se construye en
 
 - **Para quien sabe programar un poco**: variables, funciones, `if`, `for`, objetos. Los ejemplos están en TypeScript, que es JavaScript con tipos (más abajo se explica). Si nunca programaste en JavaScript, la [guía de JavaScript de MDN](https://developer.mozilla.org/es/docs/Web/JavaScript/Guide) es un buen lugar para empezar.
 - **No hace falta haber hecho nada gráfico.** Qué es la GPU, un cuadro, una malla o un radián se explica la primera vez que aparece. La [primera lección](etapa-0/00-del-3d-a-la-pantalla/) es justamente eso: cómo un mundo en 3D se convierte en los píxeles de tu pantalla.
-- **La matemática se explica cuando hace falta**, con algo que se mueve en pantalla al lado. Alcanza con la del secundario: coordenadas, algo de geometría y un poco de trigonometría. Lo que va más allá, como los cuaterniones, se cuenta en su lección, desde cero.
+- **Para empezar alcanza con la matemática del secundario:** coordenadas, algo de geometría y un poco de trigonometría. Lo que va más allá se explica en cada lección, a la profundidad que quieras: lo cuenta la sección siguiente.
+
+## La matemática, a tu medida
+
+Hacer mundos físicos obliga a mirar matemática, y no por gusto. Es el idioma en el que están escritas las cosas que queremos simular:
+
+- una posición es un **vector**;
+- girar algo es multiplicar **cuaterniones**;
+- que una pelota caiga es sumarle la gravedad a su velocidad, **paso a paso**;
+- la gravedad de un planeta es un **campo** que en cada punto apunta hacia el centro.
+
+Sin entender eso, el código anda hasta que algo sale raro: una nave que se traba, una órbita que se abre sola, una repetición que no da igual. Y ahí no hay manera de saber por qué.
+
+Por eso cada detalle matemático se cuenta **en capas**, y cada uno elige hasta dónde bajar:
+
+1. **Lo mínimo, en el texto de la lección:** qué es, para qué sirve y cómo se usa en el código, con un ejemplo que se mueve. Es lo único necesario para seguir la lección, y está escrito para quien lo ve por primera vez.
+2. **El porqué, en los recuadros "Más a fondo":** de dónde sale una fórmula, una cuenta hecha paso a paso, por qué funciona un truco. Están cerrados: se abren con un clic, para quien quiera entender además de usar.
+3. **La matemática completa, en "Para saber más":** artículos, videos y libros para seguir tan lejos como quieras.
+
+Saltearse los recuadros no te deja afuera de nada de lo que sigue. Cuando una lección necesita algo de una anterior, vuelve a contar su mínimo o te dice dónde está.
 
 ## Qué vas a aprender
 
@@ -53,9 +72,10 @@ Todas tienen las mismas partes:
 2. **El ejemplo:** el programa, corriendo. Arriba se ve lo que dibuja; abajo está el código. Cada lección dice **qué probar**.
 3. **El código, paso a paso:** qué hace cada parte, en orden.
 4. **Lo importante:** lo que hay que llevarse.
-5. **Sutilezas:** las trampas, y lo que no es obvio.
-6. **En Manifold:** dónde está esa idea en el motor de verdad, para quien quiera ver el código completo.
-7. **Para saber más:** dónde seguir leyendo.
+5. **Más a fondo:** el porqué matemático, en recuadros que se abren con un clic. Son opcionales.
+6. **Sutilezas:** las trampas, y lo que no es obvio.
+7. **En Manifold:** dónde está esa idea en el motor de verdad, para quien quiera ver el código completo.
+8. **Para saber más:** dónde seguir leyendo.
 
 ## Cómo se usan los ejemplos
 

@@ -54,6 +54,32 @@ No hace falta saber hacer sus cuentas a mano, porque Three.js las hace. Sí hace
 - **Un cuaternión es un eje y un ángulo, codificados**: `(x, y, z) = eje · sen(θ/2)` y `w = cos(θ/2)`, donde `θ` (la letra griega _theta_) es el ángulo. Por eso sus cuatro números siempre cumplen `x² + y² + z² + w² = 1`.
 - **Para mostrar o para escribir a mano, los ángulos están bien.** Para guardar orientaciones y combinarlas, conviene el cuaternión.
 
+## Más a fondo
+
+<details>
+<summary>Por qué los ángulos se traban</summary>
+
+Con el orden `'YXZ'`, la orientación se arma con tres giros seguidos: guiñada alrededor de `y`, cabeceo alrededor del eje `x` **ya girado**, y alabeo alrededor del eje `z` **ya girado dos veces**.
+
+Con el cabeceo en 90°, el eje `z` de la nave (el que va de la cola a la punta) quedó vertical, sobre la misma recta que el eje `y` del mundo. Entonces la guiñada y el alabeo giran alrededor del mismo eje vertical: dos números para un solo movimiento, y ninguno para el que falta.
+
+No es un error de Three.js. Pasa con cualquier manera de describir orientaciones con tres ángulos: siempre hay alguna posición donde dos ejes se alinean. El nombre viene de los cardanes, los anillos que sostienen una brújula de barco o un giróscopo: cuando dos anillos quedan en el mismo plano, el instrumento pierde un grado de libertad.
+
+</details>
+
+<details>
+<summary>De dónde sale el `θ/2`, y por qué `q` y `−q` son el mismo giro</summary>
+
+Para girar un vector `v` con un cuaternión `q`, la cuenta es:
+
+`v′ = q · v · q*`
+
+Aquí `v` se escribe como cuaternión con `w = 0`, y `q*` es el **conjugado** de `q`: el mismo cuaternión con `x`, `y` y `z` cambiados de signo. El cuaternión aparece **dos veces**, una a cada lado, y cada una aporta la mitad del giro. Por eso adentro se guarda `θ/2`: entre las dos suman `θ`.
+
+Eso también explica lo de `q` y `−q`: si se cambian todos los signos, aparecen dos signos menos en `q · v · q*`, que se cancelan. Los cuaterniones de largo 1 forman la superficie de una esfera en cuatro dimensiones, y cada orientación del espacio aparece en ella dos veces, en puntos opuestos.
+
+</details>
+
 :::caution[Sutilezas]
 
 - **El orden de la multiplicación importa.** `a.multiply(b)` (por la derecha) gira en el marco **propio** del objeto: su derecha, su arriba. `a.premultiply(b)` (por la izquierda) gira en el marco **del mundo**: la derecha y el arriba de la escena. Cambiá uno por el otro en el código y probá.

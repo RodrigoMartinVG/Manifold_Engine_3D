@@ -40,6 +40,42 @@ Las dos pelotas salen hacia arriba a la misma velocidad y rebotan sin perder ene
 - **Con un acumulador, el paso es fijo.** El tiempo real se junta y se gasta de a pasos iguales. La altura de la verde depende del paso, que es siempre el mismo, y no de la pantalla.
 - **Interpolar.** Con pocos pasos por segundo, la verde se movería a saltos. Por eso se dibuja _entre_ el paso anterior y el actual, según cuánto del siguiente ya pasó.
 
+## Más a fondo
+
+<details>
+<summary>Cuánto se equivoca un paso</summary>
+
+En un paso de `dt` segundos, el método supone que la velocidad no cambia durante el paso. Como sí cambia, cada paso se equivoca en algo proporcional a `dt²`: con pasos de la mitad, cada uno se equivoca la cuarta parte.
+
+Pero con pasos de la mitad hay el doble de pasos, y los errores se suman. El error total, al final, queda proporcional a `dt`: **pasos de la mitad, más o menos la mitad de error**. Por eso este método se llama "de primer orden". Hay métodos de orden más alto, que se equivocan mucho menos con el mismo paso, pero cuestan más cuentas por paso, y en un juego casi siempre conviene más un paso chico y fijo.
+
+</details>
+
+<details>
+<summary>Por qué el orden de las dos líneas cambia la energía</summary>
+
+Tomá el movimiento más simple que oscila: un resorte, donde la aceleración es `−ω² · x`. Su energía, salvo un factor, es `E = v² + ω² · x²`, y en la realidad no cambia.
+
+Con **Euler explícito**, las dos líneas usan los valores viejos:
+
+```text
+x′ = x + v · dt
+v′ = v − ω² · x · dt
+```
+
+Haciendo la cuenta, la energía nueva queda **multiplicada** por `1 + ω² · dt²` en cada paso. Es un número un poquito mayor que 1, pero multiplicado miles de veces crece sin parar: el resorte oscila cada vez más, y una órbita se abre.
+
+Con **Euler semi-implícito**, la posición usa la velocidad nueva:
+
+```text
+v′ = v − ω² · x · dt
+x′ = x + v′ · dt
+```
+
+Esta versión conserva exactamente el **área** que ocupa un conjunto de estados en el plano posición-velocidad, porque el determinante de la cuenta es 1. Por eso la energía sube y baja un poco alrededor del valor real, pero no se va. Los métodos con esta propiedad se llaman **simplécticos**, y son los que usan los motores de física.
+
+</details>
+
 :::caution[Sutilezas]
 
 - **La interpolación muestra el pasado**: como mucho, un paso atrás. Con pasos de 1/60 de segundo no se nota.

@@ -55,6 +55,34 @@ Los comentarios del código están numerados. Esto es lo que hace cada parte:
 - **Girar según el tiempo, no por cuadro.** Si el código sumara "un poquito por cuadro", en una pantalla de 144 cuadros por segundo el cubo giraría más del doble de rápido que en una de 60. Multiplicando por `dt`, gira igual en cualquier pantalla.
 - **La cámara necesita saber la forma de la ventana.** Si la ventana cambia y no se actualiza `aspect` (y no se llama a `updateProjectionMatrix`), todo se ve estirado.
 
+## Más a fondo
+
+<details>
+<summary>Por qué radianes, y no grados</summary>
+
+Un **radián** es el ángulo que abarca un arco tan largo como el radio. Como una circunferencia mide `2π · r`, en una vuelta entera entran 2π radianes.
+
+La ventaja es que, en radianes, el largo de un arco es simplemente **radio por ángulo**:
+
+`arco = r · θ`
+
+Si una rueda de 0,3 m de radio gira 2 radianes, avanza 0,6 m. En grados, la misma cuenta necesita un factor extra: `r · θ · π / 180`. Ese factor aparecería en cada fórmula de física que tenga giros. Por eso la matemática, Three.js y las funciones `Math.sin` y `Math.cos` de JavaScript trabajan en radianes.
+
+Para pasar de unos a otros: `radianes = grados · π / 180`. Three.js trae `THREE.MathUtils.degToRad` y `radToDeg`.
+
+</details>
+
+<details>
+<summary>Qué guarda `dt`, y por qué multiplicar por él</summary>
+
+Si algo gira a una velocidad `ω` (la letra griega _omega_), en radianes por segundo, entonces en `dt` segundos gira `ω · dt` radianes. Sumar eso en cada cuadro es ir acumulando el ángulo de a pedacitos:
+
+`ángulo = ω · dt₁ + ω · dt₂ + ω · dt₃ + …`
+
+La suma de todos los `dt` es el tiempo total, así que el ángulo es `ω · tiempo`, cualquiera sea la cantidad de cuadros. Sin el `dt`, el ángulo sería `ω · cantidad de cuadros`, y dependería de la pantalla.
+
+</details>
+
 :::caution[Sutilezas]
 
 - **`MeshStandardMaterial` sin luces se ve negro.** `MeshBasicMaterial` ignora la luz: siempre se ve de su color, pero plano, sin volumen.
