@@ -1,0 +1,80 @@
+---
+title: Del 3D a la pantalla
+description: Lo mínimo para entender cómo se dibuja en 3D — coordenadas, triángulos, cámara, luz y cuadros por segundo.
+sidebar:
+  order: 0
+---
+
+import CodigoVivo from '../../../../components/CodigoVivo.astro';
+
+Antes de programar conviene saber qué pasa cuando una computadora "dibuja en 3D", porque todo lo demás se apoya en eso.
+
+La pantalla es plana: una grilla de puntitos de color, los **píxeles**. Una pantalla común tiene unos dos millones. Dibujar en 3D es decidir, muchas veces por segundo, de qué color va cada píxel para que parezca que detrás del vidrio hay un mundo con profundidad. Para eso hacen falta cuatro cosas: un lugar para cada objeto, una forma, un punto de vista y una luz.
+
+El ejemplo de abajo tiene las cuatro. No hace falta entender todo su código todavía: la lección siguiente lo arma pieza por pieza. Por ahora, mirá y tocá.
+
+<CodigoVivo leccion="etapa-0/00-del-3d-a-la-pantalla" autoejecutar />
+
+**Qué probar:**
+
+- **Arrastrá sobre la escena** para girar a su alrededor (en un celular, con el dedo). La rueda del mouse, o pellizcar, acerca y aleja.
+- **Bajá el detalle de la esfera a 3, y después subilo a 64.** Mirá cuántos triángulos dice el panel.
+- **Apagá "ver los triángulos".**
+- **Llevá el campo de visión a 15° y después a 110°.**
+- **Bajá la fuerza del sol a 0.**
+
+## 1. Un lugar para cada cosa: las coordenadas
+
+Cada punto del mundo se describe con **tres números**, sus **coordenadas** `(x, y, z)`: cuánto a la derecha, cuánto arriba y cuánto hacia vos, medidos desde un punto fijo, el **origen** `(0, 0, 0)`.
+
+En el ejemplo, las tres flechas que salen del origen son los **ejes**: la roja es `x`, la verde es `y` (hacia arriba) y la azul es `z`. El piso tiene cuadrados de un metro. En este tutorial **una unidad es un metro**. No es obligatorio, pero a la física le conviene: la gravedad de la Tierra, por ejemplo, es 9,81 metros por segundo, cada segundo.
+
+La esfera está en `(0, 0.8, 0)`: en el centro, 80 centímetros arriba del piso. (En el código los decimales van con punto, como en inglés.)
+
+## 2. Todo está hecho de triángulos
+
+La placa de video, o **GPU**, es un procesador hecho para hacer muchísimas cuentas iguales a la vez. Sabe dibujar muy rápido una sola cosa: **triángulos**. Por eso toda forma, por redonda que parezca, es una red de triángulos, que se llama **malla**. Las esquinas de los triángulos son los **vértices**.
+
+Con el detalle en 3, la "esfera" parece un trompo: tiene muy pocos triángulos. Con 64 parece redonda, pero tiene miles. Más triángulos se ven mejor y cuestan más, porque cada uno es trabajo para la GPU en cada cuadro. Elegir cuántos usar es una de las decisiones de siempre en 3D.
+
+## 3. La cámara: del mundo a una foto
+
+Para saber qué píxel le toca a cada triángulo hace falta un punto de vista: la **cámara**. Como una de fotos, está en un lugar, mira hacia un lado y tiene un **campo de visión**: cuánto abarca, en grados. La cámara de este ejemplo tiene **perspectiva**, así que lo lejano se ve más chico, como en una foto.
+
+Con 15° funciona como un teleobjetivo: abarca poco y todo se ve aplanado. Con 110° es un gran angular: abarca mucho y los bordes se deforman. Nuestros ojos ven más o menos como una cámara de 50° a 60°.
+
+## 4. La luz: de qué color es cada triángulo
+
+Un triángulo de frente al sol se ve claro, y uno de costado se ve oscuro: la GPU calcula su tono con el ángulo entre la cara y la luz. Por eso las caras de la esfera tienen tonos distintos aunque todas son del mismo naranja. Esa diferencia es la que hace que el ojo "lea" el volumen.
+
+Con el sol en 0 queda solo una luz tenue que llega de todos lados, y la forma casi se aplana: sin diferencias de luz, no se ve el volumen.
+
+## 5. Una y otra vez: los cuadros
+
+Todo esto se repite **en cada cuadro** (en inglés, _frame_): la GPU borra la imagen, ubica los triángulos según la cámara, pinta los píxeles según la luz y muestra el resultado. Una pantalla común lo hace **60 veces por segundo** (60 Hz); algunas lo hacen 120 o 144 veces. El panel muestra cuántos cuadros por segundo logra tu computadora.
+
+Si algo cambia entre un cuadro y el siguiente, como la cámara cuando la arrastrás, se ve movimiento: es el mismo truco que el cine.
+
+## Lo importante
+
+- **La pantalla es una grilla de píxeles.** Dibujar en 3D es decidir su color, muchas veces por segundo.
+- **Cada punto tiene coordenadas `(x, y, z)`.** En este tutorial se miden en metros, con `y` hacia arriba.
+- **Las formas son mallas de triángulos.** Más triángulos dan más detalle y más trabajo.
+- **La cámara decide desde dónde y cuánto se ve.** La luz decide de qué tono es cada cara.
+- **Todo se vuelve a hacer en cada cuadro**, unas 60 veces por segundo.
+
+:::caution[Sutilezas]
+
+- **"Arriba" es una convención.** Three.js usa `y` hacia arriba, pero otros programas usan `z` (Blender, por ejemplo). Por eso, al pasar un modelo de uno a otro, a veces aparece acostado.
+- **Los triángulos tienen frente y dorso.** Para ahorrar trabajo, la GPU normalmente no dibuja el dorso. Acercate con la rueda hasta entrar en la esfera: sus caras desaparecen y quedan solo las líneas, porque desde adentro estás viendo el dorso de todos los triángulos.
+- **El campo de visión va en grados, pero casi todos los demás ángulos de Three.js van en radianes.** La lección siguiente explica qué son.
+  :::
+
+## En Manifold
+
+El motor dibuja con estas mismas piezas de Three.js, pero en un paquete aparte, la **presentación**: [`paquetes/presentacion`](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/paso-00/paquetes/presentacion). Lo que dibuja no lo decide la presentación, sino la simulación. Esa separación es el tema de la [última lección de esta etapa](../05-simulacion-y-dibujo/).
+
+## Para saber más
+
+- [Explicación de la teoría básica del 3D](https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_on_the_web/Basic_theory), en MDN (en inglés): vértices, cámaras, luces y el recorrido de la GPU, con más detalle.
+- [Fundamentos de Three.js](https://threejs.org/manual/#en/fundamentals), en el manual oficial (en inglés).
