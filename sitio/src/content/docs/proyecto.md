@@ -1,15 +1,15 @@
 ---
 title: El proyecto
-description: Qué es Manifold, de dónde viene y cómo está pensado.
+description: Qué es Manifold Gaming, de dónde viene y cómo está pensado.
 ---
 
-**Manifold** es un laboratorio de mundos físicos en 3D para la web: un motor propio escrito en TypeScript (con [Three.js](https://threejs.org) para dibujar y [Rapier](https://rapier.rs) para la física), un **Dojo** donde experimentar con él, **juegos** construidos encima y un **tutorial** que se escribe a medida que el motor crece.
+**Manifold Gaming** es un laboratorio de mundos físicos en 3D para la web: un motor propio escrito en TypeScript (con [Three.js](https://threejs.org) para dibujar y [Rapier](https://rapier.rs) para la física), un **Dojo** donde experimentar con él, **juegos** construidos encima y un **tutorial** que se escribe a medida que el motor crece.
 
-El nombre viene de la matemática: una _manifold_ (en castellano, _variedad_) es un espacio que, mirado de cerca, parece plano, aunque en grande sea curvo, retorcido o tenga una sola cara, como la cinta de Möbius. Es lo que este motor quiere tratar como caso normal: que el "abajo" cambie de lugar en lugar.
+El nombre viene de la matemática: una _manifold_ (en castellano, _variedad_) es un espacio que, mirado de cerca, parece plano, aunque en grande sea curvo, retorcido o tenga una sola cara, como la cinta de Möbius. Es lo que este motor quiere tratar como caso normal: que el "abajo" cambie de lugar en lugar. Y **Gaming**, porque es una plataforma para hacer y jugar juegos: no es un motor de física ni de dibujo (eso lo hacen [Rapier](https://rapier.rs) y [Three.js](https://threejs.org), sobre los que está construido), ni una herramienta de diseño.
 
 ## De dónde viene
 
-Manifold es la **segunda versión**. La primera fue un shooter que creció paso a paso (física, armas, una hormiga que trepa por las paredes, autos, una cinta de Möbius, red, mecanismos, luz, inteligencia artificial, repeticiones, tres juegos sobre el mismo motor). De ella no se copia código: se traen **lecciones**, muchas medidas, que ahora son reglas desde el primer día. Están escritas, con sus números, en la [decisión 0000](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/main/docs/decisiones/0000-por-que-la-v2.md).
+Manifold Gaming es la **segunda versión**. La primera fue un shooter que creció paso a paso (física, armas, una hormiga que trepa por las paredes, autos, una cinta de Möbius, red, mecanismos, luz, inteligencia artificial, repeticiones, tres juegos sobre el mismo motor). De ella no se copia código: se traen **lecciones**, muchas medidas, que ahora son reglas desde el primer día. Están escritas, con sus números, en la [decisión 0000](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0000-por-que-la-v2.md).
 
 ## Cómo está pensado
 
@@ -42,4 +42,4 @@ Y unas reglas que no se negocian:
 | 5. Juegos                 | Juegos completos sobre el motor                                                 | Juegos en este sitio                                     |
 | 6. Red y autoría          | Partidas en red, editor de niveles                                              |                                                          |
 
-El código está en [GitHub](https://github.com/RodrigoMartinVG/Manifold_Engine_3D). Las decisiones importantes, con su porqué, están en [`docs/decisiones`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/tree/main/docs/decisiones).
+El código está en [GitHub](https://github.com/RodrigoMartinVG/Manifold_Gaming). Las decisiones importantes, con su porqué, están en [`docs/decisiones`](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/main/docs/decisiones).

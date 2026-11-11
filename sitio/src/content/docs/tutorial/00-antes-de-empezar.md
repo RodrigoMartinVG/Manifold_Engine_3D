@@ -23,16 +23,16 @@ Vas a entender:
 - Por qué el estado son **datos planos**.
 - Cómo se trabaja con **git**: ramas, _pull requests_, commits, etiquetas, integración continua.
 
-| Archivo                                                                                                                                                                                                                                                     | Qué contiene                                   |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| [`paquetes/comun/src/azar.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/comun/src/azar.ts)                                                                                                                               | El azar con semilla (SFC32)                    |
-| [`paquetes/comun/src/matematica.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/comun/src/matematica.ts)                                                                                                                   | Vectores y cuaterniones como tuplas            |
-| [`paquetes/nucleo/src/mundo.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/nucleo/src/mundo.ts)                                                                                                                           | El mundo: reloj, ids, azar, entidades, eventos |
-| [`paquetes/nucleo/src/partida.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/nucleo/src/partida.ts) y [`cartucho.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/nucleo/src/cartucho.ts) | Un mundo y el juego que lo juega               |
-| [`paquetes/nucleo/src/reloj.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/nucleo/src/reloj.ts)                                                                                                                           | El paso fijo                                   |
-| [`paquetes/nucleo/src/huella.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/nucleo/src/huella.ts)                                                                                                                         | Un número que resume el mundo entero           |
-| [`paquetes/presentacion/src/cliente.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/paquetes/presentacion/src/cliente.ts)                                                                                                           | Dibujar el mundo con Three.js                  |
-| [`juegos/dojo/src/cartucho.ts`](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/paso-00/juegos/dojo/src/cartucho.ts)                                                                                                                             | El Dojo: un cubo que gira                      |
+| Archivo                                                                                                                                                                                                                                               | Qué contiene                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| [`paquetes/comun/src/azar.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/azar.ts)                                                                                                                            | El azar con semilla (SFC32)                    |
+| [`paquetes/comun/src/matematica.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/matematica.ts)                                                                                                                | Vectores y cuaterniones como tuplas            |
+| [`paquetes/nucleo/src/mundo.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/nucleo/src/mundo.ts)                                                                                                                        | El mundo: reloj, ids, azar, entidades, eventos |
+| [`paquetes/nucleo/src/partida.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/nucleo/src/partida.ts) y [`cartucho.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/nucleo/src/cartucho.ts) | Un mundo y el juego que lo juega               |
+| [`paquetes/nucleo/src/reloj.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/nucleo/src/reloj.ts)                                                                                                                        | El paso fijo                                   |
+| [`paquetes/nucleo/src/huella.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/nucleo/src/huella.ts)                                                                                                                      | Un número que resume el mundo entero           |
+| [`paquetes/presentacion/src/cliente.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/presentacion/src/cliente.ts)                                                                                                        | Dibujar el mundo con Three.js                  |
+| [`juegos/dojo/src/cartucho.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/juegos/dojo/src/cartucho.ts)                                                                                                                          | El Dojo: un cubo que gira                      |
 
 ---
 
@@ -40,7 +40,7 @@ Vas a entender:
 
 La primera versión fue un shooter que creció durante unos treinta pasos. Aprendimos mucho, y varias veces hubo que frenar para rehacer cimientos: separar la simulación de la pantalla, sacar las reglas del juego del motor, darle a cada simulación su propio azar.
 
-Esta versión se escribe **de cero**. No se copia código de la anterior: se traen sus **lecciones**, la mayoría medidas, y se vuelven reglas desde el primer día. Están escritas en la [decisión 0000](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/main/docs/decisiones/0000-por-que-la-v2.md), junto con lo que se tomó y lo que no de dos borradores de arquitectura.
+Esta versión se escribe **de cero**. No se copia código de la anterior: se traen sus **lecciones**, la mayoría medidas, y se vuelven reglas desde el primer día. Están escritas en la [decisión 0000](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0000-por-que-la-v2.md), junto con lo que se tomó y lo que no de dos borradores de arquitectura.
 
 ## 2. Tres capas
 
@@ -51,7 +51,7 @@ juegos/dojo  ──usa──►  paquetes/presentacion  ──usa──►  paqu
 
 Las flechas van **siempre hacia adentro**. El núcleo no sabe que existe una pantalla, ni a qué se juega. Así, la misma simulación corre en el navegador, en las pruebas (sin pantalla) y, más adelante, en un servidor.
 
-¿Quién lo vigila? Tres guardias ([decisión 0003](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/main/docs/decisiones/0003-fronteras.md)):
+¿Quién lo vigila? Tres guardias ([decisión 0003](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0003-fronteras.md)):
 
 1. **El compilador.** El núcleo compila **sin la librería del navegador** (`"lib": ["ES2023"]`). Si escribes `document` en la simulación, **no compila**.
 2. **El linter.** Prohíbe importaciones: el núcleo no importa Three.js ni un juego, y un juego no importa otro.
@@ -87,7 +87,7 @@ Una **entidad** es un id y sus **componentes**: objetos planos de números. El c
 }
 ```
 
-Sin clases, sin métodos, sin objetos de Three.js. ¿Por qué tanto cuidado? Porque así **el mundo se puede fotografiar**: copiar, comparar, guardar, mandar por la red, volver atrás. En la primera versión eso quedó pendiente porque el estado estaba repartido en objetos ([decisión 0004](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/main/docs/decisiones/0004-estado-como-datos.md)).
+Sin clases, sin métodos, sin objetos de Three.js. ¿Por qué tanto cuidado? Porque así **el mundo se puede fotografiar**: copiar, comparar, guardar, mandar por la red, volver atrás. En la primera versión eso quedó pendiente porque el estado estaba repartido en objetos ([decisión 0004](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0004-estado-como-datos.md)).
 
 La rotación es un **cuaternión** `[x, y, z, w]`: cuatro números que representan un giro sin los problemas de los ángulos (el "bloqueo de cardán"). El sistema de giro, en cada paso, multiplica la rotación por el giro de ese paso: un ángulo de |ω|·Δt alrededor del eje de la velocidad angular ω. Después **renormaliza**: multiplicar miles de veces acumula redondeo, y un cuaternión que deja de medir 1 empieza a deformar lo que rota.
 
@@ -105,7 +105,7 @@ Los eventos tienen **dos lectores**: el juego los lee de a un paso, y la present
 
 ## 7. Cómo se trabaja: git y GitHub
 
-Todo el proyecto vive en un **repositorio git**, publicado en [GitHub](https://github.com/RodrigoMartinVG/Manifold_Engine_3D) ([decisión 0005](https://github.com/RodrigoMartinVG/Manifold_Engine_3D/blob/main/docs/decisiones/0005-forma-de-trabajo.md)):
+Todo el proyecto vive en un **repositorio git**, publicado en [GitHub](https://github.com/RodrigoMartinVG/Manifold_Gaming) ([decisión 0005](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0005-forma-de-trabajo.md)):
 
 - **Un commit** es una foto del proyecto con un mensaje que dice qué cambió. Los mensajes siguen una convención: `feat(nucleo): gravedad como campo radial`, `fix(dojo): ...`, `docs(tutorial): ...`.
 - **`main`** es la rama principal y **siempre anda**. Cada paso del motor se hace en su propia **rama** (`paso/01-...`) y entra a `main` por un **pull request**: una propuesta de cambio que se puede revisar y discutir.

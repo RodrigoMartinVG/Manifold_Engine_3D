@@ -1,5 +1,5 @@
 {
-  "name": "manifold-engine-3d",
+  "name": "manifold-gaming",
   "private": true,
   "type": "module",
   "description": "Un laboratorio de mundos físicos en 3D para la web: un motor propio, un Dojo para experimentar, juegos y un tutorial que crece con el motor.",
@@ -23,7 +23,7 @@
     "pruebas:mirar": "vitest",
     "e2e": "playwright test",
     "verificar": "npm run check && npm run lint && npm run formato && npm run pruebas",
-    "servir-sitio": "vite preview --outDir sitio/dist --base /Manifold_Engine_3D/ --port 4321 --strictPort"
+    "servir-sitio": "vite preview --outDir sitio/dist --base /Manifold_Gaming/ --port 4321 --strictPort"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
