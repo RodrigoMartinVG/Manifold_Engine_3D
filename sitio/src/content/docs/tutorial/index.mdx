@@ -1,31 +1,84 @@
 ---
 title: El tutorial
-description: Lecciones cortas, cada una con código que se edita y se ejecuta en la página.
+description: Aprender a hacer mundos físicos en 3D para la web, de a una idea por vez, con código que se edita y se ejecuta en la página.
 sidebar:
   order: 0
-  label: Cómo funciona
+  label: Empezar aquí
 ---
 
 import CodigoVivo from '../../../components/CodigoVivo.astro';
 
-El tutorial acompaña la construcción de Manifold Gaming, pero **simplificado**: cada lección toma **una** idea de una etapa del motor y la muestra con un código chico que corre **aquí mismo**. No hace falta instalar nada.
+Este tutorial enseña a hacer **mundos físicos en 3D que corren en el navegador**: cosas que caen, giran, chocan y que, si se las vuelve a correr, hacen exactamente lo mismo.
 
-- **Cambiá el código y ejecutalo** (▶, o Ctrl/⌘ + Enter). Lo que escriba con `console.log` aparece debajo.
-- **Varios archivos**: cuando una lección tiene pestañas, es para mostrar cómo se reparte el código en módulos.
-- **↺ Restaurar** vuelve al código original.
-- **⛶ Pantalla completa** pone el código y lo que dibuja lado a lado, ocupando toda la pantalla (en un celular, uno arriba del otro). La línea del medio se arrastra para darle más lugar a uno o al otro. Esc vuelve.
-- Es **TypeScript de verdad**: el navegador ejecuta el mismo código que está en el [repositorio](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/main/sitio/src/lecciones), revisado por el compilador y probado en cada cambio.
+Avanza a la par de [Manifold Gaming](../proyecto/), el motor que se construye en este mismo sitio, pero por un camino más corto. Cada lección toma **una** idea y la muestra con un programa chico, que se edita y se ejecuta **aquí mismo**. No hace falta instalar nada.
 
-El detalle de lo que hicimos en cada etapa (los hallazgos, las mediciones, las decisiones) está en la **Bitácora**.
+## Para quién es
 
-Probá: cambiá el `1` por `10` y ejecutá.
+- **Para quien sabe programar un poco**: variables, funciones, `if`, `for`, objetos. Los ejemplos están en TypeScript, que es JavaScript con tipos (más abajo se explica). Si nunca programaste en JavaScript, la [guía de JavaScript de MDN](https://developer.mozilla.org/es/docs/Web/JavaScript/Guide) es un buen lugar para empezar.
+- **No hace falta haber hecho nada gráfico.** Qué es la GPU, un cuadro, una malla o un radián se explica la primera vez que aparece. La [primera lección](etapa-0/00-del-3d-a-la-pantalla/) es justamente eso: cómo un mundo en 3D se convierte en los píxeles de tu pantalla.
+- **La matemática se explica cuando hace falta**, con algo que se mueve en pantalla al lado. Alcanza con la del secundario: coordenadas, algo de geometría y un poco de trigonometría. Lo que va más allá, como los cuaterniones, se cuenta en su lección, desde cero.
+
+## Qué vas a aprender
+
+El tutorial sigue las etapas del motor ([el plan completo](../proyecto/)). Cada etapa trae sus lecciones cuando el motor llega a ella. Hoy está la etapa 0.
+
+| Etapa                    | Las ideas                                                                                                                                                                                                       | Estado         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| **0. Cimientos**         | Cómo se dibuja en 3D. La escena, la cámara y el bucle. Orientar las cosas sin que se traben. Por qué la física avanza de a pasos fijos. Un azar que se puede repetir. Separar la simulación del dibujo.         | **Disponible** |
+| **1. Física y gravedad** | Cuerpos que chocan, con un motor de física. Una gravedad que cambia de lugar en lugar, como la de un planeta. Un personaje cuyo "arriba" cambia mientras camina. Repetir una partida y comprobar que dio igual. | La próxima     |
+| **2. Capacidades**       | Trepar, volar, agarrar: comportamientos que se combinan.                                                                                                                                                        | Después        |
+| **3 en adelante**        | Un mundo que responde (mecanismos, cosas que se rompen, luz), enemigos que piensan, juegos completos y partidas en red.                                                                                         | Más adelante   |
+
+## Con qué se trabaja
+
+| Herramienta                                      | Qué es                                                                                                                                                                                                                                       | Desde          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| **[TypeScript](https://www.typescriptlang.org)** | JavaScript con **tipos**: anotaciones como `x: number` que un programa, el compilador, revisa antes de ejecutar. Encuentra errores sin correr nada. Al ejecutar, los tipos se borran y queda JavaScript común.                               | Todo el código |
+| **[Three.js](https://threejs.org)**              | La librería que **dibuja en 3D**. Por debajo usa WebGL, la puerta que tiene el navegador para hablar con la placa de video. Three.js lo ordena todo en escenas, cámaras, mallas y luces, para no tener que hablarle a la placa directamente. | La etapa 0     |
+| **[lil-gui](https://lil-gui.georgealways.com)**  | Paneles con deslizadores y botones, para cambiar valores mientras el ejemplo corre. Viene con Three.js.                                                                                                                                      | Los ejemplos   |
+| **[Rapier](https://rapier.rs)**                  | Un **motor de física**: calcula cómo se mueven y chocan los cuerpos sólidos. Está escrito en Rust y llega al navegador como WebAssembly: código compilado que el navegador corre casi tan rápido como un programa instalado.                 | La etapa 1     |
+
+Para hacer el sitio se usan otras herramientas: Astro y Starlight para las páginas, CodeMirror para el editor y Vitest y Playwright para las pruebas. No hace falta conocerlas para seguir el tutorial. La [Bitácora](../bitacora/etapa-0b/) cuenta cómo se armó todo eso.
+
+## Cómo es una lección
+
+Todas tienen las mismas partes:
+
+1. **La idea:** qué problema resuelve y por qué importa, en palabras.
+2. **El ejemplo:** el programa, corriendo. Arriba se ve lo que dibuja; abajo está el código. Cada lección dice **qué probar**.
+3. **El código, paso a paso:** qué hace cada parte, en orden.
+4. **Lo importante:** lo que hay que llevarse.
+5. **Sutilezas:** las trampas, y lo que no es obvio.
+6. **En Manifold:** dónde está esa idea en el motor de verdad, para quien quiera ver el código completo.
+7. **Para saber más:** dónde seguir leyendo.
+
+## Cómo se usan los ejemplos
+
+- **Cambiá el código y ejecutalo** (▶, o Ctrl/⌘ + Enter). Lo que el programa escriba con `console.log` aparece debajo de lo que dibuja.
+- **Varios archivos:** cuando una lección tiene pestañas, es para mostrar cómo se reparte el código en módulos.
+- **↺ Restaurar** vuelve al código original. Romper el código es una buena manera de aprender: si algo falla, el error aparece en la consola, con su archivo y su línea, y Restaurar siempre lo arregla.
+- **⛶ Pantalla completa** pone el código y lo que dibuja lado a lado, ocupando toda la pantalla. En un celular quedan uno arriba del otro. La línea del medio se arrastra para darle más lugar a uno o al otro, y Esc vuelve a la página.
+- **Lo que cambiás no se guarda:** al recargar la página vuelve el código original.
+- **Cada ejemplo corre en un recuadro aislado:** no puede tocar el resto de la página ni nada tuyo.
+- **Es TypeScript de verdad:** el navegador ejecuta el mismo código que está en el [repositorio](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/main/sitio/src/lecciones), que el compilador revisa y que se prueba en cada cambio.
+
+Este es el programa más chico posible: escribe en la consola con `console.log`, y en el recuadro con `document.body`. Probá: cambiá el `1` por `10` y ejecutá.
 
 <CodigoVivo leccion="etapa-0/00-hola" />
 
+## Lo que este tutorial no es
+
+- **No es un curso de programación.** Supone que ya sabés lo básico (más arriba dice qué).
+- **No es la documentación de Three.js ni la de Rapier.** Muestra lo mínimo para cada idea y deja enlaces a las documentaciones oficiales, que tienen todo lo demás.
+- **No es el motor.** Los ejemplos simplifican a propósito. El motor de verdad reparte todo en paquetes, tiene pruebas y cuida casos que aquí no importan. Cada lección enlaza a ese código, y la **Bitácora** cuenta cómo se hizo cada etapa, con sus mediciones.
+- **No cubre todo el 3D.** No hay modelado, que es hacer personajes o escenarios en programas como Blender. Tampoco _shaders_ escritos a mano (los programas que corren dentro de la placa de video), ni arte, ni sonido, al menos por ahora. El foco es la **simulación**: que las cosas se muevan bien y que se puedan repetir.
+- **Necesita un navegador con WebGL**, que tiene cualquier navegador actual, en computadora o en celular. En un celular los ejemplos andan, pero editar código es incómodo: conviene una computadora.
+
 ## Etapa 0: cimientos
 
-1. [Tu primer cubo](etapa-0/01-primer-cubo/): renderer, escena, cámara, luces y el bucle.
-2. [Girar sin trabarse](etapa-0/02-cuaterniones/): ángulos contra cuaterniones.
+0. [Del 3D a la pantalla](etapa-0/00-del-3d-a-la-pantalla/): coordenadas, triángulos, cámara y luz. Lo mínimo para entender todo lo demás.
+1. [Tu primer cubo](etapa-0/01-primer-cubo/): el programa más chico de Three.js, pieza por pieza.
+2. [Girar sin trabarse](etapa-0/02-cuaterniones/): cómo guardar hacia dónde mira algo, y por qué los ángulos se traban.
 3. [El paso fijo](etapa-0/03-paso-fijo/): por qué la física no puede depender de la pantalla.
 4. [Azar con semilla](etapa-0/04-azar-con-semilla/): azar que se puede repetir.
-5. [Simulación y dibujo, separados](etapa-0/05-simulacion-y-dibujo/): dos módulos que no se mezclan.
+5. [Simulación y dibujo, separados](etapa-0/05-simulacion-y-dibujo/): lo que pasa y lo que se ve, en dos módulos que no se mezclan.

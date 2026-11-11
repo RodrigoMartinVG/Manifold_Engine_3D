@@ -30,7 +30,7 @@ export default defineConfig({
         {
           label: 'Tutorial',
           items: [
-            { label: 'Cómo funciona', link: '/tutorial/' },
+            { label: 'Empezar aquí', link: '/tutorial/' },
             { label: 'Etapa 0: cimientos', items: [{ autogenerate: { directory: 'tutorial/etapa-0' } }] },
           ],
         },

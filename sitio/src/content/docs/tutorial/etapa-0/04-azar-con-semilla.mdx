@@ -7,22 +7,52 @@ sidebar:
 
 import CodigoVivo from '../../../../components/CodigoVivo.astro';
 
-`Math.random()` da otra secuencia cada vez. Para un juego eso es un problema: no se puede repetir una partida, compartir un experimento ni lograr que el servidor y el jugador vean lo mismo. Un generador **con semilla** da números que _parecen_ al azar, pero el mismo número inicial (la **semilla**) da **siempre** la misma secuencia.
+Los juegos usan azar para casi todo: dónde aparece un enemigo, cómo rebota algo, cómo se arma un nivel. Pero una computadora no tira dados: **calcula**. Los números "al azar" salen de una cuenta que, vista de afuera, no parece tener ningún patrón. Por eso se llaman **pseudoaleatorios**.
+
+`Math.random()`, el azar que trae JavaScript, empieza cada vez desde un lugar distinto, así que da otra secuencia cada vez. Para un juego eso es un problema:
+
+- **No se puede repetir una partida**, ni ver de nuevo qué pasó.
+- **No se puede compartir un experimento.** "Con este nivel el auto vuelca" no sirve si el nivel sale distinto cada vez.
+- **El servidor y los jugadores no pueden ver lo mismo** sin mandarse cada número por la red.
+
+Un generador **con semilla** resuelve las tres cosas. La **semilla** es el número desde el que empieza la cuenta: la misma semilla da **siempre** la misma secuencia de números.
 
 <CodigoVivo leccion="etapa-0/04-azar-con-semilla" autoejecutar />
 
+El ejemplo arma un "nivel": 60 cubos con lugar, tamaño, color y giro sacados del azar.
+
+**Qué probar:**
+
+1. **Tocá "regenerar" varias veces.** Con semilla, sale siempre el mismo nivel. Mirá la consola: los primeros números son siempre los mismos.
+2. **Cambiá la semilla**: otro nivel. Volvé a la anterior: vuelve el primero, idéntico.
+3. **Activá "usar Math.random"** y regenerá: cada vez sale otro nivel, y no hay manera de volver a uno.
+
+## El código, paso a paso
+
+- **`azar.ts`** tiene el generador. `crearAzar(semilla)` guarda un **estado** (al principio, la semilla) y devuelve una función. Cada vez que se la llama, calcula el estado siguiente a partir del anterior y lo devuelve convertido en un número entre 0 y 1, igual que `Math.random()`.
+- **La cuenta** es `estado = a · estado + c`, quedándose solo con los últimos 32 bits. Un número de **32 bits** es un entero entre 0 y 4.294.967.295 (2³² − 1). Al pasarse de ese tope, "da la vuelta", como el cuentakilómetros de un auto viejo. Esa vuelta es lo que mezcla los números.
+- **`main.ts`** usa el generador como si fuera `Math.random`. Para cada cubo pide números: uno para el tamaño, uno para el color, tres para la posición y dos para el giro. Si la semilla es la misma, las respuestas son las mismas, y en el mismo orden.
+- **Son dos módulos:** `azar.ts` no sabe nada de cubos, y `main.ts` no sabe cómo se calcula el azar. Se podría cambiar el generador por uno mejor sin tocar el resto.
+
 ## Lo importante
 
-- **Un generador es un estado que se transforma.** En `azar.ts`: `estado = a · estado + c` (con números de 32 bits). Cada llamada calcula el siguiente a partir del anterior.
-- **Misma semilla, mismo "nivel".** Tocá _regenerar_ varias veces: los mismos cubos. Activá _usar Math.random_: cada vez otros.
-- **Dos módulos**: `azar.ts` no sabe nada de cubos, y `main.ts` no sabe cómo se calcula el azar. Se podría cambiar el generador sin tocar el resto.
+- **Un generador es un estado que se transforma.** Cada número sale del anterior con una cuenta fija.
+- **Misma semilla, mismo nivel.** Y con el nivel, la misma partida, el mismo experimento, la misma prueba.
+- **Separar el generador del que lo usa** permite cambiarlo sin tocar nada más.
 
 :::caution[Sutilezas]
 
-- `Math.imul` multiplica como un procesador de 32 bits. Una multiplicación común de JavaScript usa números de 64 bits con decimales, y pierde los bits bajos.
-- **Todo** el azar que cambia el mundo tiene que salir del generador con semilla. Con **un** `Math.random()` escondido, la repetición deja de dar igual. El azar puramente visual (chispas, polvo) puede seguir con `Math.random()`.
+- **`Math.imul` multiplica como un procesador de 32 bits.** Una multiplicación común de JavaScript usa números con decimales de 64 bits: con números tan grandes, pierde los dígitos del final, justo los que la cuenta necesita.
+- **Todo el azar que cambia el mundo tiene que salir del generador con semilla.** Basta **un** `Math.random()` escondido para que la repetición deje de dar igual. El azar puramente visual, como chispas o polvo, puede seguir con `Math.random()`.
+- **El orden importa.** Si una versión nueva del código pide un número más antes de armar el nivel, todos los números siguientes se corren, y el nivel cambia aunque la semilla sea la misma.
+- **Este generador es el más simple que hay**, y para un juego alcanza. Para claves o sorteos de verdad no sirve ninguno de estos: para eso existen los generadores criptográficos, como `crypto.getRandomValues()`.
   :::
 
 ## En Manifold
 
-El motor usa un generador mejor (SFC32), con su estado guardable, y cada mundo tiene **el suyo**: [`paquetes/comun/src/azar.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/azar.ts). En el [Dojo](../../../jugar/dojo/?cubos=30), `?semilla=` elige la semilla.
+El motor usa un generador mejor (SFC32), cuyo estado se puede guardar y restaurar, y cada mundo tiene **el suyo**: [`paquetes/comun/src/azar.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/azar.ts). En el [Dojo](../../../jugar/dojo/?cubos=30), el parámetro `?semilla=` de la dirección elige la semilla. Probá `?cubos=30&semilla=1` y `?cubos=30&semilla=2`.
+
+## Para saber más
+
+- [`Math.imul`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/imul), en MDN (en inglés).
+- [Generador lineal congruencial](https://es.wikipedia.org/wiki/Generador_lineal_congruencial), en Wikipedia: el tipo de generador de `azar.ts`, con su historia y sus defectos.

@@ -1,28 +1,73 @@
 ---
 title: Simulación y dibujo, separados
-description: Dos módulos que no se mezclan — la simulación no sabe que existe una pantalla.
+description: Lo que pasa y lo que se ve, en dos módulos que no se mezclan — la simulación no sabe que existe una pantalla.
 sidebar:
   order: 5
 ---
 
 import CodigoVivo from '../../../../components/CodigoVivo.astro';
 
-La idea más importante del motor: **lo que pasa** y **lo que se ve** son dos programas distintos. La **simulación** es solo datos y cuentas. La **vista** lee esos datos y los dibuja. La simulación nunca importa Three.js.
+Hasta ahora, cada ejemplo mezclaba las cuentas con el dibujo: la misma variable era la posición de la pelota y la de su malla en Three.js. En un programa chico no importa. En un motor, es la decisión más importante: **lo que pasa** y **lo que se ve** son dos programas distintos.
+
+- La **simulación** es solo datos y cuentas: dónde está cada cosa, a qué velocidad va, qué chocó. No importa Three.js ni sabe que existe una pantalla.
+- La **vista** lee esos datos y los dibuja. Nunca los cambia.
+
+Pensalo como un partido de fútbol y su transmisión por televisión. El partido pasa igual aunque nadie lo filme. La transmisión elige las cámaras, repite jugadas y agrega gráficos, pero no puede mover la pelota.
+
+¿Para qué tanto cuidado? Porque una simulación que no necesita pantalla:
+
+- **se puede probar sin navegador**, miles de veces, en segundos;
+- **puede correr en un servidor**, que no tiene pantalla, para un juego en red;
+- **puede ir más rápido que el tiempo real**, para adelantar o para buscar un error en una partida larga;
+- **puede tener varias vistas a la vez**, como el juego, un minimapa o una vista de depuración con flechas;
+- **no depende de Three.js**: si algún día se cambia la librería de dibujo, la física no se entera.
 
 <CodigoVivo leccion="etapa-0/05-simulacion-y-dibujo" autoejecutar />
 
+**Qué probar:**
+
+1. **Mirá la consola.** Antes de dibujar nada, el programa simuló **dos** mundos de 10 segundos cada uno, en unos pocos milisegundos. Con la misma semilla, los dos resúmenes son **exactamente** iguales.
+2. **En `main.ts`, cambiá la semilla del mundo B** (el `7` de `crearMundo(7, 25)` en la línea de `b`) y ejecutá: los resúmenes ya no coinciden.
+3. **En `simulacion.ts`, cambiá `0.92`** (cuánta velocidad conserva una pelota al rebotar) por `1` o por `0.5`.
+4. **Recorré las tres pestañas** y mirá qué importa cada archivo.
+
+## El código, paso a paso
+
+- **`simulacion.ts`** no importa nada.
+  - Define un `Mundo`: una lista de pelotas, cada una con posición, velocidad y radio, más un contador de pasos.
+  - `crearMundo(semilla, cantidad)` las ubica con un azar con semilla, como el de la lección anterior.
+  - `avanzar(mundo)` da **un** paso fijo: la gravedad, el movimiento y los rebotes contra el piso y las paredes de la caja.
+  - `resumen(mundo)` reduce todo el mundo a un número con 9 decimales, para comparar dos mundos de un vistazo.
+- **`vista.ts`** importa Three.js y lee el `Mundo`.
+  - Crea una malla por pelota y las líneas de la caja.
+  - `dibujar()` copia la posición de cada pelota a su malla. Esa es la **única** conexión entre los dos mundos: datos que van de la simulación a la vista, nunca al revés.
+- **`main.ts`** une todo.
+  - Primero corre los dos mundos sin pantalla: 600 pasos cada uno, sin dibujar.
+  - Después crea un tercero, con su vista, y en cada cuadro lo avanza de a pasos fijos, como en la [lección del paso fijo](../03-paso-fijo/), y lo dibuja.
+
 ## Lo importante
 
-- **Mirá las pestañas.** `simulacion.ts` no importa nada; `vista.ts` importa Three.js y la simulación; `main.ts` los une con el paso fijo.
-- **Sin pantalla, la simulación corre a la velocidad que dé la máquina.** Al empezar, `main.ts` simula **dos** mundos de 10 segundos cada uno en unos pocos milisegundos, sin dibujar nada. Mirá la consola: con la misma semilla dan **exactamente** el mismo resumen.
-- **Por eso se puede probar sin navegador, y correr en un servidor:** la misma simulación, sin la vista.
+- **La simulación es datos y cuentas.** La vista lee los datos y dibuja. Las flechas van en un solo sentido.
+- **Sin pantalla, la simulación corre a la velocidad que dé la máquina.** 600 pasos tardan milisegundos, en vez de los 10 segundos que dura verlos.
+- **Misma semilla, mismos pasos, mismo resultado, número por número.** Eso es el **determinismo**, y es lo que permite repeticiones, pruebas y juego en red.
+- **Por eso se puede probar sin navegador y correr en un servidor:** es la misma simulación, sin la vista.
 
 :::caution[Sutilezas]
 
-- **La vista lee y nunca escribe.** Si la vista moviera una pelota, la simulación y la pantalla dejarían de estar de acuerdo.
-- **"Exactamente igual" significa número por número.** Por eso el resumen se compara como texto con 9 decimales, y no "más o menos".
+- **La vista lee y nunca escribe.** Si la vista moviera una pelota, la simulación y la pantalla dejarían de estar de acuerdo, y la repetición ya no daría igual.
+- **"Exactamente igual" quiere decir número por número.** Por eso el resumen se compara como texto, con 9 decimales, y no "más o menos". Una diferencia en el noveno decimal hoy es una pelota en otro lugar dentro de un minuto.
+- **En este ejemplo, la separación es una costumbre:** nada le impide a `simulacion.ts` importar Three.js (probalo: funciona). En el motor no es costumbre, es una regla que el compilador hace cumplir.
   :::
 
 ## En Manifold
 
-Así está armado todo el motor: `paquetes/nucleo` (la simulación) compila **sin** la librería del navegador, y si alguien escribe `document` adentro, no compila. `paquetes/presentacion` dibuja. Lo cuenta la [bitácora de la etapa 0](../../../bitacora/etapa-0/).
+Así está armado todo el motor:
+
+- `paquetes/nucleo` es la simulación. Compila **sin** las funciones del navegador: si alguien escribe `document` adentro, el programa no compila.
+- `paquetes/presentacion` dibuja. Un juego solo puede importar las partes que le corresponden, y eso también lo revisa una herramienta automática (el _linter_).
+
+Lo cuenta la [bitácora de la etapa 0](../../../bitacora/etapa-0/), y las reglas están en la [decisión 0003](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0003-fronteras.md).
+
+## Para saber más
+
+- [Game Programming Patterns: Game Loop](https://gameprogrammingpatterns.com/game-loop.html), de Robert Nystrom (en inglés, libre en la web): el bucle de un juego, el paso fijo y la separación entre actualizar y dibujar.
