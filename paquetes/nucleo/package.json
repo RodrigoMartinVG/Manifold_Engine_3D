@@ -1,0 +1,16 @@
+{
+  "name": "@manifold/nucleo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "La simulación: el mundo, su paso fijo, sus entidades y sus eventos. Corre igual en el navegador, en el servidor y en las pruebas: sin pantalla.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@manifold/comun": "0.0.0"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json"
+  }
+}
