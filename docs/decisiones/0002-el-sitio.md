@@ -11,7 +11,7 @@ La plataforma es también una **web**: un inicio, la descripción del proyecto, 
 
 - **Astro**, con su tema de documentación **Starlight** para el tutorial y las páginas de texto. Los juegos son **páginas de Astro a pantalla completa** (`/jugar/dojo/`) que importan su paquete: Astro los empaqueta con Vite, como al resto. Una sola compilación arma todo el sitio.
 - Se publica en **GitHub Pages**, en `https://rodrigomartinvg.github.io/Manifold_Gaming/`. Por eso el sitio tiene `base: '/Manifold_Gaming'`, y los enlaces internos se escriben relativos.
-- El tutorial vive en `sitio/src/content/docs/tutorial/`, un capítulo por paso del motor.
+- El tutorial vive en `sitio/src/content/docs/tutorial/`. (La [0007](0007-tutorial-ejecutable.md) cambió su forma: lecciones cortas con código ejecutable, y los informes de cada etapa en una bitácora.)
 
 ## Consecuencias
 
