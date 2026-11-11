@@ -16,7 +16,7 @@ test('el inicio abre y lleva al Dojo, al tutorial y al proyecto', async ({ page 
   await expect(page).toHaveTitle(/Manifold/);
   await expect(page.getByRole('link', { name: 'Entrar al Dojo' })).toBeVisible();
   await page.getByRole('link', { name: 'Leer el tutorial' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Antes de empezar');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('El tutorial');
   expect(lista).toEqual([]);
 });
 
