@@ -1,0 +1,28 @@
+---
+title: Girar sin trabarse
+description: Ángulos de Euler contra cuaterniones — el bloqueo de cardán, a la vista.
+sidebar:
+  order: 2
+---
+
+import CodigoVivo from '../../../../components/CodigoVivo.astro';
+
+Hay dos maneras habituales de guardar una orientación en 3D: **tres ángulos** (guiñada, cabeceo, alabeo: los _ángulos de Euler_) o un **cuaternión** (cuatro números). Los ángulos se entienden mejor. El cuaternión no tiene una trampa que los ángulos sí: el **bloqueo de cardán**.
+
+<CodigoVivo leccion="etapa-0/02-cuaterniones" autoejecutar />
+
+## Lo importante
+
+- **Con ángulos, cada giro se aplica después del anterior**, en un orden fijo (aquí, `'YXZ'`). Poné el **cabeceo en 90°** (la nave apunta hacia arriba) y mové la guiñada y el alabeo: **hacen lo mismo**. Se perdió una forma de girar: eso es el bloqueo de cardán.
+- **Con un cuaternión, cada giro se suma desde donde estés**, alrededor de los ejes **de la nave** (multiplicar por la derecha: `q.multiply(giro)`). No hay posición en la que se trabe.
+- **Un cuaternión es un eje y un ángulo, codificados**: `(x, y, z) = eje · sen(θ/2)` y `w = cos(θ/2)`. Por eso sus cuatro números siempre cumplen `x² + y² + z² + w² = 1`.
+
+:::caution[Sutilezas]
+
+- **El orden de la multiplicación importa.** `a.multiply(b)` (por la derecha) gira en el marco **propio** del objeto; `a.premultiply(b)` (por la izquierda), en el marco **del mundo**. Probá cambiar uno por el otro en el código.
+- **Hay que renormalizar.** Después de miles de multiplicaciones, el redondeo hace que el cuaternión deje de medir 1, y empieza a deformar lo que rota.
+  :::
+
+## En Manifold
+
+El motor guarda las rotaciones como cuaterniones y las escribe con su propia matemática, sobre tuplas de números: [`paquetes/comun/src/matematica.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/matematica.ts). Cuando un personaje camine por una pared o una cinta de Möbius, no puede haber ninguna orientación "prohibida".

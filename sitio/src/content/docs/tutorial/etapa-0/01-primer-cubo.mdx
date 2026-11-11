@@ -1,0 +1,28 @@
+---
+title: Tu primer cubo
+description: Lo mínimo para dibujar en 3D con Three.js — renderer, escena, cámara, luces y el bucle.
+sidebar:
+  order: 1
+---
+
+import CodigoVivo from '../../../../components/CodigoVivo.astro';
+
+Todo programa 3D con [Three.js](https://threejs.org) tiene las mismas piezas: un **renderer** que dibuja en un `<canvas>` con la GPU, una **escena** con lo que hay, una **cámara** desde donde se mira, **luces**, y un **bucle** que vuelve a dibujar en cada cuadro de la pantalla.
+
+<CodigoVivo leccion="etapa-0/01-primer-cubo" autoejecutar />
+
+## Lo importante
+
+- **Un objeto es forma + material.** `BoxGeometry` es la forma; `MeshStandardMaterial`, cómo responde a la luz. Juntos son un `Mesh`.
+- **Girar según el tiempo, no por cuadro.** `rotation.y += 0.8 * dt` gira 0,8 radianes por segundo, a cualquier velocidad de pantalla. Si sumaras "un poquito por cuadro", en una pantalla de 144 Hz giraría el doble de rápido que en una de 60.
+- **La cámara necesita saber la forma de la ventana.** Si la ventana cambia y no actualizás `aspect` (y llamás a `updateProjectionMatrix`), todo se ve estirado.
+
+:::caution[Sutilezas]
+
+- `MeshStandardMaterial` **sin luces se ve negro**. `MeshBasicMaterial` ignora la luz: siempre se ve de su color, pero plano.
+- `setPixelRatio`: en una pantalla Retina hay 2 píxeles por punto. Dibujar a 2× es **cuatro veces** más trabajo (el doble de ancho por el doble de alto). En una gráfica integrada, conviene un tope.
+  :::
+
+## En Manifold
+
+La presentación del motor hace esto mismo, pero lee **qué** dibujar de la simulación: [`paquetes/presentacion/src/cliente.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/presentacion/src/cliente.ts). El detalle, en la [bitácora de la etapa 0](../../../bitacora/etapa-0/).
