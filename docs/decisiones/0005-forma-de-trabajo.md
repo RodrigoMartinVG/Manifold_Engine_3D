@@ -1,6 +1,6 @@
 # 0005. Cómo se trabaja: ramas, PR, commits, etiquetas, idioma
 
-- **Estado:** aceptada
+- **Estado:** aceptada; lo de ramas y PR, reemplazado por la [0009](0009-directo-en-main.md) (se trabaja directo en `main`)
 - **Fecha:** 2026-11-11
 
 ## Contexto

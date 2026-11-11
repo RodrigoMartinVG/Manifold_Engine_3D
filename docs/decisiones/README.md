@@ -11,7 +11,8 @@ Cada una tiene: **contexto** (qué problema había), **decisión**, **consecuenc
 | [0002](0002-el-sitio.md)                | El sitio: Astro con Starlight, en GitHub Pages                     | Aceptada                            |
 | [0003](0003-fronteras.md)               | Las fronteras entre capas, vigiladas por el compilador y el linter | Aceptada                            |
 | [0004](0004-estado-como-datos.md)       | El estado del mundo como datos planos                              | Aceptada (se completa en la fase 1) |
-| [0005](0005-forma-de-trabajo.md)        | Cómo se trabaja: ramas, PR, commits, etiquetas, idioma             | Aceptada                            |
+| [0005](0005-forma-de-trabajo.md)        | Cómo se trabaja: ramas, PR, commits, etiquetas, idioma             | Aceptada (ramas y PR: ver la 0009)  |
 | [0006](0006-el-nombre.md)               | El nombre: Manifold Gaming                                         | Aceptada                            |
 | [0007](0007-tutorial-ejecutable.md)     | El tutorial ejecutable y la bitácora                               | Aceptada                            |
 | [0008](0008-la-estetica-del-taller.md)  | La estética del sitio: el taller                                   | Aceptada                            |
+| [0009](0009-directo-en-main.md)         | Directo en main, sin pull requests                                 | Aceptada                            |

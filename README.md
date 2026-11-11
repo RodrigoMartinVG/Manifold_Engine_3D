@@ -40,7 +40,7 @@ npm run dev           # el sitio y el Dojo, con recarga en caliente
 | `npm run build`            | El sitio listo para publicar, en `sitio/dist`                                             |
 | `npm run dibujar -w sitio` | Vuelve a generar los dibujos del sitio (fondo, marca, engranajes) con su geometría        |
 
-Cómo se trabaja (ramas, PR, commits, etiquetas por paso): [decisión 0005](docs/decisiones/0005-forma-de-trabajo.md). Todas las decisiones: [docs/decisiones](docs/decisiones/README.md).
+Cómo se trabaja: directo en `main`, verificando antes en la máquina ([decisión 0009](docs/decisiones/0009-directo-en-main.md)); commits, etiquetas por paso e idioma en la [decisión 0005](docs/decisiones/0005-forma-de-trabajo.md). Todas las decisiones: [docs/decisiones](docs/decisiones/README.md).
 
 ## De dónde viene
 
