@@ -8,6 +8,11 @@ updates:
     groups:
       dependencias:
         patterns: ['*']
+    ignore:
+      # Los tipos de Node describen las funciones de UNA versión de Node: su versión mayor tiene que
+      # ser la del Node que corre el proyecto (mise.toml y .nvmrc). Se sube a mano, junto con Node.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:

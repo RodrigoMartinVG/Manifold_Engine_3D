@@ -23,10 +23,10 @@ Las capas solo dependen hacia adentro: el núcleo no conoce a la presentación n
 
 ## Para trabajar
 
-Hace falta [mise](https://mise.jdx.dev) (o Node 24).
+Hace falta [mise](https://mise.jdx.dev) (o Node 26).
 
 ```bash
-mise install          # Node 24, el de este proyecto
+mise install          # Node 26, el de este proyecto
 npm install
 npm run dev           # el sitio y el Dojo, con recarga en caliente
 ```
