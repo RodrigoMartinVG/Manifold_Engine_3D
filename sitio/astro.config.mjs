@@ -21,7 +21,14 @@ export default defineConfig({
       sidebar: [
         { label: 'El proyecto', link: '/proyecto/' },
         { label: 'Jugar', link: '/jugar/' },
-        { label: 'Tutorial', items: [{ autogenerate: { directory: 'tutorial' } }] },
+        {
+          label: 'Tutorial',
+          items: [
+            { label: 'Cómo funciona', link: '/tutorial/' },
+            { label: 'Etapa 0: cimientos', items: [{ autogenerate: { directory: 'tutorial/etapa-0' } }] },
+          ],
+        },
+        { label: 'Bitácora', items: [{ autogenerate: { directory: 'bitacora' } }] },
       ],
     }),
   ],

@@ -1,0 +1,30 @@
+---
+title: El tutorial
+description: Lecciones cortas, cada una con código que se edita y se ejecuta en la página.
+sidebar:
+  order: 0
+  label: Cómo funciona
+---
+
+import CodigoVivo from '../../../components/CodigoVivo.astro';
+
+El tutorial acompaña la construcción de Manifold Gaming, pero **simplificado**: cada lección toma **una** idea de una etapa del motor y la muestra con un código chico que corre **aquí mismo**. No hace falta instalar nada.
+
+- **Cambiá el código y ejecutalo** (▶, o Ctrl/⌘ + Enter). Lo que escriba con `console.log` aparece debajo.
+- **Varios archivos**: cuando una lección tiene pestañas, es para mostrar cómo se reparte el código en módulos.
+- **↺ Restaurar** vuelve al código original.
+- Es **TypeScript de verdad**: el navegador ejecuta el mismo código que está en el [repositorio](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/main/sitio/src/lecciones), revisado por el compilador y probado en cada cambio.
+
+El detalle de lo que hicimos en cada etapa (los hallazgos, las mediciones, las decisiones) está en la **Bitácora**.
+
+Probá: cambiá el `1` por `10` y ejecutá.
+
+<CodigoVivo leccion="etapa-0/00-hola" />
+
+## Etapa 0: cimientos
+
+1. [Tu primer cubo](etapa-0/01-primer-cubo/): renderer, escena, cámara, luces y el bucle.
+2. [Girar sin trabarse](etapa-0/02-cuaterniones/): ángulos contra cuaterniones.
+3. [El paso fijo](etapa-0/03-paso-fijo/): por qué la física no puede depender de la pantalla.
+4. [Azar con semilla](etapa-0/04-azar-con-semilla/): azar que se puede repetir.
+5. [Simulación y dibujo, separados](etapa-0/05-simulacion-y-dibujo/): dos módulos que no se mezclan.

@@ -1,0 +1,28 @@
+---
+title: Simulación y dibujo, separados
+description: Dos módulos que no se mezclan — la simulación no sabe que existe una pantalla.
+sidebar:
+  order: 5
+---
+
+import CodigoVivo from '../../../../components/CodigoVivo.astro';
+
+La idea más importante del motor: **lo que pasa** y **lo que se ve** son dos programas distintos. La **simulación** es solo datos y cuentas. La **vista** lee esos datos y los dibuja. La simulación nunca importa Three.js.
+
+<CodigoVivo leccion="etapa-0/05-simulacion-y-dibujo" autoejecutar />
+
+## Lo importante
+
+- **Mirá las pestañas.** `simulacion.ts` no importa nada; `vista.ts` importa Three.js y la simulación; `main.ts` los une con el paso fijo.
+- **Sin pantalla, la simulación corre a la velocidad que dé la máquina.** Al empezar, `main.ts` simula **dos** mundos de 10 segundos cada uno en unos pocos milisegundos, sin dibujar nada. Mirá la consola: con la misma semilla dan **exactamente** el mismo resumen.
+- **Por eso se puede probar sin navegador, y correr en un servidor:** la misma simulación, sin la vista.
+
+:::caution[Sutilezas]
+
+- **La vista lee y nunca escribe.** Si la vista moviera una pelota, la simulación y la pantalla dejarían de estar de acuerdo.
+- **"Exactamente igual" significa número por número.** Por eso el resumen se compara como texto con 9 decimales, y no "más o menos".
+  :::
+
+## En Manifold
+
+Así está armado todo el motor: `paquetes/nucleo` (la simulación) compila **sin** la librería del navegador, y si alguien escribe `document` adentro, no compila. `paquetes/presentacion` dibuja. Lo cuenta la [bitácora de la etapa 0](../../../bitacora/etapa-0/).

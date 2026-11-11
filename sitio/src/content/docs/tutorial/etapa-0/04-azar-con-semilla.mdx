@@ -1,0 +1,28 @@
+---
+title: Azar con semilla
+description: Azar que se puede repetir — la base de las repeticiones, los experimentos y el juego en red.
+sidebar:
+  order: 4
+---
+
+import CodigoVivo from '../../../../components/CodigoVivo.astro';
+
+`Math.random()` da otra secuencia cada vez. Para un juego eso es un problema: no se puede repetir una partida, compartir un experimento ni lograr que el servidor y el jugador vean lo mismo. Un generador **con semilla** da números que _parecen_ al azar, pero el mismo número inicial (la **semilla**) da **siempre** la misma secuencia.
+
+<CodigoVivo leccion="etapa-0/04-azar-con-semilla" autoejecutar />
+
+## Lo importante
+
+- **Un generador es un estado que se transforma.** En `azar.ts`: `estado = a · estado + c` (con números de 32 bits). Cada llamada calcula el siguiente a partir del anterior.
+- **Misma semilla, mismo "nivel".** Tocá _regenerar_ varias veces: los mismos cubos. Activá _usar Math.random_: cada vez otros.
+- **Dos módulos**: `azar.ts` no sabe nada de cubos, y `main.ts` no sabe cómo se calcula el azar. Se podría cambiar el generador sin tocar el resto.
+
+:::caution[Sutilezas]
+
+- `Math.imul` multiplica como un procesador de 32 bits. Una multiplicación común de JavaScript usa números de 64 bits con decimales, y pierde los bits bajos.
+- **Todo** el azar que cambia el mundo tiene que salir del generador con semilla. Con **un** `Math.random()` escondido, la repetición deja de dar igual. El azar puramente visual (chispas, polvo) puede seguir con `Math.random()`.
+  :::
+
+## En Manifold
+
+El motor usa un generador mejor (SFC32), con su estado guardable, y cada mundo tiene **el suyo**: [`paquetes/comun/src/azar.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/azar.ts). En el [Dojo](../../../jugar/dojo/?cubos=30), `?semilla=` elige la semilla.

@@ -1,0 +1,29 @@
+---
+title: El paso fijo
+description: Por qué la física avanza de a pasos iguales, y cómo se dibuja suave entre un paso y otro.
+sidebar:
+  order: 3
+---
+
+import CodigoVivo from '../../../../components/CodigoVivo.astro';
+
+La pantalla dibuja cuando puede: 60, 30 o 144 veces por segundo, y a veces se traba. Si la física avanza "un cuadro de pantalla" por vez, **el resultado depende de la pantalla**. La solución es separar los dos relojes: la física avanza siempre de a **pasos fijos**, y la pantalla dibuja lo que haya.
+
+<CodigoVivo leccion="etapa-0/03-paso-fijo" autoejecutar />
+
+## Lo importante
+
+- **La pelota roja** avanza con el tiempo de cada cuadro. Bajá la pantalla a 10 cuadros por segundo: **sube a otra altura**. La misma física con otra pantalla da otro resultado (en un juego en red, cada jugador vería una partida distinta).
+- **La pelota verde** junta el tiempo real en un **acumulador** y lo gasta de a pasos iguales. Lo que sobra queda para el cuadro siguiente. Su altura depende del paso (que es fijo), no de la pantalla.
+- **Interpolar.** Con pocos pasos por segundo, la verde se movería a saltos. Por eso se dibuja _entre_ el paso anterior y el actual, según cuánto del siguiente ya pasó (`alfa`). Apagá la interpolación con el paso en 10 y comparalo.
+
+:::caution[Sutilezas]
+
+- **La interpolación muestra el pasado**: como mucho, un paso atrás. Con pasos de 1/60 s no se nota.
+- Si la pestaña se duerme diez segundos, el acumulador junta diez segundos. Hay que ponerle un tope, o al volver intentaría correr 600 pasos de golpe y se trabaría todo (la "espiral de la muerte").
+- **Euler semi-implícito**: primero cambia la velocidad, después la posición. Es lo que usan casi todos los motores de física; al revés, la energía crece sola.
+  :::
+
+## En Manifold
+
+El reloj del motor es esto mismo, con el tope incluido: [`paquetes/nucleo/src/reloj.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/nucleo/src/reloj.ts). La presentación interpola cada cosa entre su pose anterior y la actual.

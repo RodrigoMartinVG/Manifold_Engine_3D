@@ -4,13 +4,13 @@ description: Un laboratorio de mundos físicos en 3D para la web.
 template: splash
 hero:
   title: Manifold Gaming
-  tagline: Un laboratorio de mundos físicos en 3D, en el navegador. Un motor propio donde la gravedad es un campo, las cosas se componen de capacidades y todo lo que pasa se puede repetir. Se construye paso a paso, y cada paso es un capítulo del tutorial.
+  tagline: 'Un laboratorio de mundos físicos en 3D, en el navegador. Un motor propio donde la gravedad es un campo, las cosas se componen de capacidades y todo lo que pasa se puede repetir. Se construye por etapas: cada una trae lecciones con código que corre en la página, y su informe en la bitácora.'
   actions:
     - text: Entrar al Dojo
       link: jugar/dojo/
       icon: right-arrow
     - text: Leer el tutorial
-      link: tutorial/00-antes-de-empezar/
+      link: tutorial/
       variant: minimal
     - text: El proyecto
       link: proyecto/
@@ -32,6 +32,7 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     Juegos distintos sobre el mismo motor. El motor no sabe a qué se juega: cada juego trae sus reglas.
   </Card>
   <Card title="El tutorial" icon="open-book">
-    Cada paso del motor es un capítulo: la idea, cómo funciona, lo que medimos, experimentos y un reto. Crece junto con el código.
+    Lecciones cortas que acompañan cada etapa del motor, con código que se edita y se ejecuta en la página: cómo se usa cada
+    librería, las ideas de fondo y sus sutilezas.
   </Card>
 </CardGrid>

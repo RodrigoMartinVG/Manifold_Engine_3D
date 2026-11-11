@@ -13,7 +13,8 @@ paquetes/comun          azar con semilla y matemática sobre datos planos
 paquetes/nucleo         la simulación: el mundo, su paso fijo, sus eventos (sin pantalla)
 paquetes/presentacion   lo que se ve: Three.js
 juegos/dojo             el primer juego (el laboratorio)
-sitio                   la web: inicio, el proyecto, el tutorial, jugar (Astro + Starlight)
+sitio                   la web: inicio, el proyecto, jugar, el tutorial y la bitácora (Astro + Starlight)
+sitio/src/lecciones     el código de las lecciones (se edita y se ejecuta en la página)
 docs/decisiones         las decisiones de arquitectura, con su porqué
 e2e                     pruebas en un navegador de verdad (Playwright)
 ```

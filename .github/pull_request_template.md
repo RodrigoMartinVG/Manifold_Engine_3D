@@ -10,6 +10,7 @@
 
 ## Si es un paso del motor
 
-- [ ] Su capítulo del tutorial (`sitio/src/content/docs/tutorial/`)
+- [ ] Su informe en la bitácora (`sitio/src/content/docs/bitacora/`)
+- [ ] Sus lecciones, si trae ideas nuevas (`sitio/src/lecciones/` y `sitio/src/content/docs/tutorial/`)
 - [ ] Las decisiones nuevas, en `docs/decisiones/`
 - [ ] Lo que se midió, con su escenario
