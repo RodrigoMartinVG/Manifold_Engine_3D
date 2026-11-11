@@ -1,0 +1,21 @@
+{
+  "name": "@manifold/presentacion",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lo que se ve y se oye: dibuja el mundo de la simulación con Three.js. Lee el núcleo; el núcleo nunca la lee a ella.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@manifold/comun": "0.0.0",
+    "@manifold/nucleo": "0.0.0",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@manifold/dojo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "El Dojo: el primer juego, que existe desde el primer día para usar el motor desde afuera. Un laboratorio de salas para experimentar.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cartucho": "./src/cartucho.ts"
+  },
+  "dependencies": {
+    "@manifold/comun": "0.0.0",
+    "@manifold/nucleo": "0.0.0",
+    "@manifold/presentacion": "0.0.0"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json"
+  }
+}
