@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Sin "DOM": si algo de aquí usa `document` o `window`, no compila (decisión 0003).
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"]
+}

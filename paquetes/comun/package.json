@@ -1,0 +1,13 @@
+{
+  "name": "@manifold/comun",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lo que usan todos los paquetes: azar con semilla y matemática sobre datos planos. Sin pantalla, sin dependencias.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json"
+  }
+}
