@@ -10,7 +10,7 @@ export function crearEscena() {
   document.body.append(renderer.domElement);
 
   const escena = new THREE.Scene();
-  escena.background = new THREE.Color(0x14161c);
+  escena.background = new THREE.Color(0x15120f);
   const camara = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
   camara.position.set(4, 3, 6);
   camara.lookAt(0, 0.8, 0);

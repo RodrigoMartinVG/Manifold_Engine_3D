@@ -9,7 +9,7 @@ document.body.append(renderer.domElement);
 
 // 2. La ESCENA: todo lo que se agregue aquí se dibuja.
 const escena = new THREE.Scene();
-escena.background = new THREE.Color(0x14161c);
+escena.background = new THREE.Color(0x15120f);
 
 // 3. La CÁMARA: campo de visión vertical (60°), proporción ancho/alto, y desde/hasta qué
 //    distancia se dibuja (0,1 m y 100 m).

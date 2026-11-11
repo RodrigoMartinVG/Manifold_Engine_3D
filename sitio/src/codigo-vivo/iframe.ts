@@ -23,8 +23,14 @@ export function documentoDelIframe(): string {
 <head>
 <meta charset="utf-8" />
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #14161c; color: #e8e8ea; font: 13px/1.4 system-ui, sans-serif; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #15120f; color: #e6dccb; font: 13px/1.4 system-ui, sans-serif; }
   canvas { display: block; }
+  /* Los paneles de lil-gui, con los colores del sitio (sus variables CSS; "html" le gana a las suyas). */
+  html .lil-gui {
+    --background-color: #1b1814; --widget-color: #2f2922; --hover-color: #3b332a; --focus-color: #473d31;
+    --text-color: #dcd2c3; --title-background-color: #2a221a; --title-text-color: #f0d59a;
+    --number-color: #93d9c9; --string-color: #e9c48c;
+  }
 </style>
 <script>
   const padre = window.parent;

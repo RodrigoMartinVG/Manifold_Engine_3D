@@ -18,6 +18,27 @@ import { nombreDeModulo, transpilar } from './transpilar';
  * `estado` (corriendo / detenido), `cuadros` (cuántos dibujó) y `errores`.
  */
 
+/**
+ * Los colores del taller encima de One Dark: carbón cálido en vez de gris azulado, y el cursor de
+ * bronce. Los colores del código (palabras clave, textos, números) siguen siendo los de One Dark.
+ * `Prec.high`: entre dos temas gana el de más precedencia.
+ */
+const taller = Prec.high(
+  EditorView.theme(
+    {
+      '&': { backgroundColor: '#1a1714', color: '#dcd2c3' },
+      '.cm-content': { caretColor: '#e9c48c' },
+      '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#e9c48c' },
+      '.cm-gutters': { backgroundColor: '#1a1714', color: '#6f6454', borderRight: '1px solid #2c2620' },
+      '.cm-activeLine': { backgroundColor: '#221e19' },
+      '.cm-activeLineGutter': { backgroundColor: '#221e19', color: '#b9a98f' },
+      '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
+        { backgroundColor: '#41362a' },
+    },
+    { dark: true },
+  ),
+);
+
 interface Archivo {
   nombre: string;
   codigo: string;
@@ -68,6 +89,7 @@ export function montarCodigoVivo(raiz: HTMLElement) {
     basicSetup,
     javascript({ typescript: true }),
     oneDark,
+    taller,
     EditorView.lineWrapping, // el editor es angosto: las líneas largas siguen abajo, sin barra horizontal
   ];
   const crearEstado = (codigo: string) => EditorState.create({ doc: codigo, extensions: extensiones });
