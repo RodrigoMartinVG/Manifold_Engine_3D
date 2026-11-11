@@ -1,0 +1,17 @@
+# Dependencias y lo que se genera
+node_modules/
+dist/
+.astro/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Sistema y editores
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Configuración local de las herramientas de Claude
+.claude/

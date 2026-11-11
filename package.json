@@ -1,0 +1,41 @@
+{
+  "name": "manifold-engine-3d",
+  "private": true,
+  "type": "module",
+  "description": "Un laboratorio de mundos físicos en 3D para la web: un motor propio, un Dojo para experimentar, juegos y un tutorial que crece con el motor.",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "paquetes/*",
+    "juegos/*",
+    "sitio"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w sitio",
+    "build": "npm run build -w sitio",
+    "vista-previa": "npm run preview -w sitio",
+    "check": "npm run check --workspaces --if-present",
+    "lint": "eslint .",
+    "formato": "prettier --check .",
+    "formatear": "prettier --write .",
+    "pruebas": "vitest run",
+    "pruebas:mirar": "vitest",
+    "e2e": "playwright test",
+    "verificar": "npm run check && npm run lint && npm run formato && npm run pruebas",
+    "servir-sitio": "vite preview --outDir sitio/dist --base /Manifold_Engine_3D/ --port 4321 --strictPort"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
