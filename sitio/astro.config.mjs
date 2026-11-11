@@ -18,6 +18,12 @@ export default defineConfig({
       defaultLocale: 'root',
       locales: { root: { label: 'Español', lang: 'es' } },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/RodrigoMartinVG/Manifold_Gaming' }],
+      // La estética del "taller" (bronce, pátina y construcciones con compás): src/estilos/taller.css.
+      logo: { src: './src/assets/dibujos/marca.svg', alt: '' },
+      favicon: '/favicon.svg',
+      customCss: ['@fontsource-variable/cinzel', './src/estilos/taller.css'],
+      // El inicio tiene su propia portada, con la vitrina 3D en vivo.
+      components: { Hero: './src/components/Heroe.astro' },
       sidebar: [
         { label: 'El proyecto', link: '/proyecto/' },
         { label: 'Jugar', link: '/jugar/' },
