@@ -41,11 +41,26 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
   <div class="cv-barra">
     <div class="cv-pestanas" role="tablist" aria-label="Archivos de la lección"></div>
     <div class="cv-acciones">
+      <button type="button" class="cv-ampliar" title="El código y lo que dibuja, en pantalla completa" aria-pressed="false">
+        <span aria-hidden="true">⛶</span><span class="cv-texto"> Pantalla completa</span>
+      </button>
       <button type="button" class="cv-restaurar" title="Volver al código original">↺ Restaurar</button>
       <button type="button" class="cv-ejecutar" title="Ejecutar (Ctrl o ⌘ + Enter)">▶ Ejecutar</button>
     </div>
   </div>
   <div class="cv-editor"></div>
+  <!-- Solo en pantalla completa: la línea entre el código y el resultado, que se puede arrastrar. -->
+  <div
+    class="cv-divisor"
+    role="separator"
+    aria-orientation="vertical"
+    aria-label="Ancho del código"
+    aria-valuemin="20"
+    aria-valuemax="80"
+    aria-valuenow="42"
+    tabindex="0"
+  >
+  </div>
 </div>
 
 <style is:global>
@@ -166,6 +181,98 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
   }
   .codigo-vivo .cv-error {
     color: #e88a7d;
+  }
+  .codigo-vivo .cv-divisor {
+    display: none;
+  }
+
+  /*
+   * PANTALLA COMPLETA. Nada se mueve de lugar en la página (si el iframe cambiara de padre, se
+   * recargaría y el ejemplo empezaría de nuevo): solo cambia la disposición, con una grilla. El
+   * código a la izquierda, lo que dibuja a la derecha, y la consola debajo; en una pantalla
+   * angosta, uno arriba del otro. Sirve igual para la pantalla completa del navegador
+   * (data-ampliado="pantalla") y para cuando no la hay, como en el iPhone ("ventana").
+   */
+  .codigo-vivo[data-ampliado] {
+    --cv-codigo: 42%;
+    display: grid;
+    grid-template-columns: minmax(14rem, var(--cv-codigo)) 6px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'barra divisor resultado'
+      'editor divisor resultado'
+      'editor divisor consola';
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: #1a1714;
+  }
+  .codigo-vivo[data-ampliado='ventana'] {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    height: 100dvh;
+  }
+  :root.cv-con-ampliado {
+    overflow: hidden; /* la página de atrás no se desplaza */
+  }
+  .codigo-vivo:fullscreen::backdrop {
+    background: #000;
+  }
+  .codigo-vivo[data-ampliado] .cv-barra {
+    grid-area: barra;
+  }
+  .codigo-vivo[data-ampliado] .cv-editor {
+    grid-area: editor;
+    min-height: 0;
+  }
+  .codigo-vivo[data-ampliado] .cv-editor .cm-editor {
+    height: 100%;
+    max-height: none;
+  }
+  .codigo-vivo[data-ampliado] .cv-resultado {
+    grid-area: resultado;
+    aspect-ratio: auto;
+  }
+  .codigo-vivo[data-ampliado] .cv-consola {
+    grid-area: consola;
+    max-height: 30vh;
+  }
+  .codigo-vivo[data-ampliado] .cv-divisor {
+    grid-area: divisor;
+    display: block;
+    cursor: col-resize;
+    touch-action: none;
+    background: var(--mg-bronce, #b98146);
+    box-shadow:
+      inset 1px 0 0 rgb(255 240 210 / 0.35),
+      inset -1px 0 0 rgb(0 0 0 / 0.5);
+  }
+  .codigo-vivo[data-ampliado] .cv-divisor:focus-visible {
+    outline: 2px solid #93d9c9;
+    outline-offset: -2px;
+  }
+  /* Mientras se arrastra, el iframe no se queda con los movimientos del puntero. */
+  .codigo-vivo[data-arrastrando] iframe {
+    pointer-events: none;
+  }
+  @media (max-width: 50rem), (max-aspect-ratio: 1/1) {
+    .codigo-vivo[data-ampliado] {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+      grid-template-areas: 'resultado' 'consola' 'barra' 'editor';
+    }
+    .codigo-vivo[data-ampliado] .cv-divisor {
+      display: none;
+    }
+  }
+  /* En una barra angosta, el botón queda solo con su símbolo. */
+  @media (max-width: 30rem) {
+    .codigo-vivo .cv-ampliar .cv-texto {
+      display: none;
+    }
   }
 </style>
 

@@ -31,6 +31,11 @@ export function documentoDelIframe(): string {
     --text-color: #dcd2c3; --title-background-color: #2a221a; --title-text-color: #f0d59a;
     --number-color: #93d9c9; --string-color: #e9c48c;
   }
+  /* En un lugar angosto (un celular), el panel más chico, para que no tape la escena. */
+  @media (max-width: 520px) {
+    html .lil-gui { --width: 180px; --font-size: 10px; --input-font-size: 10px; --widget-height: 16px; --padding: 3px; --spacing: 3px; }
+    html .lil-gui.root { opacity: 0.9; }
+  }
 </style>
 <script>
   const padre = window.parent;

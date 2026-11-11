@@ -86,3 +86,54 @@ test('editar el código y ejecutarlo; un error aparece con su archivo y su líne
   await ejecutarYEsperar(ejemplo);
   await expect(ejemplo.locator('.cv-consola')).toContainText('hola 1');
 });
+
+test('pantalla completa: el código y lo que dibuja, lado a lado, sin reiniciar el ejemplo', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('tutorial/etapa-0/01-primer-cubo/');
+  const ejemplo = page.locator('.codigo-vivo').first();
+  await ejecutarYEsperar(ejemplo);
+  // Si el iframe cambiara de lugar en la página, el navegador lo recargaría: se cuentan sus navegaciones.
+  let recargas = 0;
+  page.on('framenavigated', (marco) => marco !== page.mainFrame() && recargas++);
+
+  await ejemplo.locator('.cv-ampliar').click();
+  await expect(ejemplo).toHaveAttribute('data-ampliado', /^(pantalla|ventana)$/);
+  await expect(ejemplo.locator('.cv-ampliar')).toHaveAttribute('aria-pressed', 'true');
+  // Ocupa la pantalla, con el código a la izquierda de lo que dibuja.
+  const editor = (await ejemplo.locator('.cv-editor').boundingBox())!;
+  const resultado = (await ejemplo.locator('.cv-resultado').boundingBox())!;
+  expect(editor.x + editor.width).toBeLessThanOrEqual(resultado.x);
+  expect(resultado.x + resultado.width).toBeGreaterThan(1270);
+  expect(resultado.height).toBeGreaterThan(650);
+  // Sigue dibujando, y es el mismo ejemplo de antes.
+  const cuadros = Number(await ejemplo.getAttribute('data-cuadros'));
+  await expect.poll(async () => Number(await ejemplo.getAttribute('data-cuadros'))).toBeGreaterThan(cuadros + 20);
+  expect(recargas).toBe(0);
+
+  // El divisor, con el teclado: dos veces → le da un 10 % más al código.
+  const divisor = ejemplo.locator('.cv-divisor');
+  await divisor.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(divisor).toHaveAttribute('aria-valuenow', '52');
+  const editorMasAncho = (await ejemplo.locator('.cv-editor').boundingBox())!;
+  expect(editorMasAncho.width).toBeGreaterThan(editor.width + 100);
+
+  await ejemplo.locator('.cv-ampliar').click();
+  await expect(ejemplo).not.toHaveAttribute('data-ampliado');
+  expect(await page.evaluate(() => document.fullscreenElement)).toBeNull();
+  expect(recargas).toBe(0);
+});
+
+test('sin pantalla completa (como en el iPhone), el ejemplo ocupa la ventana, y Esc lo devuelve', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(Document.prototype, 'fullscreenEnabled', { get: () => false }));
+  await page.goto('tutorial/etapa-0/01-primer-cubo/');
+  const ejemplo = page.locator('.codigo-vivo').first();
+  await ejemplo.locator('.cv-ampliar').click();
+  await expect(ejemplo).toHaveAttribute('data-ampliado', 'ventana');
+  const caja = (await ejemplo.boundingBox())!;
+  const ventana = page.viewportSize()!;
+  expect([caja.x, caja.y, caja.width, caja.height]).toEqual([0, 0, ventana.width, ventana.height]);
+  await page.keyboard.press('Escape');
+  await expect(ejemplo).not.toHaveAttribute('data-ampliado');
+});

@@ -4,6 +4,7 @@ import { keymap } from '@codemirror/view';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { documentoDelIframe } from './iframe';
+import { montarPantallaCompleta } from './pantalla-completa';
 import { nombreDeModulo, transpilar } from './transpilar';
 
 /**
@@ -185,6 +186,13 @@ export function montarCodigoVivo(raiz: HTMLElement) {
   raiz.querySelector('.cv-restaurar')?.addEventListener('click', () => {
     estados = archivos.map((a) => crearEstado(a.codigo));
     vista.setState(estados[actual]!);
+  });
+
+  montarPantallaCompleta(raiz, {
+    alEntrar: () => {
+      if (raiz.dataset.estado !== 'corriendo') void ejecutar();
+      vista.focus(); // para escribir enseguida
+    },
   });
 
   // El primer ejemplo de una lección arranca solo cuando aparece en pantalla (si nada más está corriendo).
