@@ -1,0 +1,37 @@
+---
+title: Inicio
+description: Un laboratorio de mundos físicos en 3D para la web.
+template: splash
+hero:
+  title: Manifold
+  tagline: Un laboratorio de mundos físicos en 3D, en el navegador. Un motor propio donde la gravedad es un campo, las cosas se componen de capacidades y todo lo que pasa se puede repetir. Se construye paso a paso, y cada paso es un capítulo del tutorial.
+  actions:
+    - text: Entrar al Dojo
+      link: jugar/dojo/
+      icon: right-arrow
+    - text: Leer el tutorial
+      link: tutorial/00-antes-de-empezar/
+      variant: minimal
+    - text: El proyecto
+      link: proyecto/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="El motor" icon="setting">
+    Una simulación que corre igual en el navegador, en un servidor y en las pruebas, sin pantalla. La gravedad no es una
+    constante: es un campo que cambia de lugar en lugar.
+  </Card>
+  <Card title="El Dojo" icon="rocket">
+    El primer juego, desde el primer día: un complejo de salas para experimentar con lo que el motor sabe hacer, y ver por qué
+    pasa lo que pasa.
+  </Card>
+  <Card title="Los juegos" icon="puzzle">
+    Juegos distintos sobre el mismo motor. El motor no sabe a qué se juega: cada juego trae sus reglas.
+  </Card>
+  <Card title="El tutorial" icon="open-book">
+    Cada paso del motor es un capítulo: la idea, cómo funciona, lo que medimos, experimentos y un reto. Crece junto con el código.
+  </Card>
+</CardGrid>

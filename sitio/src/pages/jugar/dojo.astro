@@ -1,0 +1,50 @@
+---
+/**
+ * La página del Dojo: pantalla completa, sin el marco del sitio. El juego se monta en #juego.
+ * (Astro empaqueta el <script> con Vite, como cualquier página: importa el Dojo como un
+ * paquete más del monorepo.)
+ */
+const inicio = import.meta.env.BASE_URL;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dojo · Manifold</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #14161c;
+        color: #e8e8ea;
+        font: 14px/1.4 system-ui, sans-serif;
+      }
+      #juego {
+        position: fixed;
+        inset: 0;
+      }
+      #volver {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        color: inherit;
+        opacity: 0.75;
+        text-decoration: none;
+      }
+      #volver:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="juego"></div>
+    <a id="volver" href={inicio}>← Manifold</a>
+    <script>
+      import { arrancarDojo } from '@manifold/dojo';
+      arrancarDojo(document.getElementById('juego')!);
+    </script>
+  </body>
+</html>

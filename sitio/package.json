@@ -1,0 +1,21 @@
+{
+  "name": "sitio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "La web de la plataforma: el inicio, el proyecto, el tutorial y las páginas desde las que se juega.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.10",
+    "@manifold/dojo": "0.0.0",
+    "astro": "^7.4.10"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12"
+  }
+}
