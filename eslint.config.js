@@ -24,11 +24,22 @@ const presentacion = {
 };
 
 export default defineConfig(
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/.astro/**', 'playwright-report/**', 'test-results/**'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.astro/**',
+      'playwright-report/**',
+      'test-results/**',
+      'sitio/public/vendor/**',
+    ],
+  },
   js.configs.recommended,
   tseslint.configs.recommended,
   prettier,
   { languageOptions: { globals: { ...globals.node } } },
+  // El sitio y sus lecciones corren en el navegador.
+  { files: ['sitio/src/**/*.ts'], languageOptions: { globals: { ...globals.browser } } },
   {
     files: ['paquetes/comun/src/**'],
     rules: {

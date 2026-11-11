@@ -15,3 +15,7 @@ test-results/
 
 # Configuración local de las herramientas de Claude
 .claude/
+
+# Las librerías del tutorial (se arman al compilar: sitio/scripts/vendor.mjs)
+sitio/public/vendor/
+sitio/.vendor-entradas/

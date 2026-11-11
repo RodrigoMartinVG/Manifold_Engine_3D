@@ -1,5 +1,11 @@
 {
   "singleQuote": true,
   "printWidth": 130,
-  "trailingComma": "all"
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "sitio/src/lecciones/**/*.ts",
+      "options": { "printWidth": 100 }
+    }
+  ]
 }

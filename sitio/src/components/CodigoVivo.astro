@@ -1,0 +1,157 @@
+---
+/**
+ * <CodigoVivo leccion="etapa-0/01-primer-cubo" />: un ejemplo que se edita y se ejecuta en la
+ * página (decisión 0007).
+ *
+ * Los archivos de la lección viven en `src/lecciones/<leccion>/` como archivos .ts DE VERDAD:
+ * el compilador (`npm run check`) y el linter los revisan como al resto del código, y las
+ * pruebas en el navegador los ejecutan. Aquí se leen como texto y se le pasan al editor.
+ * `main.ts` es el que arranca, y va primero.
+ */
+interface Props {
+  leccion: string;
+  /** Arrancar solo cuando aparece en pantalla (el primer ejemplo de cada lección). */
+  autoejecutar?: boolean;
+}
+
+const { leccion, autoejecutar = false } = Astro.props;
+const todos = import.meta.glob<string>('../lecciones/**/*.ts', { query: '?raw', import: 'default', eager: true });
+const prefijo = `../lecciones/${leccion}/`;
+const archivos = Object.entries(todos)
+  .filter(([ruta]) => ruta.startsWith(prefijo))
+  .map(([ruta, codigo]) => ({ nombre: ruta.slice(prefijo.length), codigo }))
+  .sort((a, b) => (a.nombre === 'main.ts' ? -1 : b.nombre === 'main.ts' ? 1 : a.nombre.localeCompare(b.nombre)));
+if (!archivos.some((a) => a.nombre === 'main.ts')) {
+  throw new Error(`La lección "${leccion}" no tiene main.ts (en src/lecciones/${leccion}/)`);
+}
+---
+
+<div
+  class="codigo-vivo not-content"
+  data-archivos={JSON.stringify(archivos)}
+  data-base={import.meta.env.BASE_URL}
+  data-autoejecutar={autoejecutar ? '1' : undefined}
+  data-estado="detenido"
+>
+  <!-- Primero lo que se ve (el lector lo encuentra sin bajar), después el código. -->
+  <div class="cv-resultado">
+    <button type="button" class="cv-portada">▶ Ejecutar</button>
+  </div>
+  <div class="cv-consola" hidden></div>
+  <div class="cv-barra">
+    <div class="cv-pestanas" role="tablist" aria-label="Archivos de la lección"></div>
+    <div class="cv-acciones">
+      <button type="button" class="cv-restaurar" title="Volver al código original">↺ Restaurar</button>
+      <button type="button" class="cv-ejecutar" title="Ejecutar (Ctrl o ⌘ + Enter)">▶ Ejecutar</button>
+    </div>
+  </div>
+  <div class="cv-editor"></div>
+</div>
+
+<style is:global>
+  .codigo-vivo {
+    margin-block: 1.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #282c34;
+  }
+  .codigo-vivo .cv-barra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: #21252b;
+    flex-wrap: wrap;
+  }
+  .codigo-vivo .cv-pestanas {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  .codigo-vivo button {
+    font: 13px/1.2 var(--sl-font-system-mono, ui-monospace, monospace);
+    color: #abb2bf;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+  }
+  .codigo-vivo button:hover {
+    color: #fff;
+  }
+  .codigo-vivo .cv-pestanas button[aria-selected='true'] {
+    color: #fff;
+    border-color: #3e4451;
+    background: #282c34;
+  }
+  .codigo-vivo .cv-acciones {
+    display: flex;
+    gap: 0.25rem;
+  }
+  .codigo-vivo .cv-ejecutar {
+    color: #14161c;
+    background: #e0a040;
+    font-weight: 600;
+  }
+  .codigo-vivo .cv-ejecutar:hover {
+    color: #14161c;
+    background: #f0b450;
+  }
+  .codigo-vivo .cv-editor .cm-editor {
+    max-height: 26rem;
+    font-size: 13px;
+  }
+  .codigo-vivo .cv-editor .cm-scroller {
+    overflow: auto;
+  }
+  .codigo-vivo .cv-resultado {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #14161c;
+  }
+  .codigo-vivo .cv-resultado iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .codigo-vivo .cv-portada {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    font-size: 1.1rem;
+    color: #e8e8ea;
+  }
+  .codigo-vivo .cv-portada[hidden] {
+    display: none;
+  }
+  .codigo-vivo .cv-consola {
+    max-height: 9rem;
+    overflow: auto;
+    padding: 0.4rem 0.75rem;
+    font: 12px/1.45 var(--sl-font-system-mono, ui-monospace, monospace);
+    color: #abb2bf;
+    background: #1b1d23;
+    border-top: 1px solid #3e4451;
+    border-bottom: 1px solid #3e4451;
+    white-space: pre-wrap;
+  }
+  .codigo-vivo .cv-consola[hidden] {
+    display: none;
+  }
+  .codigo-vivo .cv-warn {
+    color: #e5c07b;
+  }
+  .codigo-vivo .cv-error {
+    color: #e06c75;
+  }
+</style>
+
+<script>
+  import { montarCodigoVivo } from '../codigo-vivo/montar';
+  document.querySelectorAll<HTMLElement>('.codigo-vivo').forEach(montarCodigoVivo);
+</script>
