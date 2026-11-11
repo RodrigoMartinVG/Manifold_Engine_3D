@@ -20,6 +20,21 @@ test('el inicio abre y lleva al Dojo, al tutorial y al proyecto', async ({ page 
   expect(lista).toEqual([]);
 });
 
+test('la vitrina del inicio se enciende y su simulación avanza', async ({ page }) => {
+  const lista = errores(page);
+  await page.goto('./');
+  // Three.js llega después de la página (import dinámico): la vitrina pasa de "cargando" a "lista".
+  await expect(page.locator('.vitrina')).toHaveAttribute('data-estado', 'lista', { timeout: 15_000 });
+  await expect
+    .poll(async () => Number(await page.locator('.vitrina-ventana').getAttribute('data-cuadros')), { timeout: 15_000 })
+    .toBeGreaterThanOrEqual(30);
+  // La placa muestra el paso de la simulación, y sigue subiendo.
+  const paso = async () => Number((await page.locator('.vitrina-paso b').textContent())?.replace(/\D/g, ''));
+  const antes = await paso();
+  await expect.poll(paso).toBeGreaterThan(antes);
+  expect(lista).toEqual([]);
+});
+
 for (const [direccion, cubos] of [
   ['jugar/dojo/', 1],
   ['jugar/dojo/?cubos=20&semilla=3', 21],

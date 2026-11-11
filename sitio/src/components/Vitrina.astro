@@ -1,0 +1,230 @@
+---
+/**
+ * LA VITRINA del inicio: un marco de bronce con una escena 3D en vivo (src/vitrina/vitrina.ts),
+ * dos engranajes que engranan de verdad, y una placa que dice qué se ve.
+ *
+ * Three.js se pide DESPUÉS de que la página se dibuja (con un `import()` dinámico, que Vite
+ * separa en su propio archivo): el inicio aparece enseguida, y la vitrina se enciende un momento
+ * después. Si no hay WebGL, queda el marco con su fondo, y nada se rompe.
+ *
+ * Los engranajes (scripts/dibujar.mjs) tienen el mismo módulo: 20 y 12 dientes, radios
+ * primitivos 40 y 24, centros a 64 unidades. Para que no se traben, giran en sentidos opuestos
+ * con períodos en razón 20 : 12 (40 s y 24 s), y arrancan con un diente frente a un hueco.
+ */
+import engranaje20 from '../assets/dibujos/engranaje-20.svg';
+import engranaje12 from '../assets/dibujos/engranaje-12.svg';
+---
+
+<figure class="vitrina not-content" data-estado="cargando">
+  <img class="engranaje engranaje-grande" src={engranaje20.src} alt="" aria-hidden="true" />
+  <img class="engranaje engranaje-chico" src={engranaje12.src} alt="" aria-hidden="true" />
+  <div class="vitrina-marco">
+    <div class="vitrina-ventana" role="img" aria-label="Tres cuerpos en órbita sobre un pozo de potencial, en 3D"></div>
+  </div>
+  <figcaption class="vitrina-placa">
+    <span>Pozo de potencial <i>Φ = −GM / r</i></span>
+    <span class="vitrina-paso">paso <b>0</b></span>
+  </figcaption>
+</figure>
+
+<style>
+  .vitrina {
+    /* La unidad de los engranajes: 1 unidad del dibujo = --u píxeles. */
+    --u: 1.1px;
+    position: relative;
+    margin: 0;
+    padding-top: 2.5rem; /* lugar para los engranajes que asoman arriba */
+  }
+
+  /* ---------- los engranajes ---------- */
+  .engranaje {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  /* Centro del grande: 2.5rem + 6px desde arriba, y adentro del borde derecho (que no asome
+     afuera de la página). El chico, a 64 unidades del grande en la dirección de 200°: a la
+     izquierda y un poco más arriba. */
+  .engranaje-grande {
+    width: calc(92 * var(--u));
+    top: calc(2.5rem + 6px - 46 * var(--u));
+    right: 0.5rem;
+    rotate: 200deg; /* un diente apunta al chico */
+    animation-name: girar-grande;
+    animation-duration: 40s;
+  }
+  .engranaje-chico {
+    width: calc(60 * var(--u));
+    top: calc(2.5rem + 6px - 21.89 * var(--u) - 30 * var(--u));
+    right: calc(0.5rem + 46 * var(--u) + 60.14 * var(--u) - 30 * var(--u));
+    rotate: 35deg; /* 200° + 180° + medio diente (15°): un hueco mira al grande */
+    animation-name: girar-chico;
+    animation-duration: 24s;
+  }
+  @keyframes girar-grande {
+    to {
+      rotate: 560deg;
+    }
+  }
+  @keyframes girar-chico {
+    to {
+      rotate: -325deg;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .engranaje {
+      animation: none;
+    }
+  }
+
+  /* ---------- el marco y la ventana ---------- */
+  .vitrina-marco {
+    position: relative;
+    z-index: 1;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--mg-patina), var(--mg-bronce);
+    box-shadow:
+      0 0 0 1px #2a1909,
+      inset 0 1px 0 rgb(255 240 210 / 0.55),
+      inset 0 -2px 0 rgb(0 0 0 / 0.35),
+      0 34px 60px -30px rgb(0 0 0 / 0.95);
+  }
+  .vitrina-marco::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    pointer-events: none;
+    background:
+      var(--mg-remache) 0 0 / 8px 8px no-repeat,
+      var(--mg-remache) 100% 0 / 8px 8px no-repeat,
+      var(--mg-remache) 0 100% / 8px 8px no-repeat,
+      var(--mg-remache) 100% 100% / 8px 8px no-repeat;
+  }
+  .vitrina-ventana {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    border-radius: 6px;
+    overflow: hidden;
+    /* Siempre oscura, también en el modo claro: es una vitrina. */
+    background: radial-gradient(ellipse 70% 70% at 50% 58%, #133530, #0a1513 58%, #060808);
+    box-shadow:
+      inset 0 0 0 1px #000,
+      inset 0 0 34px rgb(0 0 0 / 0.9);
+    touch-action: pan-y;
+  }
+  /* El reflejo del vidrio. */
+  .vitrina-ventana::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(155deg, rgb(255 255 255 / 0.07), transparent 32%);
+  }
+  .vitrina-ventana :global(canvas) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+  }
+  .vitrina[data-estado='lista'] .vitrina-ventana :global(canvas) {
+    opacity: 1;
+  }
+
+  /* ---------- la placa ---------- */
+  .vitrina-placa {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0.2rem 1.4rem;
+    width: fit-content;
+    max-width: calc(100% - 3rem);
+    margin: -0.95rem auto 0;
+    padding: 0.3rem 1.6rem 0.35rem;
+    border-radius: 4px;
+    background:
+      var(--mg-remache) 0.45rem 50% / 8px 8px no-repeat,
+      var(--mg-remache) calc(100% - 0.45rem) 50% / 8px 8px no-repeat,
+      var(--mg-bronce);
+    box-shadow:
+      0 0 0 1px #3a2410,
+      inset 0 1px 0 rgb(255 240 210 / 0.6),
+      0 8px 16px -8px rgb(0 0 0 / 0.8);
+    color: #2a1909;
+    /* Letras grabadas: una luz debajo de cada trazo. */
+    text-shadow: 0 1px 0 rgb(255 236 200 / 0.55);
+    font-family: var(--mg-letra-titulo);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    line-height: 1.5;
+  }
+  .vitrina-placa span {
+    white-space: nowrap;
+  }
+  .vitrina-placa i {
+    margin-inline-start: 0.35em;
+    font-family: var(--mg-letra-libro);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .vitrina-paso b {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+
+  @media (max-width: 40rem) {
+    .vitrina {
+      --u: 0.8px;
+      padding-top: 1.8rem;
+    }
+    .engranaje-grande {
+      top: calc(1.8rem + 6px - 46 * var(--u));
+    }
+    .engranaje-chico {
+      top: calc(1.8rem + 6px - 21.89 * var(--u) - 30 * var(--u));
+    }
+    .vitrina-marco {
+      padding: 8px;
+    }
+  }
+</style>
+
+<script>
+  const figura = document.querySelector<HTMLElement>('.vitrina');
+  const ventana = figura?.querySelector<HTMLElement>('.vitrina-ventana');
+  const contador = figura?.querySelector<HTMLElement>('.vitrina-paso b');
+
+  async function encender(figura: HTMLElement, ventana: HTMLElement) {
+    try {
+      const { arrancarVitrina } = await import('../vitrina/vitrina');
+      arrancarVitrina(ventana, {
+        alPaso: (paso) => {
+          if (contador) contador.textContent = paso.toLocaleString('es');
+        },
+      });
+      figura.dataset.estado = 'lista';
+    } catch (e) {
+      // Sin WebGL (o sin red): queda el marco vacío, que también se ve bien.
+      figura.dataset.estado = 'sin-3d';
+      console.warn('La vitrina no pudo encenderse:', e);
+    }
+  }
+
+  if (figura && ventana) {
+    // Primero que se dibuje la página; después, Three.js.
+    if ('requestIdleCallback' in window) requestIdleCallback(() => void encender(figura, ventana), { timeout: 1200 });
+    else setTimeout(() => void encender(figura, ventana), 300);
+  }
+</script>
