@@ -1,0 +1,71 @@
+# La integración continua (decisión 0005): en cada PR y en cada cambio de main se verifica todo.
+# Si main pasa, se publica el sitio en GitHub Pages.
+name: Integración continua
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Sin estadísticas de uso de Astro desde la integración continua.
+  ASTRO_TELEMETRY_DISABLED: '1'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Verificar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Tipos
+        run: npm run check
+      - name: Linter (y fronteras entre capas)
+        run: npm run lint
+      - name: Formato
+        run: npm run formato
+      - name: Pruebas sin pantalla
+        run: npm run pruebas
+      - name: Navegador para las pruebas
+        run: npx playwright install --with-deps chromium
+      - name: Pruebas en el navegador (arma el sitio)
+        run: npm run e2e
+      - name: Guardar el sitio armado
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: sitio/dist
+      - name: Informe de Playwright (si algo falló)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: informe-playwright
+          path: playwright-report
+          retention-days: 7
+
+  publicar:
+    name: Publicar en GitHub Pages
+    needs: verificar
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacion.outputs.page_url }}
+    steps:
+      - id: publicacion
+        uses: actions/deploy-pages@v5

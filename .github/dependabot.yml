@@ -1,0 +1,14 @@
+# Dependabot propone (en un PR) actualizar las dependencias una vez por mes, agrupadas.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      dependencias:
+        patterns: ['*']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
