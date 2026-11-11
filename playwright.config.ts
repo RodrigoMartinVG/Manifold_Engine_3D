@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const BASE = 'http://localhost:4321/Manifold_Engine_3D/';
+const BASE = 'http://localhost:4321/Manifold_Gaming/';
 
 /**
  * Las pruebas EN UN NAVEGADOR DE VERDAD (decisión 0001): el sitio armado como se publica, cada

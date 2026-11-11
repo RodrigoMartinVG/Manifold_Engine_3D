@@ -1,8 +1,8 @@
-# Manifold
+# Manifold Gaming
 
 **Un laboratorio de mundos físicos en 3D para la web.** Un motor propio (TypeScript, [Three.js](https://threejs.org), [Rapier](https://rapier.rs)) donde la gravedad es un campo, las cosas se componen de capacidades y lo que pasa se puede repetir; un **Dojo** para experimentar con él; **juegos** encima; y un **tutorial** que se escribe a medida que el motor crece.
 
-🌐 **Sitio:** https://rodrigomartinvg.github.io/Manifold_Engine_3D/
+🌐 **Sitio:** https://rodrigomartinvg.github.io/Manifold_Gaming/
 
 > Estado: **fase 0** (cimientos). El Dojo tiene un cubo que gira, calculado por la simulación.
 
@@ -32,7 +32,7 @@ npm run dev           # el sitio y el Dojo, con recarga en caliente
 
 | Comando                 | Qué hace                                                                                  |
 | ----------------------- | ----------------------------------------------------------------------------------------- |
-| `npm run dev`           | El sitio en http://localhost:4321/Manifold_Engine_3D/                                     |
+| `npm run dev`           | El sitio en http://localhost:4321/Manifold_Gaming/                                        |
 | `npm run verificar`     | Tipos, linter, formato y pruebas sin pantalla                                             |
 | `npm run pruebas:mirar` | Las pruebas, que se vuelven a correr al guardar                                           |
 | `npm run e2e`           | Arma el sitio y lo prueba en Chromium (la primera vez: `npx playwright install chromium`) |
