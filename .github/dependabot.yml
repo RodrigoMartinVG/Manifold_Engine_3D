@@ -13,6 +13,10 @@ updates:
       # ser la del Node que corre el proyecto (mise.toml y .nvmrc). Se sube a mano, junto con Node.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # TypeScript está fijado en la 6 a propósito (decisión 0001): typescript-eslint y
+      # @astrojs/check todavía no soportan la 7. Se sube a mano, cuando la soporten.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
