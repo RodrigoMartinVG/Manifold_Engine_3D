@@ -24,7 +24,9 @@ test('la vitrina del inicio se enciende y su simulación avanza', async ({ page 
   const lista = errores(page);
   await page.goto('./');
   // Three.js llega después de la página (import dinámico): la vitrina pasa de "cargando" a "lista".
-  await expect(page.locator('.vitrina')).toHaveAttribute('data-estado', 'lista', { timeout: 15_000 });
+  // Con GPU tarda menos de 1 s; sin GPU (como en la integración continua) unos 3 s, y con otra
+  // prueba corriendo al lado, más de 15 s alguna vez. De ahí el margen.
+  await expect(page.locator('.vitrina')).toHaveAttribute('data-estado', 'lista', { timeout: 40_000 });
   await expect
     .poll(async () => Number(await page.locator('.vitrina-ventana').getAttribute('data-cuadros')), { timeout: 15_000 })
     .toBeGreaterThanOrEqual(30);
