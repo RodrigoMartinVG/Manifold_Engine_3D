@@ -1,6 +1,6 @@
 # 0010. La consola y las recetas
 
-- **Estado:** propuesta. Se revisa antes de escribir código.
+- **Estado:** aceptada (al revisarla se sumaron la dirección propia de cada sala y las reglas de los enlaces).
 - **Fecha:** 2026-11-11
 
 ## Contexto
@@ -107,13 +107,16 @@ ver.vectores si
 - **Un juego nace configurado.** Al abrirlo, y antes de crear el mundo, se juntan en este orden:
   1. los valores por defecto;
   2. la **receta de inicio**, si hay: lo que cada persona quiere siempre, como el `autoexec.cfg` de Quake. Se guarda en el navegador con `inicio guardar` y se borra con `inicio borrar`;
-  3. la **receta del enlace**, si vino una. Gana sobre las anteriores.
+  3. la **receta de la sala**, si se entró por la dirección de una sala guardada;
+  4. la **receta del enlace**, si vino una. Gana sobre las anteriores.
 
   Recién entonces se crea el mundo, una sola vez y ya configurado. No arranca "básico" para después cambiar.
 
-- **Hay dos clases de enlaces.** Los dos usan el fragmento (`#`), que no viaja al servidor:
-  - **por nombre:** `…/jugar/dojo/#cargar=orbitas` carga una receta guardada en el repositorio del juego (`juegos/dojo/recetas/orbitas.txt`). La página "Jugar" puede listarlas, cada una con su enlace: es contenido, no un panel de opciones;
-  - **con la receta adentro:** `…/jugar/dojo/#receta=…`, la que arma `exportar`.
+- **Cada sala guardada tiene su propia dirección.** Una receta guardada en el repositorio del juego (`juegos/dojo/recetas/orbitas.txt`) se convierte, al armar el sitio, en una página propia: `…/jugar/dojo/orbitas/`. Es el mismo juego, que nace con esa receta. Se puede guardar en favoritos, la página "Jugar" la lista y una lección la puede enlazar. Es la dirección como _lugar_ ("la sala de las órbitas está acá"), no como panel de control.
+- **Un enlace puede llevar la receta adentro,** en el fragmento (`#`), que no viaja al servidor: `…/jugar/dojo/#receta=dojo.cubos+20;ver.triangulos+si`. Es lo que arma `exportar`. Las líneas se separan con `;` y los espacios se escriben `+`, así el enlace se puede leer y corregir a mano; lo demás se escapa como en cualquier dirección. Se puede sumar a la dirección de una sala: `…/jugar/dojo/orbitas/#receta=ver.vectores+si`.
+
+- **Lo que un enlace no puede hacer.** Una receta (de un enlace, de una sala o la de inicio) solo puede fijar variables y ejecutar los comandos declarados como seguros para recetas. Nunca toca las preferencias guardadas en el navegador (`inicio`, `atajo`, `idioma`): un enlace ajeno no cambia la configuración de nadie. Y como la consola no ejecuta código y valida cada valor, un enlace no puede hacer nada que la consola no permita.
+- **Si una línea no se entiende** (por ejemplo, la receta viene de una versión más nueva), el juego arranca igual con el resto, y la consola avisa cuántas líneas no entendió y cuáles.
 - **`exportar` escribe la receta de lo que se cambió.** Lo de arranque y lo del mundo van con sus valores finales; lo de la vista, en una sección aparte.
 - **Una receta no es una repetición.** La receta es un _ajuste_: cómo arrancar y qué ver. La repetición es una _historia_: la semilla más cada cambio del mundo con su paso.
 - **Las pruebas corren recetas** sin pantalla y comparan la huella.
@@ -154,7 +157,7 @@ ver.vectores si
 - **Teclas sueltas para cada vista de depuración,** como en la V1: no se descubren y chocan con el sistema. Vuelven como atajos configurables.
 - **Una consola del sitio o del motor, igual para todos los juegos:** cada juego tiene su idiosincrasia; el motor ofrece las piezas y el juego decide.
 
-## Lo que esta propuesta decide por defecto (se puede cambiar al revisarla)
+## Lo que se decidió por defecto (se puede cambiar más adelante)
 
 - **La tecla para abrirla:** la de la izquierda del 1 (**º**), más un botón en pantalla.
 - **Los sí y no:** `si`/`no`, y también `1`/`0`.

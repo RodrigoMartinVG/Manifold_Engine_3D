@@ -16,4 +16,4 @@ Cada una tiene: **contexto** (qué problema había), **decisión**, **consecuenc
 | [0007](0007-tutorial-ejecutable.md)      | El tutorial ejecutable y la bitácora                               | Aceptada                            |
 | [0008](0008-la-estetica-del-taller.md)   | La estética del sitio: el taller                                   | Aceptada                            |
 | [0009](0009-directo-en-main.md)          | Directo en main, sin pull requests                                 | Aceptada                            |
-| [0010](0010-la-consola-y-las-recetas.md) | La consola y las recetas                                           | Propuesta                           |
+| [0010](0010-la-consola-y-las-recetas.md) | La consola y las recetas                                           | Aceptada                            |
