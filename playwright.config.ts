@@ -26,6 +26,11 @@ export default defineConfig({
         launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
       },
     },
+    // Determinism across JavaScript engines (decision 0012): the physics test also runs in Firefox
+    // (SpiderMonkey) and WebKit (JavaScriptCore, Safari's). Locally, before pushing: continuous
+    // integration runs Chromium only (\`--project=chromium\`) until these browsers' WebGL is checked there.
+    { name: 'firefox', testMatch: 'physics.e2e.ts', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', testMatch: 'physics.e2e.ts', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
     // (Vite's server and not `astro preview`: outside a terminal, Astro 7 goes to the background

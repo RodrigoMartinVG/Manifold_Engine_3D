@@ -135,7 +135,7 @@ const play = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}jugar/`;
     <script>
       import { startDojo } from '@manifold/dojo';
       const game = document.getElementById('game')!;
-      startDojo(game, { room: game.dataset.room, base: import.meta.env.BASE_URL });
+      await startDojo(game, { room: game.dataset.room, base: import.meta.env.BASE_URL });
 
       // The first visit's hint (see above). Without storage (a private window), it shows every time.
       const KEY = 'mg-dojo-hint-seen';

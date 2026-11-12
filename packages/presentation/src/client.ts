@@ -51,7 +51,8 @@ interface Pose {
  * `view.*`), and the game decides whether to mount a console to touch it (decision 0010).
  *
  * `container` must be positioned (`position` fixed, absolute or relative): the stats and the
- * console are drawn on top, inside it.
+ * console are drawn on top, inside it. And the physics must be ready first (`await initPhysics()`,
+ * from the core): it loads asynchronously, and every world has its own.
  */
 export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOptions = {}): Mount {
   const registry = registryFor(cartridge);
@@ -73,6 +74,15 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   const axes = new THREE.AxesHelper(3);
   axes.visible = false;
   scene.add(axes);
+  // What the physics sees (show.physics): Rapier's colliders, as lines, redrawn on every frame.
+  const physicsLines = new THREE.LineSegments(
+    new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({ color: 0x7fe0c8, depthTest: false, transparent: true, opacity: 0.85 }),
+  );
+  physicsLines.visible = false;
+  physicsLines.renderOrder = 1;
+  physicsLines.frustumCulled = false;
+  scene.add(physicsLines);
 
   const fitSize = () => {
     const width = Math.max(1, container.clientWidth);
@@ -106,8 +116,9 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   // The world and its meshes (before anything else: a recipe can ask for show.wireframe, which walks them).
   const meshes = new Map<EntityId, THREE.Mesh>();
   const previous = new Map<EntityId, Pose>();
-  const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const geometries = { box: new THREE.BoxGeometry(1, 1, 1), sphere: new THREE.SphereGeometry(0.5, 24, 16) };
   let session: Session;
+  let started = false;
   let clock = new Clock();
 
   // ---------- What the view lets people change (decision 0010: scope "view") ----------
@@ -132,6 +143,14 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     type: { kind: 'boolean' },
     default: false,
     onChange: (v) => (axes.visible = v === true),
+  });
+  registry.declareVariable({
+    name: 'show.physics',
+    description: "What the physics sees: every body's collider, as lines (it may not match what is drawn).",
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => (physicsLines.visible = v === true),
   });
   registry.declareVariable({
     name: 'show.stats',
@@ -214,7 +233,8 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     // TWICE, when walking the world and through their `entityCreated` event; the second mesh hid
     // the first one in the map, and the first stayed in the scene, forgotten at the origin.)
     if (!e.appearance || !e.transform || meshes.has(e.id)) return;
-    const mesh = new THREE.Mesh(boxGeometry, new THREE.MeshLambertMaterial({ color: e.appearance.color, wireframe }));
+    const geometry = geometries[e.appearance.shape];
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: e.appearance.color, wireframe }));
     mesh.scale.set(...e.appearance.size);
     scene.add(mesh);
     meshes.set(e.id, mesh);
@@ -238,6 +258,9 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   /** Creates the world (at the start, and on restart), with the registry's current values. */
   function startSession() {
     for (const id of [...meshes.keys()]) removeMesh(id);
+    // The old world's physics lives in WebAssembly's memory, which the garbage collector does not see.
+    if (started) session.world.dispose();
+    started = true;
     session = new Session(cartridge, { registry });
     session.world.takeEvents(); // the ones from its creation: its meshes are created by walking the world
     for (const e of session.world.entities.values()) createMesh(e);
@@ -287,6 +310,10 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       mesh.position.set(...before.position).lerp(new THREE.Vector3(...t.position), alpha);
       mesh.quaternion.slerpQuaternions(qa.set(...before.rotation), qb.set(...t.rotation), alpha);
     }
+    if (physicsLines.visible) {
+      const { vertices } = world.physics.debugLines();
+      physicsLines.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    }
     renderer.render(scene, camera);
     framesThisSecond++;
     if (now - secondStart >= 1000) {
@@ -324,6 +351,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       cancelAnimationFrame(request);
       observer.disconnect();
       gameConsole?.stop();
+      session.world.dispose();
       renderer.dispose();
       renderer.domElement.remove();
       stats.remove();

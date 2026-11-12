@@ -4,7 +4,7 @@
 
 🌐 **Site:** https://rodrigomartinvg.github.io/Manifold_Gaming/ (in Spanish for now)
 
-> Status: **phase 0** (foundations). The Dojo has a spinning cube, computed by the simulation, and a console to configure it.
+> Status: **phase 1** (physics and a character). The Dojo has physics (Rapier, its deterministic build): cubes that fall, balls dropped from its console, a gravity that can be changed.
 
 ## How it is organized
 
@@ -34,14 +34,14 @@ npm install
 npm run dev           # the site and the Dojo, with hot reload
 ```
 
-| Command                | What it does                                                                                 |
-| ---------------------- | -------------------------------------------------------------------------------------------- |
-| `npm run dev`          | The site at http://localhost:4321/Manifold_Gaming/                                           |
-| `npm run verify`       | Types, linter, formatting and headless tests                                                 |
-| `npm run test:watch`   | The tests, run again on every save                                                           |
-| `npm run e2e`          | Builds the site and tests it in Chromium (the first time: `npx playwright install chromium`) |
-| `npm run build`        | The site ready to publish, in `site/dist`                                                    |
-| `npm run draw -w site` | Generates the site's drawings again (background, logo, gears) from their geometry            |
+| Command                | What it does                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`          | The site at http://localhost:4321/Manifold_Gaming/                                                                                                      |
+| `npm run verify`       | Types, linter, formatting and headless tests                                                                                                            |
+| `npm run test:watch`   | The tests, run again on every save                                                                                                                      |
+| `npm run e2e`          | Builds the site and tests it in Chromium, and the physics also in Firefox and WebKit (the first time: `npx playwright install chromium firefox webkit`) |
+| `npm run build`        | The site ready to publish, in `site/dist`                                                                                                               |
+| `npm run draw -w site` | Generates the site's drawings again (background, logo, gears) from their geometry                                                                       |
 
 How we work: straight on `main`, checking on the machine first ([decision 0009](docs/decisions/0009-straight-to-main.md)); commits and tags per stage in [decision 0005](docs/decisions/0005-way-of-working.md). All the decisions: [docs/decisions](docs/decisions/README.md).
 

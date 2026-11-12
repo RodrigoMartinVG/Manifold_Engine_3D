@@ -40,8 +40,9 @@ jobs:
         run: npm run test
       - name: Browser for the tests
         run: npx playwright install --with-deps chromium
+      # Chromium only: the physics test in Firefox and WebKit runs locally before pushing (playwright.config.ts).
       - name: Browser tests (builds the site)
-        run: npm run e2e
+        run: npm run e2e -- --project=chromium
       - name: Keep the built site
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5

@@ -1,5 +1,7 @@
 import { Registry } from '@manifold/commands';
+import type { Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
+import { EARTH } from './gravity';
 import { World } from './world';
 
 export interface SessionOptions {
@@ -34,6 +36,16 @@ export function declareCore(registry: Registry<World>) {
     scope: 'startup',
     type: { kind: 'integer', min: 0, max: 4294967295 },
     default: 1,
+  });
+  registry.declareVariable({
+    name: 'physics.gravity',
+    description: "The gravity, in m/s² along each axis (x y z): the Earth's is 0 -9.81 0. Try 0 -1.6 0, the Moon's.",
+    scope: 'world',
+    type: { kind: 'vector' },
+    default: [...EARTH.vector],
+    onWorld(world, value) {
+      world.gravity = { kind: 'uniform', vector: [...(value as Vec3)] };
+    },
   });
 }
 

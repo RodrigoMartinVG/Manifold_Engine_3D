@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@dimforge/rapier3d-deterministic-compat": "0.21.0",
     "@manifold/commands": "0.0.0",
     "@manifold/common": "0.0.0"
   },

@@ -1,4 +1,5 @@
 import { recipeFromLink } from '@manifold/commands';
+import { initPhysics } from '@manifold/core';
 import { mount, type InitialRecipe, type Mount } from '@manifold/presentation';
 import { DojoCartridge } from './cartridge';
 import { ROOMS } from './rooms';
@@ -17,9 +18,11 @@ export interface DojoOptions {
  *   1. each person's startup recipe (the console provides it);
  *   2. the room it was entered through;
  *   3. the link's (`#recipe=…`), the one `export` builds.
- * The world is born once, already configured.
+ * The world is born once, already configured. Before that, the physics loads (Rapier, in
+ * WebAssembly: asynchronously).
  */
-export function startDojo(container: HTMLElement, o: DojoOptions = {}): Mount {
+export async function startDojo(container: HTMLElement, o: DojoOptions = {}): Promise<Mount> {
+  await initPhysics();
   const recipes: InitialRecipe[] = [];
   const room = o.room ? ROOMS[o.room] : undefined;
   if (room) recipes.push({ from: `the room "${o.room}"`, text: room.text });

@@ -1,0 +1,6 @@
+# Moon gravity
+# Sixty cubes falling as on the Moon: 1.62 m/s², six times less than on Earth. They take longer to
+# fall and they bounce higher. Try the Earth's again in the console (physics.gravity 0 -9.81 0).
+seed 11
+dojo.cubes 60
+physics.gravity 0 -1.62 0

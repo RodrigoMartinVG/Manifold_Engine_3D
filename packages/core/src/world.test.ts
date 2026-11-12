@@ -1,7 +1,11 @@
-import { describe, expect, test } from 'vitest';
+import { beforeAll, describe, expect, test } from 'vitest';
 import { quat } from '@manifold/common';
 import { World, STEP } from './world';
 import { stateHash } from './hash';
+import { initPhysics } from './physics';
+
+// Every world has its physics (stage 1a), and Rapier loads asynchronously.
+beforeAll(initPhysics);
 
 /** A world with some spinning boxes, at places and speeds taken from its randomness. */
 function testWorld(seed: number) {

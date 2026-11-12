@@ -6,7 +6,7 @@ description: El Dojo, el laboratorio del motor, y los juegos que vendrán.
 import { LinkButton } from '@astrojs/starlight/components';
 import RoomCards from '../../components/RoomCards.astro';
 
-El **Dojo** es el primer juego: el laboratorio del motor. Por ahora tiene un cubo que gira y cubos chicos sacados del azar del mundo, y una consola para cambiar todo lo que se puede tocar. Con cada etapa del motor va a sumar salas (_rooms_) para probar lo nuevo.
+El **Dojo** es el primer juego: el laboratorio del motor. Desde la etapa 1a tiene física: un cubo grande que gira y empuja lo que toca, cubos chicos que caen del azar del mundo, pelotas que se tiran desde la consola, y una gravedad que se puede cambiar. Con cada etapa del motor va a sumar salas (_rooms_) para probar lo nuevo.
 
 <LinkButton href="dojo/" icon="right-arrow">
   Entrar al Dojo
@@ -28,6 +28,9 @@ La consola está **en inglés, y no se traduce**: sus nombres son como las palab
 ] help                        cómo se usa
 ] dojo.cubes 20               veinte cubos chicos (el mundo vuelve a empezar)
 ] show.wireframe on           las mallas como alambre
+] dojo.spawn 2 5 0            una pelota que cae desde (2, 5, 0)
+] physics.gravity 0 -1.62 0   la gravedad de la Luna
+] show.physics on             lo que ve el motor de física
 ] load rain                   una sala guardada
 ] export                      un enlace para que otra persona vea lo mismo
 ] startup save                arrancar siempre así, en este navegador

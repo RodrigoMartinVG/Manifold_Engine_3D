@@ -38,6 +38,13 @@ export default defineConfig(
   js.configs.recommended,
   tseslint.configs.recommended,
   prettier,
+  // A name that starts with "_" is unused on purpose (a parameter that the signature needs but this
+  // version does not, like the position in a uniform gravity field).
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
+  },
   { languageOptions: { globals: { ...globals.node } } },
   // The site and its lessons run in the browser.
   { files: ['site/src/**/*.ts'], languageOptions: { globals: { ...globals.browser } } },

@@ -1,5 +1,7 @@
 import { Random, quat } from '@manifold/common';
-import type { Components, Entity, Event, EntityId } from './types';
+import { EARTH, gravityAt } from './gravity';
+import { Physics } from './physics';
+import type { Components, Entity, Event, EntityId, GravityField } from './types';
 
 /** The fixed step: the simulation always advances 1/60 of a second, whatever the frame rate. */
 export const STEP = 1 / 60;
@@ -7,6 +9,8 @@ export const STEP = 1 / 60;
 export interface WorldOptions {
   /** The seed of its randomness: the same world with the same seed does exactly the same. */
   seed: number;
+  /** Its gravity (the Earth's, if not said). */
+  gravity?: GravityField;
 }
 
 /**
@@ -32,30 +36,74 @@ export class World {
    */
   stepEvents: Event[] = [];
   private pending: Event[] = [];
+  /** Its gravity field: data, like the rest of its state (decision 0012). */
+  private field: GravityField;
+  /**
+   * ITS physics (Rapier, behind the boundary of physics.ts): every world has its own, like its
+   * randomness. The entities keep only their bodies' handles (decision 0004).
+   */
+  readonly physics: Physics;
 
   constructor(o: WorldOptions) {
     this.random = new Random(o.seed);
+    this.field = o.gravity ?? EARTH;
+    this.physics = new Physics(this.uniformGravity(), STEP);
+  }
+
+  get gravity(): GravityField {
+    return this.field;
+  }
+
+  set gravity(field: GravityField) {
+    this.field = field;
+    this.physics.setGravity(this.uniformGravity());
+  }
+
+  /** The uniform field is handed to the physics as is (the planets of phase 7 will push each body instead). */
+  private uniformGravity() {
+    return gravityAt(this.field, [0, 0, 0]);
   }
 
   createEntity(components: Components): Entity {
-    const entity: Entity = { id: ++this.lastId, ...components };
+    const { body, ...rest } = components;
+    const entity: Entity = { id: ++this.lastId, ...rest };
+    if (body) {
+      if (!entity.transform) throw new Error('A body needs a transform: where is it?');
+      entity.body = this.physics.addBody(body, entity.transform);
+    }
     this.entities.set(entity.id, entity);
     this.emit({ type: 'entityCreated', id: entity.id });
     return entity;
   }
 
   removeEntity(id: EntityId) {
-    if (this.entities.delete(id)) this.emit({ type: 'entityRemoved', id });
+    const entity = this.entities.get(id);
+    if (!entity) return;
+    if (entity.body) this.physics.removeBody(entity.body.handle);
+    this.entities.delete(id);
+    this.emit({ type: 'entityRemoved', id });
   }
 
   /**
    * One fixed step. The systems ALWAYS run in the same order, and entities are visited in
    * creation order (a `Map` keeps insertion order): the order is part of determinism.
+   *
+   *   1. spin: what spins without a body turns here; a kinematic body gets its velocity;
+   *   2. physics: Rapier advances one step (gravity, collisions, bounces);
+   *   3. read back: every moving body's pose and velocities go to its components.
    */
   step() {
     this.stepEvents = [];
     this.tick++;
     this.spin();
+    this.physics.step();
+    for (const e of this.entities.values())
+      if (e.body && e.transform && e.body.type !== 'fixed') this.physics.read(e.body.handle, e.transform, e.body);
+  }
+
+  /** Frees its physics. A world that is no longer used must be disposed (WebAssembly's memory is not collected). */
+  dispose() {
+    this.physics.dispose();
   }
 
   /** Record that something happened (for both readers). */
@@ -80,6 +128,12 @@ export class World {
     for (const e of this.entities.values()) {
       if (!e.spin || !e.transform) continue;
       const w = e.spin.angularVelocity;
+      // With a kinematic body, the physics turns it (with its deterministic math), and pushes what it touches.
+      if (e.body?.type === 'kinematic') {
+        this.physics.setKinematicVelocity(e.body.handle, e.body.linearVelocity, w);
+        continue;
+      }
+      if (e.body) continue; // a dynamic or fixed body is moved by the physics, or not at all
       const speed = Math.hypot(w[0], w[1], w[2]);
       if (speed === 0) continue;
       const delta = quat.fromAxisAngle(w, speed * STEP);

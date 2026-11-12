@@ -3,4 +3,18 @@ export { Session, declareCore, registryFor, type SessionOptions, type WorldChang
 export { Clock } from './clock';
 export { stateHash } from './hash';
 export type { Cartridge } from './cartridge';
-export type { Appearance, Components, Entity, Event, EntityId, Spin, Transform } from './types';
+export { initPhysics, Physics } from './physics';
+export { EARTH, gravityAt } from './gravity';
+export type {
+  Appearance,
+  Body,
+  BodySpec,
+  Components,
+  Entity,
+  Event,
+  EntityId,
+  GravityField,
+  Shape,
+  Spin,
+  Transform,
+} from './types';
