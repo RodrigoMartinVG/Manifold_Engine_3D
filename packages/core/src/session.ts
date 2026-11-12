@@ -1,4 +1,4 @@
-import { Registry } from '@manifold/commands';
+import { formatValue, Registry } from '@manifold/commands';
 import type { Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
 import { NO_INPUT } from './character';
@@ -33,13 +33,15 @@ export interface InputChange {
  * An input as it travels (in a replay, in a link, over the network): the movement rounded to
  * hundredths. Small, comparable, and without the noise of a camera that turns a little every frame.
  */
+const hundredths = (v: Vec3): Vec3 => [Math.round(v[0] * 100) / 100, Math.round(v[1] * 100) / 100, Math.round(v[2] * 100) / 100];
 const quantize = (i: PlayerInput): PlayerInput => ({
-  move: [Math.round(i.move[0] * 100) / 100, Math.round(i.move[1] * 100) / 100, Math.round(i.move[2] * 100) / 100],
+  move: hundredths(i.move),
+  face: hundredths(i.face),
   jump: i.jump,
   run: i.run,
 });
 const sameInput = (a: PlayerInput, b: PlayerInput) =>
-  a.jump === b.jump && a.run === b.run && a.move.every((x, i) => x === b.move[i]);
+  a.jump === b.jump && a.run === b.run && a.move.every((x, i) => x === b.move[i]) && a.face.every((x, i) => x === b.face[i]);
 
 /** A registry with what the engine and the cartridge declare (without the presentation or the console). */
 export function registryFor(cartridge: Cartridge): Registry<World> {
@@ -87,6 +89,11 @@ export class Session {
   readonly history: WorldChange[] = [];
   /** Every player input that entered (only when it changed), with the step at which it was applied. */
   readonly inputs: InputChange[] = [];
+  /**
+   * How the world was born: its startup and world values that differ from their defaults, as recipe
+   * lines (without the view's: they do not change the world). With `history` and `inputs`, a replay.
+   */
+  readonly birth: string;
   private scheduled: { line: string; apply: (world: World) => void }[] = [];
   private pendingInputs = new Map<number, PlayerInput>();
 
@@ -95,6 +102,13 @@ export class Session {
     o: SessionOptions = {},
   ) {
     this.registry = o.registry ?? registryFor(cartridge);
+    this.birth = [
+      ...(o.seed !== undefined ? [`seed ${o.seed}`] : []),
+      ...this.registry
+        .changed()
+        .filter((v) => v.decl.scope !== 'view' && !(o.seed !== undefined && v.decl.name === 'seed'))
+        .map((v) => `${v.decl.name} ${formatValue(v.value)}`),
+    ].join('\n');
     this.world = new World({ seed: o.seed ?? Number(this.registry.value('seed')) });
     cartridge.onStart(this.world, this.registry);
     // World values that already came changed (from a recipe) are part of how it is born: step 0.

@@ -108,11 +108,17 @@ export type CharacterSpec = Pick<Character, 'player'> &
 
 /**
  * WHAT A PLAYER ASKS FOR at a step: where to move (a vector in the world, of length up to 1:
- * the presentation turns the keys into it, by where the camera looks), whether to jump and whether
- * to run. It enters the world through the session, at a concrete step, like any world change.
+ * the presentation turns the keys into it, by where the camera looks), where to look, whether to
+ * jump and whether to run. It enters the world through the session, at a concrete step, like any
+ * world change.
+ *
+ * `face` is where the character looks. Zero means "where it moves", the platformer's way. Given, it
+ * looks there whatever way it moves (it walks sideways without turning): the shooter's way, when the
+ * mouse aims (`view.camera aim`).
  */
 export interface PlayerInput {
   move: Vec3;
+  face: Vec3;
   jump: boolean;
   run: boolean;
 }

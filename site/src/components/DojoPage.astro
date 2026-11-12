@@ -136,6 +136,9 @@ const play = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}jugar/`;
       import { startDojo } from '@manifold/dojo';
       const game = document.getElementById('game')!;
       await startDojo(game, { room: game.dataset.room, base: import.meta.env.BASE_URL });
+      // A link to this same page with another fragment (a recipe, a replay, a ghost) does not open the
+      // page again: the browser only changes the fragment. The world must be born from it: start over.
+      window.addEventListener('hashchange', () => location.reload());
 
       // The first visit's hint (see above). Without storage (a private window), it shows every time.
       const KEY = 'mg-dojo-hint-seen';

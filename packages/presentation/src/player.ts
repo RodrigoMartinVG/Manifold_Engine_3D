@@ -20,7 +20,10 @@ import type { PlayerInput } from '@manifold/core';
  * reading. Without that, a quick tap of Space on a slow machine (few frames per second) lost the jump.
  */
 export interface PlayerControls {
-  /** What is asked for now, with the camera looking towards `look` and the character's `up`. */
+  /**
+   * What is asked for now, with the camera looking towards `look` and the character's `up`. (Where to
+   * look comes as zero, "where it moves": the client fills it in when the mouse aims.)
+   */
   read(look: Vec3, up: Vec3): PlayerInput;
   stop(): void;
 }
@@ -96,7 +99,7 @@ export function mountPlayerControls(o: { blocked(): boolean }): PlayerControls {
       let move = vec3.add(vec3.scale(ahead, forward), vec3.scale(side, right));
       const length = vec3.length(move);
       if (length > 1) move = vec3.scale(move, 1 / length);
-      return { move, jump, run };
+      return { move, face: [0, 0, 0], jump, run };
     },
     stop() {
       document.removeEventListener('keydown', down);

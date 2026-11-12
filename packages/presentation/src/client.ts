@@ -1,14 +1,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Quat, Vec3 } from '@manifold/common';
-import { declareHelp, type Message, type Registry } from '@manifold/commands';
+import { declareHelp, formatValue, type Message, type Registry } from '@manifold/commands';
 import {
   Clock,
   registryFor,
+  replayFromText,
+  replayOf,
+  ReplayPlayer,
+  replayToText,
   Session,
+  sessionFor,
   stateHash,
   upAt,
   type Appearance,
+  type Replay,
   type Cartridge,
   type Entity,
   type EntityId,
@@ -16,6 +22,7 @@ import {
 } from '@manifold/core';
 import { mountConsole, type ConsoleOptions, type GameConsole } from './console';
 import { mountPlayerControls } from './player';
+import { GHOST_PREFIX, REPLAY_PREFIX, replayToFragment } from './replay-link';
 
 /** A recipe to start with, and where it comes from (for the warnings: "the link's recipe…"). */
 export interface InitialRecipe {
@@ -37,6 +44,10 @@ export interface MountOptions {
    * A game will bring its own (the character's, from phase 1b).
    */
   camera?: 'orbit' | 'fixed';
+  /** A replay to play when the world is born (its text): the world is born like it, and at the end it is checked. */
+  replay?: string;
+  /** A replay to race (its text): it runs as a ghost, next to the live player. */
+  ghost?: string;
 }
 
 export interface Mount {
@@ -172,7 +183,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   // ---------- What the view lets people change (decision 0010: scope "view") ----------
   let wireframe = false;
   // (Declared here, before the recipes run: a recipe may bring `view.camera free`.)
-  let follow = true;
+  let cameraMode: 'follow' | 'aim' | 'free' = 'follow';
   let timescale = 1;
   let paused = false;
   registry.declareVariable({
@@ -277,11 +288,16 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     registry.declareVariable({
       name: 'view.camera',
       description:
-        'With a character to drive: `follow` keeps the camera behind it (the mouse still turns it around); `free` leaves it where it is.',
+        "With a character to drive: `follow` keeps the camera behind it, and dragging turns it around (the character looks where it walks: a platformer's way); `aim` takes the mouse with a click, the mouse turns the camera and the character looks where the camera looks, walking sideways without turning (a shooter's way; Esc lets the mouse go); `free` leaves the camera where it is.",
       scope: 'view',
-      type: { kind: 'option', options: ['follow', 'free'] },
+      type: { kind: 'option', options: ['follow', 'aim', 'free'] },
       default: 'follow',
-      onChange: (v) => (follow = v === 'follow'),
+      onChange: (v) => {
+        cameraMode = v as typeof cameraMode;
+        // In aim mode, the mouse turns the camera without dragging: OrbitControls does not rotate.
+        if (controls) controls.enableRotate = cameraMode !== 'aim';
+        if (cameraMode !== 'aim' && document.pointerLockElement === renderer.domElement) document.exitPointerLock();
+      },
     });
     registry.declareCommand({
       name: 'camera.reset',
@@ -298,7 +314,13 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     let down: { x: number; y: number } | null = null;
     renderer.domElement.addEventListener('pointerdown', (e) => (down = e.button === 0 ? { x: e.clientX, y: e.clientY } : null));
     renderer.domElement.addEventListener('pointerup', (e) => {
-      if (!down || !gameConsole || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+      if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+      // Aiming, a click takes the mouse (instead of inspecting): from then on, it turns the camera.
+      if (cameraMode === 'aim' && player()) {
+        if (document.pointerLockElement !== renderer.domElement) void renderer.domElement.requestPointerLock();
+        return;
+      }
+      if (!gameConsole) return;
       const box = renderer.domElement.getBoundingClientRect();
       pointer.set(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
@@ -356,6 +378,27 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     }
   };
 
+  // ---------- Aiming: with the mouse taken, it turns the camera around the character's head ----------
+  const turnAround = (axis: THREE.Vector3, angle: number) => {
+    if (!controls) return;
+    const offset = camera.position.clone().sub(controls.target).applyAxisAngle(axis, angle);
+    camera.position.copy(controls.target).add(offset);
+  };
+  const onMouseMove = (e: MouseEvent) => {
+    if (cameraMode !== 'aim' || !controls || document.pointerLockElement !== renderer.domElement) return;
+    const up = camera.up.clone().normalize();
+    turnAround(up, -e.movementX * 0.0025);
+    // Up and down, without going past the top or the bottom (it would turn upside down).
+    const offset = camera.position.clone().sub(controls.target);
+    const tilt = offset.angleTo(up) + e.movementY * 0.0025;
+    if (tilt > 0.15 && tilt < Math.PI - 0.15) {
+      const right = new THREE.Vector3().crossVectors(up, offset).normalize();
+      turnAround(right, e.movementY * 0.0025);
+    }
+    camera.lookAt(controls.target);
+  };
+  document.addEventListener('mousemove', onMouseMove);
+
   // ---------- The player's character (stage 1b): its inputs, and the camera that follows it ----------
   const playerControls = mountPlayerControls({ blocked: () => gameConsole?.isOpen ?? false });
   /** Player 1's character, if the world has one (an entity with `character`). */
@@ -386,6 +429,120 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     controls.enableDamping = true;
   }
 
+  // ---------- Replays and ghosts (stage 1c) ----------
+  /** The replay being played (the live player waits until it ends), if any. */
+  let playback: ReplayPlayer | null = null;
+  /** A ghost: another world, born like a replay and fed its inputs, run in step with this one. */
+  let ghost: { replay: Replay; session: Session; player: ReplayPlayer; mesh: THREE.Mesh | null } | null = null;
+
+  /** The world starts again, born like the replay, and the replay plays (checked at its end). */
+  function playReplayNow(replay: Replay) {
+    // From scratch, like `load`: the world values back to their defaults, then the replay's birth.
+    const onStartupChange = registry.onStartupChange;
+    registry.onStartupChange = null;
+    const back = registry
+      .changed()
+      .filter((v) => v.decl.scope !== 'view')
+      .map((v) => `${v.decl.name} ${formatValue(v.decl.default)}`);
+    registry.run(back.join('\n'), 'recipe');
+    warn("the replay's birth", registry.run(replay.birth, 'recipe'));
+    registry.onStartupChange = onStartupChange;
+    playback = new ReplayPlayer(replay);
+    startSession();
+    container.dataset.replay = 'playing';
+  }
+
+  function startGhost(replay: Replay) {
+    clearGhost();
+    ghost = { replay, session: sessionFor(cartridge, replay), player: new ReplayPlayer(replay), mesh: null };
+    const body = [...ghost.session.world.entities.values()].find((e) => e.character?.player === 1);
+    if (body?.appearance) {
+      // The same look, translucent: a ghost.
+      ghost.mesh = meshFor(body.appearance);
+      ghost.mesh.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        const m = o.material as THREE.MeshLambertMaterial;
+        m.transparent = true;
+        m.opacity = 0.35;
+        m.depthWrite = false;
+      });
+      scene.add(ghost.mesh);
+    }
+  }
+
+  function clearGhost() {
+    if (!ghost) return;
+    ghost.session.world.dispose();
+    ghost.mesh?.traverse((o) => {
+      if (o instanceof THREE.Mesh) (o.material as THREE.Material).dispose();
+    });
+    if (ghost.mesh) scene.remove(ghost.mesh);
+    ghost = null;
+    delete container.dataset.ghost;
+  }
+
+  /** A replay as a link, written in the console (and copied, if the browser lets). */
+  async function exportReplay(replay: Replay, prefix: string) {
+    const text = replayToText(replay);
+    const link = `${location.origin}${location.pathname}#${await replayToFragment(text, prefix)}`;
+    gameConsole?.write(link);
+    gameConsole?.write(`(${replay.end.step} steps, ${replay.inputs.length} input changes: ${link.length} characters)`);
+    navigator.clipboard?.writeText(link).then(
+      () => gameConsole?.write('(link copied)'),
+      () => undefined,
+    );
+  }
+
+  registry.declareCommand({
+    name: 'replay',
+    description:
+      'The replay of this world since it was born: `replay export` builds a link with it (whoever opens it sees the same, and it checks that it gave the same hash), `replay play` plays it again from the start, `replay stop` gives the control back.',
+    args: [{ name: 'action', type: { kind: 'option', options: ['export', 'play', 'stop'] }, optional: true }],
+    run: ([action], out) => {
+      const replay = replayOf(session);
+      if (action === 'export') void exportReplay(replay, REPLAY_PREFIX);
+      else if (action === 'play') {
+        playReplayNow(replay);
+        out.write(`playing the replay: ${replay.end.step} steps`);
+      } else if (action === 'stop') {
+        if (!playback) out.write('no replay is playing');
+        else {
+          playback = null;
+          container.dataset.replay = 'stopped';
+          out.write('stopped: the control is yours');
+        }
+      } else
+        out.write(
+          `recorded since the world was born: ${replay.end.step} steps, ${replay.inputs.length} input changes, ${replay.changes.length} world changes. \`replay export\` builds a link, \`replay play\` plays it again, \`ghost\` races it.`,
+        );
+    },
+  });
+  registry.declareCommand({
+    name: 'ghost',
+    description:
+      'Races what you just did: the world starts over, with a ghost doing it again next to you. `ghost export` builds a link with it, for someone else to race; `ghost clear` removes it.',
+    args: [{ name: 'action', type: { kind: 'option', options: ['export', 'clear'] }, optional: true }],
+    run: ([action], out) => {
+      if (action === 'clear') {
+        clearGhost();
+        out.write('no ghost');
+        return;
+      }
+      const replay = ghost && action === 'export' ? ghost.replay : replayOf(session);
+      if (action === 'export') {
+        void exportReplay(replay, GHOST_PREFIX);
+        return;
+      }
+      if (replay.end.step === 0) {
+        out.write('nothing to race yet: play first (the world records since it was born)');
+        return;
+      }
+      startGhost(replay);
+      restart();
+      out.write(`a ghost of ${replay.end.step} steps: the world starts over, and it runs next to you`);
+    },
+  });
+
   /** Creates the world (at the start, and on restart), with the registry's current values. */
   function startSession() {
     for (const id of [...meshes.keys()]) removeMesh(id);
@@ -398,13 +555,31 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     savePrevious();
     clock = new Clock();
     if (controls && player()) resetCamera();
+    // A ghost starts over with the world: both are born at step 0, and run in step.
+    if (ghost) startGhost(ghost.replay);
   }
   function restart() {
+    playback = null;
     startSession();
   }
   startSession();
   // From now on, changing a startup value (from the console) makes the world start over.
   registry.onStartupChange = restart;
+  // A replay or a ghost that came with the page (the game gathered them, from its link).
+  const fromPage = (text: string | undefined, what: string, use: (r: Replay) => void) => {
+    if (!text) return;
+    try {
+      use(replayFromText(text));
+    } catch (e) {
+      if (gameConsole) gameConsole.write(`${what}: ${(e as Error).message}`, 'warn');
+      else console.warn(`${what}: ${(e as Error).message}`);
+    }
+  };
+  fromPage(o.replay, "the link's replay", playReplayNow);
+  fromPage(o.ghost, "the link's ghost", (r) => {
+    startGhost(r);
+    restart();
+  });
 
   // How long the physics takes (for show.stats): the steps of the last second, on average.
   let stepTime = 0;
@@ -412,10 +587,27 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   let msPerStep = 0;
   function advance() {
     savePrevious();
+    playback?.feed(session);
+    if (ghost && !ghost.player.finished(ghost.session)) {
+      ghost.player.feed(ghost.session);
+      ghost.session.step();
+    }
     const t0 = performance.now();
     session.step();
     stepTime += performance.now() - t0;
     stepsTimed++;
+    if (playback?.finished(session)) {
+      const same = playback.same(session);
+      const hash = hex(stateHash(session.world));
+      container.dataset.replay = same ? 'same' : 'different';
+      gameConsole?.write(
+        same
+          ? `the replay ended at step ${session.world.tick}: the same hash (${hash}), the same world. The control is yours.`
+          : `the replay ended at step ${session.world.tick} with ANOTHER hash: ${hash} instead of ${hex(playback.replay.end.hash)}`,
+        same ? 'info' : 'error',
+      );
+      playback = null;
+    }
   }
 
   const qa = new THREE.Quaternion();
@@ -433,9 +625,11 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     last = now;
     // What player 1 asks for: it enters the world at the next step (the session keeps only the changes).
     const hero = player();
-    if (hero?.transform) {
+    if (hero?.transform && !playback) {
       const look = camera.getWorldDirection(new THREE.Vector3());
-      session.setInput(1, playerControls.read([look.x, look.y, look.z], upAt(session.world, hero.transform.position)));
+      const asked = playerControls.read([look.x, look.y, look.z], upAt(session.world, hero.transform.position));
+      // Aiming, the character looks where the camera looks (the core keeps only its horizontal part).
+      session.setInput(1, cameraMode === 'aim' ? { ...asked, face: [look.x, look.y, look.z] } : asked);
     }
     const steps = paused ? 0 : clock.advance(dt * timescale);
     for (let i = 0; i < steps; i++) advance();
@@ -459,9 +653,17 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       const { vertices } = world.physics.debugLines();
       physicsLines.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     }
+    // The ghost, where its world has it (its own world: what it pushes does not move here).
+    if (ghost?.mesh) {
+      const g = [...ghost.session.world.entities.values()].find((e) => e.character?.player === 1)?.transform;
+      if (g) {
+        ghost.mesh.position.set(...g.position);
+        ghost.mesh.quaternion.set(...g.rotation);
+      }
+    }
     // The camera follows the character: it moves as much as its head moved (the mouse still turns it).
     const heroMesh = hero && meshes.get(hero.id);
-    if (controls && follow && heroMesh && hero?.transform) {
+    if (controls && cameraMode !== 'free' && heroMesh && hero?.transform) {
       const up = upAt(world, hero.transform.position);
       const head = heroMesh.position.clone().addScaledVector(new THREE.Vector3(...up), 0.6);
       const moved = head.sub(controls.target);
@@ -486,6 +688,8 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       container.dataset.meshes = String(scene.children.filter((x) => x instanceof THREE.Mesh).length);
       container.dataset.step = String(world.tick);
       if (hero?.transform) container.dataset.player = hero.transform.position.map((n) => n.toFixed(2)).join(' ');
+      const ghostBody = ghost && [...ghost.session.world.entities.values()].find((e) => e.character?.player === 1);
+      if (ghostBody?.transform) container.dataset.ghost = ghostBody.transform.position.map((n) => n.toFixed(2)).join(' ');
       container.dataset.camera = camera.position
         .toArray()
         .map((n) => n.toFixed(2))
@@ -516,6 +720,9 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       observer.disconnect();
       gameConsole?.stop();
       playerControls.stop();
+      clearGhost();
+      document.removeEventListener('mousemove', onMouseMove);
+      if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
       controls?.dispose();
       session.world.dispose();
       renderer.dispose();

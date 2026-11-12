@@ -4,7 +4,7 @@ import type { Character, CharacterSpec, Entity, PlayerInput } from './types';
 import type { World } from './world';
 
 /** What a player who asks for nothing asks for. */
-export const NO_INPUT: Readonly<PlayerInput> = { move: [0, 0, 0], jump: false, run: false };
+export const NO_INPUT: Readonly<PlayerInput> = { move: [0, 0, 0], face: [0, 0, 0], jump: false, run: false };
 
 /** A jump is still allowed this many steps after leaving an edge (0.1 s): "coyote time". */
 export const COYOTE_STEPS = 6;
@@ -95,7 +95,10 @@ export function moveCharacter(world: World, e: Entity, dt: number) {
   c.grounded = grounded;
   c.stepsInAir = grounded ? 0 : c.stepsInAir + 1;
   c.velocity = vec3.add(vH, vec3.scale(up, vUp));
-  if (asked > 0.1) c.facing = vec3.normalize(move);
+  // Where it looks: where it is told to, if it is told; if not, where it moves.
+  const face = vec3.onPlane(input.face, up);
+  if (vec3.length(face) > 0.1) c.facing = vec3.normalize(face);
+  else if (asked > 0.1) c.facing = vec3.normalize(move);
   const position = vec3.add(world.physics.position(body.handle), movement);
   world.physics.setNextPose(body.handle, position, quat.look(c.facing, up));
 }

@@ -11,7 +11,12 @@ import { World } from './world';
 beforeAll(initPhysics);
 
 const STAND = 0.8; // a capsule 1.6 m tall stands with its center 0.8 m above the floor
-const input = (move: Vec3 = [0, 0, 0], jump = false, run = false): PlayerInput => ({ move, jump, run });
+const input = (move: Vec3 = [0, 0, 0], jump = false, run = false, face: Vec3 = [0, 0, 0]): PlayerInput => ({
+  move,
+  face,
+  jump,
+  run,
+});
 
 /** A world with a floor (its top at y = 0), boxes, and a character. */
 function setUp(o: { at?: Vec3; gravity?: GravityField; boxes?: [center: Vec3, half: Vec3][] } = {}) {
@@ -228,6 +233,17 @@ describe('the character (stage 1b)', () => {
         walk: [0, 0, 0],
       }),
     ).toBeLessThan(1.1);
+  });
+
+  test('told where to look, it looks there and walks sideways without turning (the aim)', () => {
+    const { world, hero } = setUp();
+    run(world, 60);
+    // Looking at −Z, walking towards +X: a step to the side.
+    run(world, 60, () => input([1, 0, 0], false, false, [0, 0, -1]));
+    expect(hero.character!.facing).toEqual([0, 0, -1]);
+    expect(hero.transform!.position[0]).toBeGreaterThan(4.2);
+    expect(vec3.dot(quat.rotate(hero.transform!.rotation, [0, 0, -1]), [0, 0, -1])).toBeGreaterThan(0.999);
+    world.dispose();
   });
 
   test('its "up" comes from the gravity: with gravity along −Z, it stands on a wall that is a floor', () => {

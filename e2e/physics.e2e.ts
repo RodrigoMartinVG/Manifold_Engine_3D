@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { initPhysics, registryFor, Session, stateHash } from '@manifold/core';
+import { initPhysics, playReplay, registryFor, replayFromText, Session, stateHash } from '@manifold/core';
+import { replayFromFragment } from '@manifold/presentation';
 import { DojoCartridge } from '@manifold/dojo/cartridge';
 
 /**
@@ -48,4 +49,45 @@ test('show.physics draws what the physics sees, without breaking anything', asyn
   // The ball enters at the next step: one more mesh (the floor has none: the grid is what is seen).
   await expect.poll(() => page.locator('#game').getAttribute('data-meshes').then(Number)).toBe(7);
   expect(errors).toEqual([]);
+});
+
+test('a run driven with the keys, as a replay link: Node plays it to the same hash, and so does the browser', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const at = async () => ((await page.locator('#game').getAttribute('data-player')) ?? '').split(' ').map(Number);
+  await page.goto('jugar/dojo/course/');
+  await expect.poll(async () => (await at()).length, { timeout: 20_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  const [, , z0] = await at();
+  // Walk, jump, turn: inputs at steps that depend on this machine's frames, recorded as they came.
+  await page.keyboard.down('KeyW');
+  await expect.poll(async () => (await at())[2], { timeout: 30_000 }).toBeLessThan(z0! - 1.5);
+  await page.keyboard.press('Space');
+  await page.keyboard.down('KeyD');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyW');
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'pause', 'replay export');
+  const log = page.locator('.mg-console-log');
+  await expect(log).toContainText('#replay=', { timeout: 10_000 });
+  const link = (await log.innerText())
+    .split('\n')
+    .find((l) => l.includes('#replay='))!
+    .trim();
+
+  // In Node, outside any browser: the same world, the same inputs at the same steps, the same hash.
+  const text = (await replayFromFragment(new URL(link).hash, 'replay='))!;
+  expect(text).toContain('birth dojo.level course');
+  expect(text).toMatch(/^input \d+ 1 /m);
+  await initPhysics();
+  const { session, same } = playReplay(DojoCartridge, replayFromText(text));
+  expect(same).toBe(true);
+  session.world.dispose();
+
+  // And opened in the browser: it plays, and at its end it says it gave the same hash.
+  await page.goto('about:blank');
+  await page.goto(link);
+  await expect(page.locator('#game')).toHaveAttribute('data-replay', 'same', { timeout: 90_000 });
 });

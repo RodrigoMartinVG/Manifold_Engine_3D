@@ -20,7 +20,9 @@ Cada sala es una receta (_recipe_) guardada: el Dojo arranca ya preparado, y cad
 
 ## La consola
 
-En la sala `course` hay un **personaje** para manejar, en un nivel chico con escalones, una rampa y plataformas: **WASD** o las flechas para caminar, **Espacio** para saltar y **Shift** para correr. Con un mando: el stick izquierdo camina, **A** salta y **B** corre. La cámara lo sigue; `view.camera free` la suelta.
+En la sala `course` hay un **personaje** para manejar, en un nivel chico con escalones, una rampa y plataformas: **WASD** o las flechas para caminar, **Espacio** para saltar y **Shift** para correr. Con un mando: el stick izquierdo camina, **A** salta y **B** corre. La cámara lo sigue, y arrastrar el mouse la gira alrededor: el personaje mira hacia donde camina, como en un juego de plataformas. Con `view.camera aim`, un clic toma el mouse, el mouse gira la cámara y el personaje mira hacia donde mira ella, moviéndose de costado sin girar, como en un shooter (Esc suelta el mouse). `view.camera free` deja la cámara quieta.
+
+**Todo lo que pasa queda grabado** desde que nace el mundo: `replay export` arma un enlace con la corrida, y quien lo abre la ve igual. Al terminar, comprueba que su mundo dio la misma huella que el tuyo, en su máquina y en su navegador. `ghost` vuelve a empezar con un fantasma que repite lo que hiciste, para correr contra vos mismo, y `ghost export` arma el enlace para que otra persona corra contra él.
 
 Con el mouse se mira: **arrastrá** para girar alrededor de la escena, la **rueda** (o pellizcar) acerca y aleja, y un **clic** sobre un objeto lo inspecciona: muestra en la consola de qué está hecho, con sus números.
 

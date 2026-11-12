@@ -1,6 +1,6 @@
 import { recipeFromLink } from '@manifold/commands';
 import { initPhysics } from '@manifold/core';
-import { mount, type InitialRecipe, type Mount } from '@manifold/presentation';
+import { GHOST_PREFIX, mount, REPLAY_PREFIX, replayFromFragment, type InitialRecipe, type Mount } from '@manifold/presentation';
 import { DojoCartridge } from './cartridge';
 import { ROOMS } from './rooms';
 
@@ -20,9 +20,14 @@ export interface DojoOptions {
  *   3. the link's (`#recipe=…`), the one `export` builds.
  * The world is born once, already configured. Before that, the physics loads (Rapier, in
  * WebAssembly: asynchronously).
+ *
+ * A link can also bring a replay (`#replay=…`: it plays, and checks at the end that it gave the same)
+ * or a ghost to race (`#ghost=…`), stage 1c.
  */
 export async function startDojo(container: HTMLElement, o: DojoOptions = {}): Promise<Mount> {
   await initPhysics();
+  const replay = (await replayFromFragment(location.hash, REPLAY_PREFIX)) ?? undefined;
+  const ghost = (await replayFromFragment(location.hash, GHOST_PREFIX)) ?? undefined;
   const recipes: InitialRecipe[] = [];
   const room = o.room ? ROOMS[o.room] : undefined;
   if (room) recipes.push({ from: `the room "${o.room}"`, text: room.text });
@@ -32,6 +37,8 @@ export async function startDojo(container: HTMLElement, o: DojoOptions = {}): Pr
   const base = o.base ?? '/';
   return mount(DojoCartridge, container, {
     recipes,
+    replay,
+    ghost,
     // A lab: a free camera, and a click on an object inspects it.
     camera: 'orbit',
     console: {

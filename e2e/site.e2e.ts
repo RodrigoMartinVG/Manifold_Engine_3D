@@ -215,7 +215,7 @@ test('reset puts everything back to its default value, and vars shows it by scop
 
 // ---------------------------------------------------------------- the character (stage 1b)
 
-const position = async (page: Page, what: 'player' | 'camera') =>
+const position = async (page: Page, what: 'player' | 'camera' | 'ghost') =>
   ((await page.locator('#game').getAttribute(`data-${what}`)) ?? '').split(' ').map(Number);
 
 test('in the course, the keys drive the character: it walks where the camera looks, jumps, and the camera follows', async ({
@@ -265,4 +265,40 @@ test('a link can leave the camera free: the character walks, and the camera stay
   await page.keyboard.up('KeyW');
   expect(await position(page, 'camera')).toEqual(camera0);
   expect(list).toEqual([]);
+});
+
+// ---------------------------------------------------------------- replays, ghosts and aiming (stage 1c)
+
+test('ghost: the world starts over and a ghost does what you did, next to you', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto('jugar/dojo/course/');
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  const [, , z0] = await position(page, 'player');
+  await page.keyboard.down('KeyW');
+  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 30_000 }).toBeLessThan(z0! - 1.5);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'ghost');
+  await expect(consoleLog(page)).toContainText('a ghost of');
+  await page.keyboard.press('Escape');
+  // Back at the start, the player waits; the ghost walks the same way again.
+  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 15_000 }).toBeGreaterThan(z0! - 0.1);
+  await expect.poll(async () => (await position(page, 'ghost'))[2] ?? 99, { timeout: 30_000 }).toBeLessThan(z0! - 1.5);
+  expect((await position(page, 'player'))[2]).toBeGreaterThan(z0! - 0.1);
+});
+
+test('aim: the character looks where the camera looks, and walks sideways without turning', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto('jugar/dojo/course/#recipe=view.camera+aim');
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  const [x0] = await position(page, 'player');
+  // D: to the right of the camera (+X); the character keeps looking ahead (−Z).
+  await page.keyboard.down('KeyD');
+  await expect.poll(async () => (await position(page, 'player'))[0], { timeout: 30_000 }).toBeGreaterThan(x0! + 1);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'inspect 11');
+  await expect(consoleLog(page)).toContainText('facing 0 0 -1');
 });
