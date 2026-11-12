@@ -18,3 +18,4 @@ Each one has: **context** (what problem there was), **decision**, **consequences
 | [0009](0009-straight-to-main.md)        | Straight to main, without pull requests                       | Accepted                                          |
 | [0010](0010-the-console-and-recipes.md) | The console and the recipes                                   | Accepted (language: 0011)                         |
 | [0011](0011-languages.md)               | Languages: the site in Spanish, everything else in English    | Accepted                                          |
+| [0012](0012-the-games.md)               | The games: the classics first, the strange ones after         | Accepted                                          |

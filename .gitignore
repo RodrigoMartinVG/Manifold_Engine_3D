@@ -19,3 +19,6 @@ test-results/
 # The tutorial's libraries (bundled at build time: site/scripts/vendor.mjs)
 site/public/vendor/
 site/.vendor-entries/
+
+# Local drafts and idea banks (not part of the project)
+borradores_ideas/

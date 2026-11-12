@@ -10,6 +10,7 @@ export const STAGES = [
   'Combate y bots',
   'Juegos',
   'Red y niveles',
+  'Mundos extraños',
 ] as const;
 
 /** The stage the engine is in now. */

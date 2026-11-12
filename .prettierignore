@@ -6,3 +6,6 @@ playwright-report/
 test-results/
 package-lock.json
 site/public/vendor/
+
+# Local drafts and idea banks (not part of the project)
+borradores_ideas/
