@@ -43,8 +43,8 @@
   /* Lo propio del sitio (prefijo mg-). */
   --mg-letra-titulo: 'Cinzel Variable', 'Cinzel', 'Iowan Old Style', Palatino, Georgia, serif;
   --mg-letra-libro: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
-  --mg-titulo: #cfa66c;
-  --mg-titulo-2: #c39b64;
+  --mg-titulo: #c4a06a;
+  --mg-titulo-2: #b8945f;
   --mg-linea-bronce: rgb(150 108 64 / 0.3);
   --mg-linea-bronce-fuerte: rgb(158 116 70 / 0.65);
   --mg-tinta-dibujo: rgb(224 180 120 / 0.075);
@@ -57,7 +57,7 @@
    * repiten (scripts/dibujar.mjs): manchas de óxido con picado, y costras de pátina verde.
    * `--mg-metal` es todo junto, capa sobre capa.
    */
-  --mg-bronce: linear-gradient(160deg, #3d2a17 0%, #5b4026 24%, #735532 42%, #62462a 60%, #45301b 80%, #563c21 100%);
+  --mg-bronce: linear-gradient(160deg, #3c2916 0%, #4c351f 35%, #553c24 55%, #48321c 80%, #3f2b17 100%);
   --mg-oxido: url('../assets/dibujos/oxido.svg') 0 0 / 220px 220px;
   --mg-patina: url('../assets/dibujos/patina.svg') 0 0 / 360px 360px;
   --mg-metal: var(--mg-patina), var(--mg-oxido), var(--mg-bronce);
@@ -66,7 +66,7 @@
   /* El borde de una placa: apenas una luz arriba y una sombra abajo (nada de brillo). */
   --mg-bisel: inset 0 1px 0 rgb(255 225 180 / 0.1), inset 0 -1px 0 rgb(0 0 0 / 0.4);
   /* Letras de metal envejecido, para los títulos grandes. */
-  --mg-texto-metal: linear-gradient(180deg, #cdab78 5%, #a47a48 45%, #79552f 62%, #a57e4d 85%, #86603a 100%);
+  --mg-texto-metal: linear-gradient(180deg, #b8935f 0%, #9c7646 55%, #84603a 100%);
   /* Letras claras grabadas en el metal: la sombra arriba las hunde. */
   --mg-texto-sobre-bronce: #ead5b0;
   --mg-grabado: 0 -1px 0 rgb(0 0 0 / 0.65);
@@ -119,7 +119,7 @@
   --mg-placa: #fbf5ea;
   --mg-cabecera: linear-gradient(180deg, #f6ecd9, #efe4cf);
   --mg-sombra: 0 14px 30px -18px rgb(80 50 20 / 0.45);
-  --mg-texto-metal: linear-gradient(180deg, #8c6234 10%, #5e3c1a 55%, #7d5530 100%);
+  --mg-texto-metal: linear-gradient(180deg, #7d5a32 0%, #65431f 60%, #573a1c 100%);
 }
 
 /* El inicio: el dibujo del fondo se ve más. En las lecciones queda apenas, para leer tranquilo. */
@@ -159,13 +159,12 @@ body::before {
 }
 
 /* ------------------------------------------------------------------ la cabecera y el título */
-.header {
+/* Solo la cabecera de afuera: Starlight usa la clase "header" también para lo de adentro. */
+header.header {
   background: var(--mg-cabecera);
-  border-bottom-color: var(--sl-color-hairline-shade);
-  /* Un filo de bronce debajo, y su sombra. */
-  box-shadow:
-    0 1px 0 var(--mg-linea-bronce-fuerte),
-    0 10px 24px -18px rgb(0 0 0 / 0.9);
+  /* Un solo filo de bronce debajo, y su sombra. */
+  border-bottom: 1px solid var(--mg-linea-bronce-fuerte);
+  box-shadow: 0 10px 24px -18px rgb(0 0 0 / 0.9);
 }
 
 .site-title {
@@ -176,7 +175,7 @@ body::before {
   text-transform: uppercase;
 }
 .site-title span {
-  background: var(--mg-texto-metal);
+  background: var(--mg-oxido), var(--mg-texto-metal);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -328,9 +327,10 @@ h1#_top {
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--mg-titulo-2);
-  /* Una regla de bronce que se desvanece, debajo. */
-  padding-bottom: 0.3em;
-  background: linear-gradient(90deg, var(--mg-linea-bronce-fuerte), transparent 80%) 0 100% / 100% 1px no-repeat;
+}
+/* Sin la línea que Starlight pone entre el título de la página y el contenido. */
+.content-panel + .content-panel {
+  border-top: 0;
 }
 .sl-markdown-content h3:not(:where(.not-content *)) {
   color: var(--mg-titulo-2);
