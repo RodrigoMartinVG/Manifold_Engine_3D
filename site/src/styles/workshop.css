@@ -246,6 +246,15 @@ header.header {
   }
 }
 
+/*
+ * A section with a single page (Jugar, Proyecto) has no sidebar (src/route-data.ts). Starlight
+ * widens pages without one, thinking of a cover like the home page; these are for reading, so they
+ * keep the usual width, centered.
+ */
+:root:not([data-has-sidebar]):not([data-has-hero]) {
+  --sl-content-width: 45rem;
+}
+
 /* The "Ocultar" (hide) buttons at the top of each panel (Sidebar.astro, PageSidebar.astro). */
 .mg-hide {
   display: none;

@@ -25,6 +25,8 @@ export default defineConfig({
       components: {
         // The home page has its own hero, with the live 3D showcase.
         Hero: './src/components/Hero.astro',
+        // Next to the title, the site's sections (and, on a phone, a bar at the bottom).
+        SiteTitle: './src/components/SiteTitle.astro',
         // Next to the theme selector, the buttons that hide the side panels.
         ThemeSelect: './src/components/ThemeSelect.astro',
         // Each side panel, with its "Ocultar" button on top.
@@ -39,9 +41,8 @@ export default defineConfig({
             "try{for(const[k,a]of[['mg-no-sidebar','data-no-sidebar'],['mg-no-toc','data-no-toc']])if(localStorage.getItem(k)==='1')document.documentElement.setAttribute(a,'')}catch{}",
         },
       ],
+      // The whole site's sidebar; each page shows only its section's part (src/route-data.ts).
       sidebar: [
-        { label: 'El proyecto', link: '/proyecto/' },
-        { label: 'Jugar', link: '/jugar/' },
         {
           label: 'Tutorial',
           items: [
@@ -52,6 +53,7 @@ export default defineConfig({
         },
         { label: 'Bitácora', items: [{ autogenerate: { directory: 'bitacora' } }] },
       ],
+      routeMiddleware: './src/route-data.ts',
     }),
   ],
 });

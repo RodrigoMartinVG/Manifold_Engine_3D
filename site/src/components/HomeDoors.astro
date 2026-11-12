@@ -1,0 +1,197 @@
+---
+/**
+ * THE HOME PAGE'S DOORS: one per section, each with something real inside (the Dojo's rooms, the
+ * first lesson, the latest report), read from the content itself, so they stay up to date. Below,
+ * the strip with the stage the engine is in, which leads to the full plan.
+ * (The texts are the site's, in Spanish.)
+ */
+import { ROOMS } from '@manifold/dojo/rooms';
+import { Icon } from '@astrojs/starlight/components';
+import { lessons, pageUrl, reports } from '../pages-lists';
+import { BASE } from '../sections';
+import { CURRENT_STAGE, STAGES } from '../stages';
+
+const rooms = Object.entries(ROOMS);
+const lessonList = await lessons();
+const firstLesson = lessonList[0]!;
+const latest = (await reports())[0]!;
+---
+
+<div class="mg-doors not-content">
+  <section class="card mg-door">
+    <h2 class="title"><Icon name="rocket" class="icon" size="1.333em" /><span>El Dojo</span></h2>
+    <p>
+      El laboratorio del motor: un mundo que corre en tu navegador, con una consola para cambiar todo lo que se
+      puede tocar. Sus salas ya vienen preparadas:
+    </p>
+    <ul class="mg-rooms">
+      {
+        rooms.map(([name, room]) => (
+          <li>
+            <a href={`${BASE}jugar/dojo/${name}/`}>{room.title}</a>
+          </li>
+        ))
+      }
+    </ul>
+    <a class="mg-door-link" href={`${BASE}jugar/`}>Las salas y la consola →</a>
+  </section>
+
+  <section class="card mg-door">
+    <h2 class="title"><Icon name="open-book" class="icon" size="1.333em" /><span>El tutorial</span></h2>
+    <p>
+      {lessonList.length} lecciones cortas, con código que se edita y se ejecuta en la página. No hace falta haber hecho
+      nada gráfico antes.
+    </p>
+    <p class="mg-door-next">
+      Empezá por <a href={pageUrl(firstLesson)}>{firstLesson.data.title}</a>
+    </p>
+    <a class="mg-door-link" href={`${BASE}tutorial/`}>Qué vas a aprender →</a>
+  </section>
+
+  <section class="card mg-door">
+    <h2 class="title"><Icon name="pencil" class="icon" size="1.333em" /><span>La bitácora</span></h2>
+    <p>El informe de cada etapa: qué se hizo, qué se encontró y qué se midió.</p>
+    <p class="mg-door-next">
+      Lo último: <a href={pageUrl(latest)}>{latest.data.title}</a>
+    </p>
+    <a class="mg-door-link" href={`${BASE}bitacora/`}>Todos los informes →</a>
+  </section>
+</div>
+
+<nav class="mg-stages not-content" aria-label="Las etapas del motor">
+  <span class="mg-stages-label">En qué etapa está</span>
+  <ol start="0">
+    {
+      STAGES.map((name, i) => (
+        <li aria-current={i === CURRENT_STAGE ? 'step' : undefined} data-done={i < CURRENT_STAGE ? '' : undefined}>
+          <b>{i}</b> {name}
+        </li>
+      ))
+    }
+  </ol>
+  <a href={`${BASE}proyecto/#en-qué-etapa-está`}>El plan completo →</a>
+</nav>
+
+<style>
+  .mg-doors {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1rem;
+  }
+  @media (min-width: 62rem) {
+    .mg-doors {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .mg-door {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.4rem 1.5rem 1.3rem;
+  }
+  .mg-door .title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: var(--sl-text-h4);
+  }
+  .mg-door .icon {
+    padding: 0.2rem;
+    border: 1px solid var(--mg-bronze-line-strong);
+    border-radius: 0.25rem;
+  }
+  .mg-door p {
+    margin: 0;
+    color: var(--sl-color-gray-2);
+    line-height: 1.6;
+  }
+  .mg-rooms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mg-rooms a {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent-high) 40%, transparent);
+    border-radius: 999px;
+    color: var(--sl-color-accent-high);
+    font-size: var(--sl-text-sm);
+    text-decoration: none;
+  }
+  .mg-rooms a:hover {
+    background: color-mix(in srgb, var(--sl-color-accent) 18%, transparent);
+  }
+  .mg-door-next a {
+    color: var(--sl-color-accent-high);
+  }
+  /* The door's main link goes at the bottom, aligned across the three doors. */
+  .mg-door-link {
+    margin-top: auto;
+    padding-top: 0.25rem;
+    color: var(--mg-title);
+    font-family: var(--mg-font-title);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+  }
+  .mg-door-link:hover {
+    color: var(--sl-color-white);
+  }
+
+  /* ---------- The stages ---------- */
+  .mg-stages {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    margin-top: 2rem;
+    padding: 0.9rem 1.1rem;
+    border-top: 1px solid var(--mg-bronze-line);
+    border-bottom: 1px solid var(--mg-bronze-line);
+    font-size: var(--sl-text-sm);
+  }
+  .mg-stages-label {
+    color: var(--mg-title-2);
+    font-family: var(--mg-font-title);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .mg-stages ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mg-stages li {
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--mg-bronze-line);
+    border-radius: 0.3rem;
+    color: var(--sl-color-gray-3);
+  }
+  .mg-stages li b {
+    color: var(--sl-color-gray-2);
+  }
+  .mg-stages li[aria-current] {
+    border-color: var(--sl-color-accent);
+    background: color-mix(in srgb, var(--sl-color-accent) 18%, transparent);
+    color: var(--sl-color-accent-high);
+  }
+  .mg-stages li[aria-current] b {
+    color: inherit;
+  }
+  .mg-stages > a {
+    margin-inline-start: auto;
+    color: var(--mg-title);
+    text-decoration: none;
+  }
+  .mg-stages > a:hover {
+    color: var(--sl-color-white);
+  }
+</style>

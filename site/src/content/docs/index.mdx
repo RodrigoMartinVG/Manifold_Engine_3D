@@ -4,35 +4,16 @@ description: Un laboratorio de mundos físicos en 3D para la web.
 template: splash
 hero:
   title: Manifold Gaming
-  tagline: 'Un laboratorio de mundos físicos en 3D, en el navegador. Un motor propio donde la gravedad es un campo, las cosas se componen de capacidades y todo lo que pasa se puede repetir. Se construye por etapas: cada una trae lecciones con código que corre en la página, y su informe en la bitácora.'
+  tagline: 'Un laboratorio de mundos físicos en 3D que corre en el navegador: un motor propio que se construye a la vista. Probalo en el Dojo, aprendé cómo funciona en el tutorial y seguí cada etapa en la bitácora.'
   actions:
     - text: Entrar al Dojo
       link: jugar/dojo/
       icon: right-arrow
-    - text: Leer el tutorial
+    - text: Empezar el tutorial
       link: tutorial/
-      variant: minimal
-    - text: El proyecto
-      link: proyecto/
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import HomeDoors from '../../components/HomeDoors.astro';
 
-<CardGrid>
-  <Card title="El motor" icon="setting">
-    Una simulación que corre igual en el navegador, en un servidor y en las pruebas, sin pantalla. La gravedad no es una
-    constante: es un campo que cambia de lugar en lugar.
-  </Card>
-  <Card title="El Dojo" icon="rocket">
-    El primer juego, desde el primer día: un complejo de salas para experimentar con lo que el motor sabe hacer, y ver por qué
-    pasa lo que pasa.
-  </Card>
-  <Card title="Los juegos" icon="puzzle">
-    Juegos distintos sobre el mismo motor. El motor no sabe a qué se juega: cada juego trae sus reglas.
-  </Card>
-  <Card title="El tutorial" icon="open-book">
-    Lecciones cortas que acompañan cada etapa del motor, con código que se edita y se ejecuta en la página: cómo se usa cada
-    librería, las ideas de fondo y sus sutilezas.
-  </Card>
-</CardGrid>
+<HomeDoors />

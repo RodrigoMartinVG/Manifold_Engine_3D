@@ -18,8 +18,10 @@ test('the home page opens and leads to the Dojo, the tutorial and the project', 
   await page.goto('./');
   await expect(page).toHaveTitle(/Manifold/);
   await expect(page.getByRole('link', { name: 'Entrar al Dojo' })).toBeVisible();
-  await page.getByRole('link', { name: 'Leer el tutorial' }).click();
+  await page.getByRole('link', { name: 'Empezar el tutorial' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('El tutorial');
+  await page.locator('header nav.mg-sections').getByRole('link', { name: 'Proyecto' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('El proyecto');
   expect(list).toEqual([]);
 });
 

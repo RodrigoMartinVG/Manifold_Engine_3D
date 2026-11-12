@@ -1,29 +1,24 @@
 ---
 title: Jugar
-description: El Dojo y los juegos construidos sobre el motor.
+description: El Dojo, el laboratorio del motor, y los juegos que vendrán.
 ---
 
-import { ROOMS } from '@manifold/dojo/rooms';
+import { LinkButton } from '@astrojs/starlight/components';
+import RoomCards from '../../components/RoomCards.astro';
 
-## El Dojo
+El **Dojo** es el primer juego: el laboratorio del motor. Por ahora tiene un cubo que gira y cubos chicos sacados del azar del mundo, y una consola para cambiar todo lo que se puede tocar. Con cada etapa del motor va a sumar salas (_rooms_) para probar lo nuevo.
 
-[**Entrar al Dojo →**](dojo/)
+<LinkButton href="dojo/" icon="right-arrow">
+  Entrar al Dojo
+</LinkButton>
 
-El primer juego: el laboratorio del motor. Por ahora tiene un cubo que gira y cubos chicos sacados del azar del mundo. Con cada etapa del motor va a sumar salas (_rooms_) para probar lo nuevo.
+## Sus salas
 
-### Sus salas
+Cada sala es una receta (_recipe_) guardada: el Dojo arranca ya preparado, y cada sala tiene su propia dirección. Como todo lo de la consola, sus nombres están en inglés.
 
-Cada sala es una receta (_recipe_) guardada, con su propia dirección. Como todo lo de la consola, sus nombres están en inglés:
+<RoomCards />
 
-<ul>
-  {Object.entries(ROOMS).map(([name, room]) => (
-    <li>
-      <a href={`dojo/${name}/`}>{room.title}</a> (<code>load {name}</code>)
-    </li>
-  ))}
-</ul>
-
-### La consola
+## La consola
 
 Con la tecla **º** (la que está a la izquierda del 1), o con el botón de abajo a la izquierda, se abre la consola, como la de los juegos de antes. Ahí se ve y se cambia todo lo que el Dojo deja tocar.
 
@@ -43,4 +38,4 @@ Tab completa los nombres, las flechas recorren lo que escribiste, y Esc cierra. 
 
 ## Los juegos
 
-Todavía ninguno: llegan en la fase 5, cuando el motor sepa hacer lo que necesitan. Cada juego va a decidir si tiene consola, y qué deja tocar.
+**Próximamente.** Llegan en la etapa 5, cuando el motor sepa hacer lo que necesitan: juegos completos, con sus reglas, sus objetivos y sus niveles, que se juegan en este sitio. Cada juego va a decidir si tiene consola, y qué deja tocar. Mientras tanto, la [bitácora](../bitacora/) cuenta cómo se acercan.

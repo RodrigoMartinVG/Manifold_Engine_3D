@@ -1,0 +1,139 @@
+---
+/**
+ * Starlight's site title (it replaces "SiteTitle" in astro.config.mjs), followed by THE SITE'S
+ * SECTIONS: Jugar, Tutorial, Bitácora, Proyecto (src/sections.ts). They are on every page, the home
+ * page included, so any section is one click away.
+ *
+ * - On a wide screen they go in the header, next to the title. Between 50 and 72rem there is not
+ *   room for everything: the title's text is hidden (it is still read by screen readers) and the
+ *   logo stays.
+ * - On a phone the header has no room: they go in a bar fixed at the bottom of the screen, with an
+ *   icon each, where the thumb reaches. (Starlight's own menu, the sidebar, opens over it.)
+ *
+ * The current section is marked with `aria-current`: "page" on its own page, "true" inside it.
+ * (The labels are the site's text, in Spanish.)
+ */
+import Default from '@astrojs/starlight/components/SiteTitle.astro';
+import { Icon } from '@astrojs/starlight/components';
+import { BASE, SECTIONS, sectionOf } from '../sections';
+
+const { id } = Astro.locals.starlightRoute;
+const current = sectionOf(id);
+const links = SECTIONS.map((s) => ({
+  ...s,
+  href: `${BASE}${s.id}/`,
+  current: s.id === current ? (id === s.id ? ('page' as const) : ('true' as const)) : undefined,
+}));
+---
+
+<Default />
+<nav class="mg-sections" aria-label="Secciones del sitio">
+  {
+    links.map((s) => (
+      <a href={s.href} aria-current={s.current}>
+        {s.label}
+      </a>
+    ))
+  }
+</nav>
+<nav class="mg-tabbar" aria-label="Secciones del sitio">
+  {
+    links.map((s) => (
+      <a href={s.href} aria-current={s.current}>
+        <Icon name={s.icon} size="1.25rem" />
+        <span>{s.label}</span>
+      </a>
+    ))
+  }
+</nav>
+
+<style>
+  /* ---------- In the header ---------- */
+  .mg-sections {
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+    margin-inline-start: 1.25rem;
+  }
+  .mg-sections a {
+    padding: 0.35rem 0.6rem;
+    border-bottom: 2px solid transparent;
+    color: var(--sl-color-gray-2);
+    font-family: var(--mg-font-title);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .mg-sections a:hover {
+    color: var(--sl-color-white);
+  }
+  .mg-sections a[aria-current] {
+    color: var(--mg-title);
+    border-bottom-color: var(--mg-bronze-line-strong);
+  }
+  @media (min-width: 50rem) {
+    .mg-sections {
+      display: flex;
+    }
+  }
+  /* Not room for the title's text too: it stays for screen readers only. */
+  @media (min-width: 50rem) and (max-width: 72rem) {
+    :global(.site-title span) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  /* ---------- On a phone: a bar at the bottom ---------- */
+  .mg-tabbar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: var(--sl-z-index-navbar);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--mg-header);
+    border-top: 1px solid var(--mg-bronze-line-strong);
+    box-shadow: 0 -8px 20px -14px rgb(0 0 0 / 0.9);
+  }
+  .mg-tabbar a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.45rem 0.25rem 0.4rem;
+    border-top: 2px solid transparent;
+    color: var(--sl-color-gray-3);
+    font-size: 0.72rem;
+    text-decoration: none;
+  }
+  .mg-tabbar a[aria-current] {
+    color: var(--sl-color-accent-high);
+    border-top-color: var(--sl-color-accent);
+  }
+  /* The page leaves room for the bar, so its end is not hidden under it. */
+  @media (max-width: 49.99rem) {
+    :global(body) {
+      padding-bottom: calc(3.4rem + env(safe-area-inset-bottom));
+    }
+  }
+  @media (min-width: 50rem) {
+    .mg-tabbar {
+      display: none;
+    }
+  }
+  @media print {
+    .mg-sections,
+    .mg-tabbar {
+      display: none;
+    }
+  }
+</style>

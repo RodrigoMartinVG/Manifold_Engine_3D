@@ -1,0 +1,58 @@
+---
+/**
+ * THE DOJO'S SAVED ROOMS, as cards: each one opens its room's page, and shows the command that
+ * loads it from the console. They are read from games/dojo/recipes/: a new room shows up by itself.
+ * (Rooms are in English, like everything in the console: decision 0011.)
+ */
+import { ROOMS } from '@manifold/dojo/rooms';
+import { BASE } from '../sections';
+---
+
+<ul class="mg-room-cards not-content">
+  {
+    Object.entries(ROOMS).map(([name, room]) => (
+      <li>
+        <a href={`${BASE}jugar/dojo/${name}/`}>
+          <span class="mg-room-title">{room.title}</span>
+          <code>load {name}</code>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .mg-room-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0.9rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mg-room-cards a {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.6rem;
+    height: 100%;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--mg-bronze-line-strong);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--mg-plate) 85%, transparent);
+    text-decoration: none;
+  }
+  .mg-room-cards a:hover {
+    border-color: var(--sl-color-accent);
+  }
+  .mg-room-title {
+    color: var(--mg-title);
+    font-family: var(--mg-font-title);
+    font-weight: 600;
+  }
+  .mg-room-cards code {
+    align-self: flex-start;
+    color: var(--sl-color-accent-high);
+    font-size: var(--sl-text-sm);
+  }
+</style>

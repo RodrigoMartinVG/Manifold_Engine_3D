@@ -4,6 +4,11 @@
  * use it: `/jugar/dojo/` and each saved room's (`/jugar/dojo/rain/`), which passes its name
  * (decision 0010: every room has its address). Astro bundles the <script> with Vite, like any page:
  * it imports the Dojo as one more package of the monorepo.
+ *
+ * The first time, a hint says how to start: the console is the Dojo's whole interface, and without
+ * the hint all one sees is a cube. It goes away when the console opens (or with its ✕), and it is
+ * not shown again in this browser. Leaving goes to "Jugar", the Dojo's page in the site.
+ * (The texts are the site's, in Spanish.)
  */
 import '@fontsource-variable/cinzel';
 import rust from '../assets/drawings/rust.svg';
@@ -15,7 +20,7 @@ interface Props {
   title?: string;
 }
 const { room, title } = Astro.props;
-const home = import.meta.env.BASE_URL;
+const play = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}jugar/`;
 ---
 
 <html lang="es">
@@ -63,15 +68,103 @@ const home = import.meta.env.BASE_URL;
       #back:hover {
         opacity: 1;
       }
+      /* The first visit's hint: a plate at the bottom, between the console's button and "back". */
+      #hint {
+        position: fixed;
+        left: 50%;
+        bottom: 12px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: max-content;
+        max-width: calc(100% - 2 * 190px);
+        padding: 0.55rem 0.6rem 0.55rem 1rem;
+        border: 1px solid #24170a;
+        border-radius: 0.4rem;
+        background: rgb(27 24 20 / 0.92);
+        box-shadow: 0 8px 20px -8px rgb(0 0 0 / 0.8);
+        color: #e6dccb;
+        font: 14px/1.45 system-ui, sans-serif;
+      }
+      #hint[hidden] {
+        display: none;
+      }
+      #hint kbd,
+      #hint code {
+        padding: 0.05rem 0.35rem;
+        border-radius: 0.25rem;
+        background: #2f2922;
+        color: #f0d59a;
+        font: 13px ui-monospace, monospace;
+      }
+      #hint button {
+        flex: none;
+        width: 1.8rem;
+        height: 1.8rem;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #b8ab97;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      #hint button:hover {
+        color: #f3e9d8;
+        background: #2f2922;
+      }
+      /* On a narrow screen, above the two buttons instead of between them. */
+      @media (max-width: 640px) {
+        #hint {
+          bottom: 56px;
+          max-width: calc(100% - 24px);
+        }
+      }
     </style>
   </head>
   <body>
     <div id="game" data-room={room}></div>
-    <a id="back" href={home} style={`--rust: url(${rust.src})`}>← Manifold Gaming</a>
+    <p id="hint" role="note" hidden>
+      <span>
+        Todo se maneja desde la consola: abrila con <kbd>º</kbd> o con el botón <code>›_</code>, y probá
+        <code>load rain</code> o <code>help</code>.
+      </span>
+      <button type="button" aria-label="Cerrar la pista">✕</button>
+    </p>
+    <a id="back" href={play} style={`--rust: url(${rust.src})`}>← Salir del Dojo</a>
     <script>
       import { startDojo } from '@manifold/dojo';
       const game = document.getElementById('game')!;
       startDojo(game, { room: game.dataset.room, base: import.meta.env.BASE_URL });
+
+      // The first visit's hint (see above). Without storage (a private window), it shows every time.
+      const KEY = 'mg-dojo-hint-seen';
+      const hint = document.getElementById('hint')!;
+      const seen = () => {
+        try {
+          return localStorage.getItem(KEY) === '1';
+        } catch {
+          return false;
+        }
+      };
+      const dismiss = () => {
+        hint.hidden = true;
+        try {
+          localStorage.setItem(KEY, '1');
+        } catch {
+          // no storage: it lasts only for this page
+        }
+      };
+      if (!seen()) {
+        hint.hidden = false;
+        hint.querySelector('button')!.addEventListener('click', dismiss);
+        const gameConsole = document.querySelector('.mg-console');
+        if (gameConsole) {
+          new MutationObserver(() => {
+            if (gameConsole.getAttribute('data-open') === 'true') dismiss();
+          }).observe(gameConsole, { attributes: true, attributeFilter: ['data-open'] });
+        }
+      }
     </script>
   </body>
 </html>

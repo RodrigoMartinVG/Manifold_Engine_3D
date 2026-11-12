@@ -35,14 +35,11 @@ const [first, ...rest] = title.split(' ');
     {
       actions.length > 0 && (
         <div class="hero-actions">
-          {actions.map(({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }, i) => (
-            <>
-              <LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
-                {text}
-                {icon?.html && <Fragment set:html={icon.html} />}
-              </LinkButton>
-              {i === 0 && <span class="hero-break" />}
-            </>
+          {actions.map(({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+            <LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+              {text}
+              {icon?.html && <Fragment set:html={icon.html} />}
+            </LinkButton>
           ))}
         </div>
       )
@@ -143,17 +140,13 @@ const [first, ...rest] = title.split(' ');
     color: var(--sl-color-gray-2);
   }
 
-  /* The main action alone on its line; the other two, below and together. */
+  /* The main action and the secondary one, side by side (one above the other if there is no room). */
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.9rem 1rem;
     justify-content: center;
     margin-top: 0.4rem;
-  }
-  .hero-break {
-    flex-basis: 100%;
-    height: 0;
   }
   @media (min-width: 62rem) {
     .hero-actions {

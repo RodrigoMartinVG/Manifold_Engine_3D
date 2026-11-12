@@ -1,0 +1,48 @@
+---
+/** The Bitácora's reports, newest first, each with its description (src/pages-lists.ts). */
+import { pageUrl, reports } from '../pages-lists';
+
+const list = await reports();
+---
+
+<ol class="mg-reports not-content" reversed>
+  {
+    list.map((r) => (
+      <li>
+        <a href={pageUrl(r)}>{r.data.title}</a>
+        <p>{r.data.description}</p>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .mg-reports {
+    display: grid;
+    gap: 0.9rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mg-reports li {
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--mg-bronze-line);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--mg-plate) 85%, transparent);
+  }
+  .mg-reports a {
+    font-family: var(--mg-font-title);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--mg-title);
+    text-decoration: none;
+  }
+  .mg-reports a:hover {
+    text-decoration: underline;
+  }
+  .mg-reports p {
+    margin: 0.35rem 0 0;
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-sm);
+  }
+</style>
