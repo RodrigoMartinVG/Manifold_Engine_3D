@@ -125,6 +125,24 @@ export class Registry<W = unknown> {
    * Returns what should be shown. If a startup value changed, it says so once at the end, even if
    * it changed on several lines.
    */
+  /** The world values (scope `world`) as they are now: for a session's save (stage 1d). */
+  worldValues(): Map<string, Value> {
+    const out = new Map<string, Value>();
+    for (const [name, s] of this.vars) if (s.decl.scope === 'world') out.set(name, copy(s.value));
+    return out;
+  }
+
+  /**
+   * Back to saved world values, WITHOUT applying them: the world they belong to comes back with them
+   * (from its snapshot). What was not saved stays as it is.
+   */
+  restoreWorldValues(values: ReadonlyMap<string, Value>) {
+    for (const [name, value] of values) {
+      const s = this.vars.get(name);
+      if (s?.decl.scope === 'world') s.value = copy(value);
+    }
+  }
+
   run(text: string, source: Source = 'console'): Message[] {
     const messages: Message[] = [];
     const out: Output = { write: (t, level: Level = 'info') => messages.push({ level, text: t }) };

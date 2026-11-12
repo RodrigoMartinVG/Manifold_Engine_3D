@@ -1,5 +1,5 @@
 import { vec3, type Vec3 } from '@manifold/common';
-import { NO_INPUT, type PlayerInput } from '@manifold/core';
+import type { InputValue, PlayerInput } from '@manifold/core';
 
 /**
  * WHAT THE PLAYER ASKS FOR, from the keyboard and a gamepad (stage 1b).
@@ -24,12 +24,35 @@ import { NO_INPUT, type PlayerInput } from '@manifold/core';
  *   is not resolved here but in the simulation (`ahead`, `side`, `turn`): where the character looks is
  *   the world's.
  *
+ * A game's own buttons (stage 1d: `dojo.throw`…) come with the keys the game chose for them (`buttons`).
+ *
  * Nothing is read while the console is open, or while typing somewhere else.
  *
  * A key pressed and released between two frames still counts: every press is kept until the next
  * reading. Without that, a quick tap of Space on a slow machine (few frames per second) lost the jump.
  */
 export type ControlScheme = 'camera' | 'tank';
+
+/** A game's button and what presses it: keys (by `code`) and, maybe, a gamepad button. */
+export interface GameButton {
+  /** The action the game declared (`dojo.throw`). */
+  action: string;
+  /** Physical keys (`KeyboardEvent.code`): `KeyF`. */
+  keys: readonly string[];
+  /** A gamepad button, by its standard number (2 is X, or the left one of the four). */
+  pad?: number;
+}
+
+/** What presses the character's actions, in words (for the console's `inputs`). */
+export const CHARACTER_KEYS: Record<string, string> = {
+  move: 'W A S D or the arrows, by the camera (or the left stick)',
+  ahead: 'W and S, in `controls.scheme tank` (or the left stick)',
+  side: 'Q and E, or A and D with Alt held, in `controls.scheme tank` (or the shoulder buttons)',
+  turn: 'A and D, in `controls.scheme tank` (or the left stick)',
+  face: 'the mouse, in `view.camera aim`',
+  jump: 'Space (or A)',
+  run: 'Shift (or B, or pressing the left stick)',
+};
 
 export interface PlayerControls {
   /**
@@ -60,7 +83,9 @@ const DEAD_ZONE = 0.2;
 const axis = (pad: Gamepad, i: number) => (Math.abs(pad.axes[i] ?? 0) > DEAD_ZONE ? pad.axes[i]! : 0);
 const clamp = (x: number) => Math.max(-1, Math.min(1, x));
 
-export function mountPlayerControls(o: { blocked(): boolean }): PlayerControls {
+export function mountPlayerControls(o: { blocked(): boolean; buttons?: readonly GameButton[] }): PlayerControls {
+  const buttons = o.buttons ?? [];
+  const gameKeys = new Set(buttons.flatMap((b) => b.keys));
   const held = new Set<string>();
   /** Pressed since the last reading (even if already released). */
   const pressed = new Set<string>();
@@ -69,7 +94,7 @@ export function mountPlayerControls(o: { blocked(): boolean }): PlayerControls {
   const down = (e: KeyboardEvent) => {
     // (Alt is not left out: held, A and D go to the sides. Ctrl and Cmd are the browser's.)
     if (o.blocked() || typing(e) || e.ctrlKey || e.metaKey) return;
-    if (!(e.code in MOVE_KEYS) && !(e.code in SIDE_KEYS) && !OTHER_KEYS.has(e.code)) return;
+    if (!(e.code in MOVE_KEYS) && !(e.code in SIDE_KEYS) && !OTHER_KEYS.has(e.code) && !gameKeys.has(e.code)) return;
     held.add(e.code);
     pressed.add(e.code);
     // The arrows and Space would scroll the page, or press the focused button; Alt would take the
@@ -115,17 +140,21 @@ export function mountPlayerControls(o: { blocked(): boolean }): PlayerControls {
         run ||= (pad.buttons[1]?.pressed ?? false) || (pad.buttons[10]?.pressed ?? false);
       }
 
+      // The game's buttons, by their keys (or the gamepad's).
+      const own: Record<string, InputValue> = {};
+      for (const b of buttons)
+        if (b.keys.some((k) => keys.has(k)) || (b.pad !== undefined && pad && !o.blocked() && pad.buttons[b.pad]?.pressed))
+          own[b.action] = true;
+
       // Tank: forward and back, turning and to the sides, all by where the character looks.
       if (scheme === 'tank')
         return {
-          ...NO_INPUT,
-          move: [0, 0, 0],
           ahead: clamp(forward),
           side: clamp(sideways + (alt ? right : 0)),
           turn: alt ? 0 : clamp(right),
-          face: [0, 0, 0],
           jump,
           run,
+          ...own,
         };
 
       // By the camera: its forward and right, flattened on the character's ground.
@@ -134,7 +163,7 @@ export function mountPlayerControls(o: { blocked(): boolean }): PlayerControls {
       let move = vec3.add(vec3.scale(ahead, forward), vec3.scale(side, right));
       const length = vec3.length(move);
       if (length > 1) move = vec3.scale(move, 1 / length);
-      return { ...NO_INPUT, move, face: [0, 0, 0], jump, run };
+      return { move, jump, run, ...own };
     },
     cameraStick() {
       const pad = navigator.getGamepads?.()[0];

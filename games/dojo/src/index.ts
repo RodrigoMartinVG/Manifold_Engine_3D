@@ -41,6 +41,8 @@ export async function startDojo(container: HTMLElement, o: DojoOptions = {}): Pr
     ghost,
     // A lab: a free camera, and a click on an object inspects it.
     camera: 'orbit',
+    // Its own button (the cartridge declares it): F, or X on a gamepad.
+    buttons: [{ action: 'dojo.throw', keys: ['KeyF'], pad: 2 }],
     console: {
       game: 'dojo',
       rooms: ROOMS,
@@ -48,6 +50,7 @@ export async function startDojo(container: HTMLElement, o: DojoOptions = {}): Pr
       examples: [
         'load course',
         'controls.scheme tank',
+        'snapshot',
         'dojo.spawn 0 5 0',
         'physics.gravity 0 -1.62 0',
         'show.physics on',

@@ -1,4 +1,5 @@
 import type { Registry } from '@manifold/commands';
+import type { InputAction } from './input';
 import type { Event } from './types';
 import type { World } from './world';
 
@@ -23,6 +24,12 @@ export interface Cartridge {
    * once per registry, before the world is created.
    */
   onDeclare?(registry: Registry<World>): void;
+  /**
+   * What its players can ask for, besides what the character reads (stage 1d): its own buttons, axes
+   * and vectors, with its namespace (`dojo.throw`). The session lets in only what was declared; the
+   * game reads them in `onStep` (`pressed`, `isDown`…), and says in the presentation which keys press them.
+   */
+  readonly inputs?: readonly InputAction[];
   /**
    * Once, with the freshly created world: put whatever there is at the start. STARTUP values (how
    * many cubes, which room) are read from the registry, which already has the recipes applied.

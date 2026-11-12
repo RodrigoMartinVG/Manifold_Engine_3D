@@ -62,11 +62,17 @@ export function stateHash(world: World): number {
     } else byte(0);
   };
   number(world.tick);
+  // The id counter too (stage 1d): two worlds with the same entities but different counters give
+  // their next entity a different id. It was left out until snapshots made it obvious.
+  number(world.lastEntityId);
   for (const n of world.random.state) number(n);
   value(world.gravity);
-  for (const player of [...world.inputs.keys()].sort((a, b) => a - b)) {
-    number(player);
-    value(world.inputs.get(player));
+  for (const inputs of [world.inputs, world.lastInputs]) {
+    number(inputs.size); // so {1: x} now and {} before do not hash like {} now and {1: x} before
+    for (const player of [...inputs.keys()].sort((a, b) => a - b)) {
+      number(player);
+      value(inputs.get(player));
+    }
   }
   const ids = [...world.entities.keys()].sort((a, b) => a - b);
   for (const id of ids) value(world.entities.get(id));

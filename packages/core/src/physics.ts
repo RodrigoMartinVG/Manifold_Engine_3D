@@ -45,10 +45,17 @@ export class Physics {
   /** One controller moves every character (its settings are the same for all, for now). */
   private controller: RAPIER.KinematicCharacterController | null = null;
 
-  constructor(gravity: Vec3, timestep: number) {
+  /** A new physics world; or, with `snapshot`, the one that snapshot keeps (its bodies keep their handles). */
+  constructor(gravity: Vec3, timestep: number, snapshot?: Uint8Array) {
     if (!ready) throw new Error('The physics is not ready: `await initPhysics()` before creating a world.');
-    this.world = new RAPIER.World(v(gravity));
+    this.world = snapshot ? RAPIER.World.restoreSnapshot(snapshot) : new RAPIER.World(v(gravity));
+    this.world.gravity = v(gravity);
     this.world.timestep = timestep;
+  }
+
+  /** Rapier's snapshot of its world, as bytes: bodies, colliders, contacts and the solver's state. */
+  snapshot(): Uint8Array {
+    return this.world.takeSnapshot();
   }
 
   setGravity(g: Vec3) {

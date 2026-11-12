@@ -1,18 +1,8 @@
 import { quat, vec3, type Vec3 } from '@manifold/common';
 import { gravityAt } from './gravity';
-import type { Character, CharacterSpec, Entity, PlayerInput } from './types';
+import { axisOf, isDown, NO_INPUT, vectorOf } from './input';
+import type { Character, CharacterSpec, Entity } from './types';
 import type { World } from './world';
-
-/** What a player who asks for nothing asks for. */
-export const NO_INPUT: Readonly<PlayerInput> = {
-  move: [0, 0, 0],
-  ahead: 0,
-  side: 0,
-  turn: 0,
-  face: [0, 0, 0],
-  jump: false,
-  run: false,
-};
 
 /** A jump is still allowed this many steps after leaving an edge (0.1 s): "coyote time". */
 export const COYOTE_STEPS = 6;
@@ -89,29 +79,31 @@ export function moveCharacter(world: World, e: Entity, dt: number) {
   const up = upAt(world, e.transform!.position);
 
   // 1: turning on its own axis (where it looks may be told instead: that comes first).
-  const face = vec3.onPlane(input.face, up);
+  const face = vec3.onPlane(vectorOf(input, 'face'), up);
   const told = vec3.length(face) > 0.1;
-  if (!told && input.turn !== 0) c.facing = turned(c.facing, up, input.turn, c.turnSpeed, dt);
+  const turn = axisOf(input, 'turn');
+  if (!told && turn !== 0) c.facing = turned(c.facing, up, turn, c.turnSpeed, dt);
 
   // 2: the velocity, split; the horizontal part towards what is asked for: in the world, plus forward
   // and to the side by where it looks now.
   let vUp = vec3.dot(c.velocity, up);
   let vH = vec3.onPlane(c.velocity, up);
-  const inWorld = vec3.onPlane(input.move, up);
+  const inWorld = vec3.onPlane(vectorOf(input, 'move'), up);
   const ahead = vec3.normalize(vec3.onPlane(c.facing, up));
   const right = vec3.cross(ahead, up);
-  let move = vec3.add(inWorld, vec3.add(vec3.scale(ahead, input.ahead), vec3.scale(right, input.side)));
+  let move = vec3.add(inWorld, vec3.add(vec3.scale(ahead, axisOf(input, 'ahead')), vec3.scale(right, axisOf(input, 'side'))));
   const asked = vec3.length(move);
   if (asked > 1) move = vec3.scale(move, 1 / asked);
-  const target = vec3.scale(move, input.run ? c.runSpeed : c.walkSpeed);
+  const target = vec3.scale(move, isDown(input, 'run') ? c.runSpeed : c.walkSpeed);
   const maxChange = (c.grounded ? GROUND_ACCELERATION : AIR_ACCELERATION) * dt;
   const diff = vec3.sub(target, vH);
   const away = vec3.length(diff);
   vH = away <= maxChange ? target : vec3.add(vH, vec3.scale(diff, maxChange / away));
 
   // 3: the jump.
-  if (input.jump && !c.jumpHeld) c.jumpPending = JUMP_BUFFER_STEPS;
-  c.jumpHeld = input.jump;
+  const jump = isDown(input, 'jump');
+  if (jump && !c.jumpHeld) c.jumpPending = JUMP_BUFFER_STEPS;
+  c.jumpHeld = jump;
   if (c.jumpPending > 0 && (c.grounded || c.stepsInAir <= COYOTE_STEPS)) {
     vUp = c.jumpSpeed;
     c.jumpPending = 0;

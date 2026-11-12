@@ -109,33 +109,23 @@ export type CharacterSpec = Pick<Character, 'player'> &
   Partial<Pick<Character, 'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'facing' | 'turnSpeed'>>;
 
 /**
- * WHAT A PLAYER ASKS FOR at a step. It enters the world through the session, at a concrete step, like
- * any world change. There are two ways to say where to go, and a client uses one or the other:
+ * WHAT A PLAYER ASKS FOR at a step: values with a name. It enters the world through the session, at a
+ * concrete step, like any world change.
  *
- * - IN THE WORLD (`move`): a vector of length up to 1. The presentation turns "forward" into it by where
- *   the camera looks (the camera is the view's, not the world's). The character looks where it walks:
- *   a platformer's way.
- * - BY THE CHARACTER (`ahead`, `side`, `turn`): forward or back where it looks, to its right or left
- *   without turning, and turning on its own axis. Where it looks is the world's, so this is resolved
- *   in the simulation: "tank" controls (stage 1c2), and how a vehicle is driven.
+ * The names are ACTIONS that somebody declared (stage 1d): the core declares what the character reads
+ * (`move`, `ahead`, `side`, `turn`, `face`, `jump`, `run`: see `CHARACTER_ACTIONS` in input.ts), and
+ * each game declares its own, with its namespace (`dojo.throw`). A button is `true` while it is held;
+ * an axis, an amount from −1 to 1; a vector, three numbers. What is not there is zero, or not held.
  *
- * `face` is where the character looks, given: whatever way it moves, it looks there (it walks sideways
- * without turning). The shooter's way, when the mouse aims (`view.camera aim`). Zero means "not given".
+ *   { move: [0, 0, -1], jump: true }       forward in the world (by the camera), and jumping
+ *   { ahead: 1, turn: -1 }                  forward where the character looks, turning left (tank)
+ *   { 'dojo.throw': true }                  a game's button
+ *
+ * Before (stages 1b to 1c2) it was a fixed list of fields: every new action would have changed the
+ * replays' format and taught the core a game's actions.
  */
-export interface PlayerInput {
-  /** Where to go, in the world (length up to 1). */
-  move: Vec3;
-  /** Forward (+) or back (−), where the character looks; from −1 to 1. */
-  ahead: number;
-  /** To its right (+) or left (−), without turning; from −1 to 1. */
-  side: number;
-  /** Turning on its own axis: to the right (+) or the left (−), as a part of its turn speed; from −1 to 1. */
-  turn: number;
-  /** Where to look (zero: not given). */
-  face: Vec3;
-  jump: boolean;
-  run: boolean;
-}
+export type InputValue = number | Vec3 | boolean;
+export type PlayerInput = Readonly<Record<string, InputValue>>;
 
 /** How it looks, as DATA (the presentation decides which material, depending on quality). */
 export interface Appearance {

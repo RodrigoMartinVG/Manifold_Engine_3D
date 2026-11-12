@@ -173,3 +173,23 @@ test('a run through the course, recorded and played again, ends in the same worl
   expect(playReplay(DojoCartridge, replay).same).toBe(true);
   session.world.dispose();
 });
+
+test('dojo.throw, the Dojo’s own button: one ball per press, thrown where the character looks, and in the replay', () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+  for (let i = 0; i < 90; i++) session.step();
+  const before = session.world.entities.size;
+  // Held for half a second: a single ball. Then pressed again: another.
+  for (let step = 1; step <= 60; step++) {
+    session.setInput(1, step <= 30 || step > 40 ? { 'dojo.throw': true } : NO_INPUT);
+    session.step();
+  }
+  const balls = [...session.world.entities.values()].filter((e) => e.appearance?.shape === 'sphere');
+  expect(session.world.entities.size).toBe(before + 2);
+  expect(balls).toHaveLength(2);
+  // The character looks at −Z: the first ball went that way.
+  expect(balls[0]!.transform!.position[2]).toBeLessThan(5);
+  const text = replayToText(replayOf(session));
+  expect(text).toMatch(/^input \d+ 1 dojo\.throw$/m);
+  expect(playReplay(DojoCartridge, replayFromText(text)).same).toBe(true);
+  session.world.dispose();
+});

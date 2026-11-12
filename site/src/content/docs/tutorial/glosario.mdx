@@ -142,6 +142,10 @@ El texto del tutorial está en español y el código, en inglés ([por qué](../
 | tomar el mouse           | _pointer lock_         | el mouse deja de mover la flecha y gira la cámara; Esc lo suelta                      |
 | repetición               | _replay_               | cómo nació el mundo y lo que pidió cada jugador, paso a paso: `replay`                |
 | fantasma                 | _ghost_                | una repetición que corre al lado del jugador: `ghost`                                 |
+| instantánea              | _snapshot_             | el mundo entero en un momento, física incluida, para volver a él: `snapshot`          |
+| acción                   | _action_               | algo que un jugador puede pedir, con su nombre: `move`, `jump`, `dojo.throw`          |
+| botón, eje, vector       | _button, axis, vector_ | las tres clases de acción: apretado o no, un número de −1 a 1, tres números           |
+| apretar                  | _press_                | que un botón pase de suelto a apretado en un paso (`pressed`); mantenerlo no cuenta   |
 
 ## La consola del Dojo
 
@@ -179,6 +183,8 @@ Y los nombres que hay hoy:
 | `view.camera`     | con un personaje: `follow` lo sigue, `chase` vuelve detrás de él, `aim` apunta con el mouse, `free` deja la cámara donde está     |
 | `controls.scheme` | cómo manejan las teclas al personaje: `camera`, según la cámara, o `tank`, según hacia dónde mira él (_scheme_: esquema)          |
 | `replay`          | la repetición de este mundo: `replay export` arma un enlace, `replay play` la vuelve a mostrar, `replay stop` devuelve el control |
+| `snapshot`        | guarda este momento del mundo; `snapshot load` vuelve a él                                                                        |
+| `inputs`          | lo que un jugador puede pedir en este juego, y qué tecla lo pide                                                                  |
 | `ghost`           | vuelve a empezar con un fantasma que repite lo que hiciste; `ghost export` arma el enlace, `ghost clear` lo saca                  |
 | `seed`            | la semilla del azar del mundo                                                                                                     |
 | `physics.gravity` | la gravedad, en m/s² en cada eje: la de la Tierra es `0 -9.81 0`                                                                  |

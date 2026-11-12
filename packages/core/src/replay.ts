@@ -1,10 +1,10 @@
 import { splitLines } from '@manifold/commands';
-import type { Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
-import { NO_INPUT } from './character';
 import { stateHash } from './hash';
+import { actionsFor, inputProblem } from './input';
 import { registryFor, Session, type InputChange, type WorldChange } from './session';
-import type { PlayerInput } from './types';
+import type { InputValue } from './types';
+import { SIMULATION_VERSION } from './version';
 
 /**
  * A REPLAY (stage 1c): everything needed to play a session again, step by step, and to check that it
@@ -38,45 +38,37 @@ export function replayOf(session: Session): Replay {
   };
 }
 
-/**
- * THE VERSION of the replays this engine plays. A replay is tied to the engine that recorded it, and
- * not only to its text: if the simulation keeps one more number (stage 1c2: the input's `ahead`, `side`
- * and `turn`, the character's `turnSpeed`), the same inputs give another hash. So it goes up whenever
- * the simulation changes what a replay gives, and an older replay says so instead of "different".
- */
-export const REPLAY_VERSION = 2;
 const HEADER = '# Manifold replay';
 const hex = (n: number) => n.toString(16).padStart(8, '0');
-const zero = (v: Vec3) => v.every((x) => x === 0);
 
-/** What a player asked for, as words: only what is not zero (`input 41 1` is "nothing"). */
+/**
+ * What a player asked for, as words: each action by its name, with its numbers (none for a button,
+ * one for an axis, three for a vector). Only what is not zero: `input 41 1` is "nothing".
+ */
 function inputText(i: InputChange): string {
-  const { move, ahead, side, turn, face, jump, run } = i.input;
-  return [
-    `input ${i.step} ${i.player}`,
-    ...(zero(move) ? [] : [`move ${move.join(' ')}`]),
-    ...(ahead ? [`ahead ${ahead}`] : []),
-    ...(side ? [`side ${side}`] : []),
-    ...(turn ? [`turn ${turn}`] : []),
-    ...(zero(face) ? [] : [`face ${face.join(' ')}`]),
-    ...(jump ? ['jump'] : []),
-    ...(run ? ['run'] : []),
-  ].join(' ');
+  const parts = [`input ${i.step} ${i.player}`];
+  for (const [name, value] of Object.entries(i.input)) {
+    if (value === true) parts.push(name);
+    else if (typeof value === 'number') parts.push(`${name} ${value}`);
+    else if (Array.isArray(value)) parts.push(`${name} ${value.join(' ')}`);
+  }
+  return parts.join(' ');
 }
 
 /**
  * As text, one thing per line, in step order: it can be read, and compared by eye.
  *
- *   # Manifold replay 2               the version (see REPLAY_VERSION)
+ *   # Manifold replay 3                     the simulation's version (version.ts)
  *   game dojo
  *   birth dojo.level course
- *   input 41 1 move 0 0 -1            step, player, and what is not zero: move (x y z), ahead,
- *   input 96 1 ahead 1 turn -1 jump     side, turn, face (x y z), jump, run
+ *   input 41 1 move 0 0 -1                  step, player, and each action that is not zero, by
+ *   input 96 1 ahead 1 turn -1 jump           its name: a vector (three numbers), an axis (one),
+ *   input 130 1 dojo.throw                    a button (none)
  *   change 120 dojo.spawn 0 5 0       step, and the line typed in the console
  *   end 600 1a2b3c4d                  the last step, and its hash
  */
 export function replayToText(r: Replay): string {
-  const lines = [`${HEADER} ${REPLAY_VERSION}`, `game ${r.game}`, ...splitLines(r.birth).map((l) => `birth ${l}`)];
+  const lines = [`${HEADER} ${SIMULATION_VERSION}`, `game ${r.game}`, ...splitLines(r.birth).map((l) => `birth ${l}`)];
   const events: [step: number, line: string][] = [
     ...r.changes.map((c): [number, string] => [c.step, `change ${c.step} ${c.line}`]),
     ...r.inputs.map((i): [number, string] => [i.step, inputText(i)]),
@@ -96,10 +88,13 @@ export function replayFromText(text: string): Replay {
     throw new Error(`replay, line ${n + 1}: ${why}`);
   };
   const header = /^# Manifold replay(?: (\d+))?$/.exec(rows[0]?.trim() ?? '');
-  if (!header) fail(0, `it must start with "${HEADER} ${REPLAY_VERSION}"`);
+  if (!header) fail(0, `it must start with "${HEADER} ${SIMULATION_VERSION}"`);
   const version = header![1] ? Number(header![1]) : 1;
-  if (version !== REPLAY_VERSION)
-    fail(0, `a replay of version ${version}, and this engine plays version ${REPLAY_VERSION}: it was recorded by another engine`);
+  if (version !== SIMULATION_VERSION)
+    fail(
+      0,
+      `a replay of version ${version}, and this engine plays version ${SIMULATION_VERSION}: it was recorded by another engine`,
+    );
   rows.forEach((row, n) => {
     const line = row.trim();
     if (!line || line.startsWith('#')) return;
@@ -120,16 +115,18 @@ export function replayFromText(text: string): Replay {
         replay.changes.push({ step: integer(rest[0]), line: line.replace(/^change\s+\d+\s+/, '') });
         break;
       case 'input': {
-        const input: PlayerInput = { ...NO_INPUT, move: [0, 0, 0], face: [0, 0, 0] };
-        const vector = (at: number): Vec3 => [number(rest[at]), number(rest[at + 1]), number(rest[at + 2])];
-        for (let at = 2; at < rest.length; at++) {
-          const word = rest[at];
-          if (word === 'move' || word === 'face') {
-            input[word] = vector(at + 1);
-            at += 3;
-          } else if (word === 'ahead' || word === 'side' || word === 'turn') input[word] = number(rest[++at]);
-          else if (word === 'jump' || word === 'run') input[word] = true;
-          else fail(n, `"${word}" is not part of an input (move, ahead, side, turn, face, jump, run)`);
+        // Each name, followed by its numbers: none (a button), one (an axis) or three (a vector).
+        const input: Record<string, InputValue> = {};
+        let at = 2;
+        while (at < rest.length) {
+          const name = rest[at++]!;
+          if (!/^[a-z][a-z0-9.]*$/.test(name)) fail(n, `"${name}" is not the name of an action`);
+          const values: number[] = [];
+          while (at < rest.length && !/^[a-z]/.test(rest[at]!)) values.push(number(rest[at++]));
+          if (values.length === 0) input[name] = true;
+          else if (values.length === 1) input[name] = values[0]!;
+          else if (values.length === 3) input[name] = [values[0]!, values[1]!, values[2]!];
+          else fail(n, `"${name}" has ${values.length} numbers: an action has none, one or three`);
         }
         replay.inputs.push({ step: integer(rest[0]), player: integer(rest[1]), input });
         break;
@@ -184,8 +181,17 @@ export class ReplayPlayer {
   }
 }
 
-/** A session born like the replay's (its recipe applied). The recipe's errors are thrown: a replay must be understood whole. */
+/**
+ * A session born like the replay's (its recipe applied). The recipe's errors are thrown, and so is
+ * an input this game does not declare: a replay must be understood whole.
+ */
 export function sessionFor(cartridge: Cartridge, replay: Replay): Session {
+  if (replay.game && replay.game !== cartridge.id) throw new Error(`a replay of "${replay.game}", not of "${cartridge.id}"`);
+  const actions = actionsFor(cartridge.inputs);
+  for (const i of replay.inputs) {
+    const problem = inputProblem(i.input, actions);
+    if (problem) throw new Error(`replay, the input at step ${i.step}: ${problem}`);
+  }
   const registry = registryFor(cartridge);
   const errors = registry.run(replay.birth, 'recipe').filter((m) => m.level === 'error');
   if (errors.length) throw new Error(`replay birth: ${errors.map((e) => e.text).join('; ')}`);

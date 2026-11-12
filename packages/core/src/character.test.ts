@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, test } from 'vitest';
 import { quat, vec3, type Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
-import { COYOTE_STEPS, NO_INPUT, turned } from './character';
+import { COYOTE_STEPS, turned } from './character';
+import { NO_INPUT } from './input';
 import { stateHash } from './hash';
 import { initPhysics } from './physics';
 import { Session } from './session';

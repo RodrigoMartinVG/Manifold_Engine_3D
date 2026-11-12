@@ -125,3 +125,41 @@ test('tank controls turn without trigonometry: a run that turns, recorded in the
   expect(same).toBe(true);
   session.world.dispose();
 });
+
+test('a snapshot restored in this browser goes on like the original: the replay of a world that went back plays in Node to the same hash', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const at = async () => ((await page.locator('#game').getAttribute('data-player')) ?? '').split(' ').map(Number);
+  await page.goto('jugar/dojo/course/#recipe=dojo.cubes+12');
+  await expect.poll(async () => (await at()).length, { timeout: 20_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  const [, , z0] = await at();
+  // Forward, a snapshot, more forward and a throw, back to the snapshot, and to the side.
+  await page.keyboard.down('KeyW');
+  await expect.poll(async () => (await at())[2], { timeout: 30_000 }).toBeLessThan(z0! - 1);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'snapshot');
+  await page.keyboard.press('Escape');
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.press('KeyF');
+  await page.waitForTimeout(400);
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'snapshot load');
+  await expect(page.locator('.mg-console-log')).toContainText('back at step');
+  await page.keyboard.press('Escape');
+  await page.keyboard.down('KeyD');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyD');
+  const { text } = await exportReplay(page);
+  // The replay goes from the birth: what happened between the snapshot and going back is not in it.
+  expect(text).not.toMatch(/dojo\.throw/);
+
+  await initPhysics();
+  const { session, same } = playReplay(DojoCartridge, replayFromText(text));
+  expect(same).toBe(true);
+  session.world.dispose();
+});

@@ -368,3 +368,36 @@ test('tank controls: A and D turn the character on its own axis, W goes where it
   expect(((cx! - x2!) * fx! + (cz! - z2!) * fz!) / Math.hypot(cx! - x2!, cz! - z2!)).toBeLessThan(-0.9);
   expect(list).toEqual([]);
 });
+
+// ---------------------------------------------------------------- snapshots and a game's own button (stage 1d)
+
+test('snapshot: save, walk and throw, load: the character is back, the ball is gone, and the hash is the same', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const list = errors(page);
+  await page.goto('jugar/dojo/course/');
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'pause', 'snapshot');
+  await expect(consoleLog(page)).toContainText('a snapshot at step');
+  const [, step, hash] = /a snapshot at step (\d+) · hash ([0-9a-f]{8})/.exec(await consoleLog(page).innerText())!;
+  const saved = await position(page, 'player');
+  const shown = await meshes(page);
+  await typeInConsole(page, 'pause');
+  await page.keyboard.press('Escape');
+  // Forward, and a ball thrown (F: the Dojo's own button).
+  await page.keyboard.down('KeyW');
+  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 30_000 }).toBeLessThan(saved[2]! - 1.5);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.press('KeyF');
+  await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(shown + 1);
+  // Back: where it was, without the ball, with the same hash.
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'pause', 'snapshot load');
+  await expect(consoleLog(page)).toContainText(`back at step ${step} · hash ${hash}`);
+  await expect.poll(() => position(page, 'player')).toEqual(saved);
+  await expect.poll(() => meshes(page)).toBe(shown);
+  expect(list).toEqual([]);
+});

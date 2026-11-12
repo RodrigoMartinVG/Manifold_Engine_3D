@@ -3,6 +3,7 @@ import { moveCharacter, newCharacter } from './character';
 import { EARTH, gravityAt } from './gravity';
 import { Physics } from './physics';
 import type { Components, Entity, Event, EntityId, GravityField, PlayerInput } from './types';
+import { SIMULATION_VERSION } from './version';
 
 /** The fixed step: the simulation always advances 1/60 of a second, whatever the frame rate. */
 export const STEP = 1 / 60;
@@ -12,6 +13,46 @@ export interface WorldOptions {
   seed: number;
   /** Its gravity (the Earth's, if not said). */
   gravity?: GravityField;
+  /** A snapshot of Rapier's world to start from, instead of an empty one (`World.restore` uses it). */
+  physics?: Uint8Array;
+}
+
+/**
+ * A SNAPSHOT OF A WORLD (stage 1d, as decision 0004 defined it): everything it is, at the end of a
+ * step. Its clock and its id counter, its randomness's state, its gravity, its players' inputs (and
+ * the previous step's), its entities (plain data: copied as they are), and Rapier's own snapshot of
+ * its physics, which also keeps what is not in the entities: the contacts, and what the solver
+ * carries from one step to the next. Restored, it goes on exactly as the original would have
+ * (measured before this stage: the same bits 300 steps later).
+ */
+export interface WorldSnapshot {
+  /** The simulation's version it was taken with: only that one restores it. */
+  readonly version: number;
+  readonly tick: number;
+  readonly lastId: number;
+  readonly random: readonly [number, number, number, number];
+  readonly gravity: GravityField;
+  readonly inputs: readonly [number, PlayerInput][];
+  readonly lastInputs: readonly [number, PlayerInput][];
+  readonly entities: readonly Entity[];
+  /** Rapier's snapshot: its bodies, colliders, contacts and solver, as bytes. */
+  readonly physics: Uint8Array;
+}
+
+/**
+ * A copy of plain data (numbers, texts, booleans, arrays and objects of them: what the state is made
+ * of, decision 0004), all the way down. Not with JSON: it would turn −0 into 0 (different bits:
+ * another hash) and NaN into null. Nor with `structuredClone`, which is the browser's and Node's,
+ * not JavaScript's: the core runs on the language alone.
+ */
+export function copyData<T>(x: T): T {
+  if (Array.isArray(x)) return x.map(copyData) as T;
+  if (x && typeof x === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(x)) out[k] = copyData(v);
+    return out as T;
+  }
+  return x;
 }
 
 /**
@@ -42,6 +83,11 @@ export class World {
    * concrete step, and it is part of the state (and of the hash), like everything else.
    */
   readonly inputs = new Map<number, PlayerInput>();
+  /**
+   * What each player asked for at the PREVIOUS step (stage 1d): a button is pressed when it is held
+   * now and was not then (`pressed` in input.ts). Also part of the state.
+   */
+  readonly lastInputs = new Map<number, PlayerInput>();
   /** Its gravity field: data, like the rest of its state (decision 0012). */
   private field: GravityField;
   /**
@@ -53,7 +99,54 @@ export class World {
   constructor(o: WorldOptions) {
     this.random = new Random(o.seed);
     this.field = o.gravity ?? EARTH;
-    this.physics = new Physics(this.uniformGravity(), STEP);
+    this.physics = new Physics(this.uniformGravity(), STEP, o.physics);
+  }
+
+  /** The last id given (the next entity gets the following one): part of the state. */
+  get lastEntityId(): number {
+    return this.lastId;
+  }
+
+  /**
+   * The inputs for the next step: the current ones become the previous step's, and the changes enter.
+   * The session calls it before EVERY step, even without changes.
+   */
+  applyInputs(changes: ReadonlyMap<number, PlayerInput>) {
+    this.lastInputs.clear();
+    for (const [player, input] of this.inputs) this.lastInputs.set(player, input);
+    for (const [player, input] of changes) this.inputs.set(player, input);
+  }
+
+  /** A snapshot of this moment: copies, so it does not change when the world goes on. */
+  snapshot(): WorldSnapshot {
+    return {
+      version: SIMULATION_VERSION,
+      tick: this.tick,
+      lastId: this.lastId,
+      random: [...this.random.state],
+      gravity: copyData(this.field),
+      inputs: copyData([...this.inputs]),
+      lastInputs: copyData([...this.lastInputs]),
+      entities: copyData([...this.entities.values()]),
+      physics: this.physics.snapshot(),
+    };
+  }
+
+  /**
+   * A NEW world from a snapshot, the same as the one that took it. It emits no events: its entities
+   * were already there (whoever draws it reads them from `entities`).
+   */
+  static restore(s: WorldSnapshot): World {
+    if (s.version !== SIMULATION_VERSION)
+      throw new Error(`A snapshot of version ${s.version}, and this engine is version ${SIMULATION_VERSION}.`);
+    const world = new World({ seed: 0, gravity: copyData(s.gravity), physics: s.physics });
+    world.tick = s.tick;
+    world.lastId = s.lastId;
+    world.random.restore(s.random);
+    for (const [player, input] of copyData(s.inputs)) world.inputs.set(player, input);
+    for (const [player, input] of copyData(s.lastInputs)) world.lastInputs.set(player, input);
+    for (const e of copyData(s.entities)) world.entities.set(e.id, e);
+    return world;
   }
 
   get gravity(): GravityField {

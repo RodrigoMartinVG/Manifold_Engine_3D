@@ -1,5 +1,5 @@
-import { quat, type Quat, type Vec3 } from '@manifold/common';
-import type { Cartridge, World } from '@manifold/core';
+import { quat, vec3, type Quat, type Vec3 } from '@manifold/common';
+import { pressed, upAt, type Cartridge, type World } from '@manifold/core';
 
 /** The big cube's spin at the start (a tilted axis: so it shows that it spins in 3D, not just "turns"). */
 const START_SPIN: Vec3 = [0.35, 0.9, 0.15];
@@ -67,13 +67,19 @@ function buildCourse(world: World) {
 }
 
 /** A ball at a place, with its size and color from the world's randomness: it falls from there. */
-function ball(world: World, position: Vec3) {
+function ball(world: World, position: Vec3, velocity: Vec3 = [0, 0, 0]) {
   const diameter = world.random.between(0.3, 0.7);
   world.createEntity({
     transform: { position: [...position], rotation: quat.identity() },
     // A little angular damping: Rapier has no rolling resistance, and without it the ball would roll
     // until it fell off the floor's edge.
-    body: { type: 'dynamic', shape: { kind: 'ball', radius: diameter / 2 }, restitution: 0.5, angularDamping: 0.8 },
+    body: {
+      type: 'dynamic',
+      shape: { kind: 'ball', radius: diameter / 2 },
+      restitution: 0.5,
+      angularDamping: 0.8,
+      linearVelocity: [...velocity],
+    },
     appearance: { shape: 'sphere', size: [diameter, diameter, diameter], color: randomColor(world) },
   });
 }
@@ -88,6 +94,8 @@ function ball(world: World, position: Vec3) {
  * - `dojo.cubes` is STARTUP: how many cubes there are when the world is born (changing it restarts it);
  * - `dojo.spin` is WORLD: the big cube's spin, which changes at a given step;
  * - `dojo.spawn x y z` is a WORLD action: a ball that falls from there, at a given step.
+ * - `dojo.throw` is a PLAYER's button (stage 1d): the character throws a ball forward. The core does
+ *   not know it: the Dojo declares it, reads it on every step, and its page says which key presses it.
  * (And the engine's `seed` and `physics.gravity`, which the Dojo lets people touch too.)
  *
  * The Dojo's rules do not touch the screen (this file runs the same in tests): what is seen is
@@ -96,6 +104,7 @@ function ball(world: World, position: Vec3) {
 export const DojoCartridge: Cartridge = {
   id: 'dojo',
   title: 'Dojo',
+  inputs: [{ name: 'dojo.throw', kind: 'button', description: 'the character throws a ball forward' }],
 
   onDeclare(registry) {
     registry.declareVariable({
@@ -134,6 +143,16 @@ export const DojoCartridge: Cartridge = {
         ball(world, place as Vec3);
       },
     });
+  },
+
+  onStep(world) {
+    // Each press throws one ball (held, it does not throw more): from the chest, forward and up a little.
+    for (const e of world.entities.values()) {
+      if (!e.character || !e.transform || !pressed(world, e.character.player, 'dojo.throw')) continue;
+      const up = upAt(world, e.transform.position);
+      const from = vec3.add(e.transform.position, vec3.add(vec3.scale(e.character.facing, 0.75), vec3.scale(up, 0.4)));
+      ball(world, from, vec3.add(vec3.scale(e.character.facing, 9), vec3.scale(up, 2.5)));
+    }
   },
 
   onStart(world, registry) {

@@ -1,10 +1,10 @@
-import { formatValue, Registry } from '@manifold/commands';
+import { formatValue, Registry, type Value } from '@manifold/commands';
 import type { Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
-import { NO_INPUT } from './character';
 import { EARTH } from './gravity';
+import { actionsFor, NO_INPUT, normalizeInput, sameInput, type InputAction } from './input';
 import type { PlayerInput } from './types';
-import { World } from './world';
+import { World, type WorldSnapshot } from './world';
 
 export interface SessionOptions {
   /**
@@ -30,31 +30,20 @@ export interface InputChange {
 }
 
 /**
- * An input as it travels (in a replay, in a link, over the network): its numbers rounded to
- * hundredths. Small, comparable, and without the noise of a camera that turns a little every frame.
+ * A SESSION'S SAVE (stage 1d): its world's snapshot, and what the session needs to go on as if
+ * nothing had happened. Its history and inputs up to then (so its replay, from its birth, still
+ * describes the world after going back), the world values of its registry, and what was waiting for
+ * the next step. It lives in memory: it is for going back to a moment (like an emulator's "save
+ * state"), not for saving a game (phase 3: the game's progress, as data of its own).
  */
-const hundredth = (x: number) =>
-  // `|| 0`: a little negative number rounds to −0, which is written "0" and read back as +0; the two
-  // have different bits, so a replay of it gave another hash (stage 1c2). Here it is +0 from the start.
-  Math.round(x * 100) / 100 || 0;
-const hundredths = (v: Vec3): Vec3 => [hundredth(v[0]), hundredth(v[1]), hundredth(v[2])];
-const quantize = (i: PlayerInput): PlayerInput => ({
-  move: hundredths(i.move),
-  ahead: hundredth(i.ahead),
-  side: hundredth(i.side),
-  turn: hundredth(i.turn),
-  face: hundredths(i.face),
-  jump: i.jump,
-  run: i.run,
-});
-const sameInput = (a: PlayerInput, b: PlayerInput) =>
-  a.jump === b.jump &&
-  a.run === b.run &&
-  a.ahead === b.ahead &&
-  a.side === b.side &&
-  a.turn === b.turn &&
-  a.move.every((x, i) => x === b.move[i]) &&
-  a.face.every((x, i) => x === b.face[i]);
+export interface SessionSave {
+  readonly world: WorldSnapshot;
+  readonly history: readonly WorldChange[];
+  readonly inputs: readonly InputChange[];
+  readonly values: ReadonlyMap<string, Value>;
+  readonly scheduled: readonly { line: string; apply: (world: World) => void }[];
+  readonly pendingInputs: ReadonlyMap<number, PlayerInput>;
+}
 
 /** A registry with what the engine and the cartridge declare (without the presentation or the console). */
 export function registryFor(cartridge: Cartridge): Registry<World> {
@@ -96,8 +85,10 @@ export function declareCore(registry: Registry<World>) {
  * that receive the same changes at the same steps do exactly the same.
  */
 export class Session {
-  readonly world: World;
+  private current: World;
   readonly registry: Registry<World>;
+  /** What its players can ask for: the core's actions and the cartridge's (stage 1d). */
+  readonly actions: readonly InputAction[];
   /** Every world change that entered, with the step at which it was applied. */
   readonly history: WorldChange[] = [];
   /** Every player input that entered (only when it changed), with the step at which it was applied. */
@@ -115,6 +106,7 @@ export class Session {
     o: SessionOptions = {},
   ) {
     this.registry = o.registry ?? registryFor(cartridge);
+    this.actions = actionsFor(cartridge.inputs);
     this.birth = [
       ...(o.seed !== undefined ? [`seed ${o.seed}`] : []),
       ...this.registry
@@ -122,7 +114,7 @@ export class Session {
         .filter((v) => v.decl.scope !== 'view' && !(o.seed !== undefined && v.decl.name === 'seed'))
         .map((v) => `${v.decl.name} ${formatValue(v.value)}`),
     ].join('\n');
-    this.world = new World({ seed: o.seed ?? Number(this.registry.value('seed')) });
+    this.current = new World({ seed: o.seed ?? Number(this.registry.value('seed')) });
     cartridge.onStart(this.world, this.registry);
     // World values that already came changed (from a recipe) are part of how it is born: step 0.
     this.registry.applyToWorld(this.world);
@@ -130,12 +122,18 @@ export class Session {
     this.registry.scheduler = (line, apply) => this.scheduled.push({ line, apply });
   }
 
+  /** Its world (another one, after `load`). */
+  get world(): World {
+    return this.current;
+  }
+
   /**
    * What a player asks for, from now on: it enters at the start of the next step (like a world
    * change), and stays until it changes. Asking for the same again changes nothing, and is not kept.
+   * Only what was declared enters (see input.ts): anything else is left out.
    */
   setInput(player: number, input: PlayerInput) {
-    const next = quantize(input);
+    const next = normalizeInput(input, this.actions);
     const current = this.pendingInputs.get(player) ?? this.world.inputs.get(player) ?? NO_INPUT;
     if (sameInput(next, current)) return;
     this.pendingInputs.set(player, next);
@@ -149,12 +147,39 @@ export class Session {
       s.apply(this.world);
       this.history.push({ step, line: s.line });
     }
-    for (const [player, input] of this.pendingInputs) {
-      this.world.inputs.set(player, input);
-      this.inputs.push({ step, player, input });
-    }
+    for (const [player, input] of this.pendingInputs) this.inputs.push({ step, player, input });
+    // On EVERY step, even if nobody changed anything: the world remembers the previous step's inputs.
+    this.world.applyInputs(this.pendingInputs);
     this.pendingInputs.clear();
     this.world.step();
     this.cartridge.onStep?.(this.world, this.world.stepEvents);
+  }
+
+  /** A save of this moment, to come back to it with `load`. */
+  save(): SessionSave {
+    return {
+      world: this.world.snapshot(),
+      history: [...this.history],
+      inputs: [...this.inputs],
+      values: this.registry.worldValues(),
+      scheduled: [...this.scheduled],
+      pendingInputs: new Map(this.pendingInputs),
+    };
+  }
+
+  /**
+   * Back to a save of THIS session: its world comes back from the snapshot (a new one: the old one is
+   * disposed), and the history, the inputs, the world values and what was waiting, as they were.
+   * From there, the same inputs give the same hash as the first time.
+   */
+  load(save: SessionSave) {
+    const old = this.current;
+    this.current = World.restore(save.world);
+    old.dispose();
+    this.history.splice(0, this.history.length, ...save.history);
+    this.inputs.splice(0, this.inputs.length, ...save.inputs);
+    this.registry.restoreWorldValues(save.values);
+    this.scheduled = [...save.scheduled];
+    this.pendingInputs = new Map(save.pendingInputs);
   }
 }

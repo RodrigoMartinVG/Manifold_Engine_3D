@@ -10,6 +10,7 @@ import {
   ReplayPlayer,
   replayToText,
   Session,
+  type SessionSave,
   sessionFor,
   stateHash,
   upAt,
@@ -21,7 +22,7 @@ import {
   type World,
 } from '@manifold/core';
 import { mountConsole, type ConsoleOptions, type GameConsole } from './console';
-import { mountPlayerControls, type ControlScheme } from './player';
+import { CHARACTER_KEYS, mountPlayerControls, type ControlScheme, type GameButton } from './player';
 import { GHOST_PREFIX, REPLAY_PREFIX, replayToFragment } from './replay-link';
 
 /** A recipe to start with, and where it comes from (for the warnings: "the link's recipe…"). */
@@ -48,6 +49,8 @@ export interface MountOptions {
   replay?: string;
   /** A replay to race (its text): it runs as a ghost, next to the live player. */
   ghost?: string;
+  /** The keys of the game's own buttons (stage 1d): the game declares the actions, and says what presses them. */
+  buttons?: readonly GameButton[];
 }
 
 export interface Mount {
@@ -297,6 +300,23 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     default: 'camera',
     onChange: (v) => (scheme = v as ControlScheme),
   });
+  registry.declareCommand({
+    name: 'inputs',
+    description:
+      'What a player can ask for in this game, and what presses it (the core declares what the character reads; each game, its own buttons).',
+    run: (_, out) => {
+      out.write('what a player can ask for:');
+      for (const a of session.actions) {
+        const keys =
+          CHARACTER_KEYS[a.name] ??
+          o.buttons
+            ?.find((b) => b.action === a.name)
+            ?.keys.map((k) => k.replace(/^Key/, ''))
+            .join(' or ');
+        out.write(`  \`${a.name}\` (${a.kind}): ${a.description}${keys ? ` — ${keys}` : ''}`);
+      }
+    },
+  });
   if (controls) {
     registry.declareVariable({
       name: 'view.camera',
@@ -426,7 +446,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   document.addEventListener('mousemove', onMouseMove);
 
   // ---------- The player's character (stage 1b): its inputs, and the camera that follows it ----------
-  const playerControls = mountPlayerControls({ blocked: () => gameConsole?.isOpen ?? false });
+  const playerControls = mountPlayerControls({ blocked: () => gameConsole?.isOpen ?? false, buttons: o.buttons });
   /** Player 1's character, if the world has one (an entity with `character`). */
   const player = () => [...session.world.entities.values()].find((e) => e.character?.player === 1);
   /**
@@ -454,6 +474,46 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     } else controls.reset();
     controls.enableDamping = true;
   }
+
+  // ---------- Snapshots (stage 1d) ----------
+  /** The moment `snapshot` saved, and of which session (after a restart, it belongs to another world). */
+  let saved: { session: Session; save: SessionSave } | null = null;
+  /** After a world comes back from a snapshot, its meshes, as its entities are: no event tells it. */
+  function syncMeshes() {
+    for (const id of [...meshes.keys()]) if (!session.world.entities.has(id)) removeMesh(id);
+    for (const e of session.world.entities.values()) createMesh(e);
+    session.world.takeEvents();
+    savePrevious();
+  }
+  registry.declareCommand({
+    name: 'snapshot',
+    description:
+      'Saves this moment (`snapshot`), and goes back to it (`snapshot load`), like an emulator\'s "save state": the whole world, its physics included. From there, the same inputs give the same hash, and its replay still holds.',
+    args: [{ name: 'action', type: { kind: 'option', options: ['save', 'load'] }, optional: true }],
+    run: ([action], out) => {
+      const hash = () => hex(stateHash(session.world));
+      if (action === 'load') {
+        if (!saved || saved.session !== session)
+          return out.write('there is no snapshot of this world: `snapshot` takes one', 'warn');
+        if (playback) return out.write('a replay is playing: `replay stop` first', 'warn');
+        const start = performance.now();
+        session.load(saved.save);
+        const ms = performance.now() - start;
+        syncMeshes();
+        out.write(`back at step ${session.world.tick} · hash ${hash()} · in ${ms.toFixed(2)} ms`);
+        return;
+      }
+      const start = performance.now();
+      const save = session.save();
+      const ms = performance.now() - start;
+      saved = { session, save };
+      const kb = (bytes: number) => (bytes / 1024).toFixed(1);
+      const entities = JSON.stringify(save.world.entities).length;
+      out.write(
+        `a snapshot at step ${session.world.tick} · hash ${hash()} · ${kb(save.world.physics.length)} KB of physics and about ${kb(entities)} KB of entities · in ${ms.toFixed(2)} ms. \`snapshot load\` comes back here.`,
+      );
+    },
+  });
 
   // ---------- Replays and ghosts (stage 1c) ----------
   /** The replay being played (the live player waits until it ends), if any. */
