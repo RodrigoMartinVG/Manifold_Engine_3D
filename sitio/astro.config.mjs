@@ -24,7 +24,13 @@ export default defineConfig({
       customCss: ['@fontsource-variable/cinzel', './src/estilos/taller.css'],
       // El inicio tiene su propia portada, con la vitrina 3D en vivo. Junto al selector de tema,
       // los botones que ocultan los paneles de los costados.
-      components: { Hero: './src/components/Heroe.astro', ThemeSelect: './src/components/SelectorDeTema.astro' },
+      components: {
+        Hero: './src/components/Heroe.astro',
+        ThemeSelect: './src/components/SelectorDeTema.astro',
+        // Cada panel de los costados, con su botón "Ocultar" arriba.
+        Sidebar: './src/components/BarraLateral.astro',
+        PageSidebar: './src/components/IndiceLateral.astro',
+      },
       // Los paneles que se ocultaron en otra página: se aplica antes de dibujar, para que no parpadee.
       head: [
         {

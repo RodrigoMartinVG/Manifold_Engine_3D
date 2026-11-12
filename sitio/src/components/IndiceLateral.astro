@@ -1,0 +1,17 @@
+---
+/**
+ * El panel "En esta página" de Starlight (reemplaza a "PageSidebar" en astro.config.mjs), con un
+ * botón arriba para ocultarlo. Hace lo mismo que el botón de la cabecera (SelectorDeTema.astro,
+ * que tiene el código). Solo aparece cuando el panel está al costado, desde los 72rem.
+ */
+import Default from '@astrojs/starlight/components/PageSidebar.astro';
+---
+
+{
+  Astro.locals.starlightRoute.toc && (
+    <button type="button" class="mg-panel mg-ocultar mg-ocultar-indice" data-panel="indice">
+      Ocultar ›
+    </button>
+  )
+}
+<Default />

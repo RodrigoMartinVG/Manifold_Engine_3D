@@ -1,0 +1,11 @@
+---
+/**
+ * La barra lateral de Starlight (reemplaza a "Sidebar" en astro.config.mjs), con un botón arriba
+ * para ocultarla. Hace lo mismo que el botón de la cabecera (SelectorDeTema.astro, que tiene el
+ * código), pero está donde se lo busca. En el celular no aparece: ahí la barra es el menú.
+ */
+import Default from '@astrojs/starlight/components/Sidebar.astro';
+---
+
+<button type="button" class="mg-panel mg-ocultar mg-ocultar-barra" data-panel="barra">‹ Ocultar el índice</button>
+<Default />

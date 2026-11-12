@@ -246,6 +246,76 @@ body::before {
   }
 }
 
+/* Los botones "Ocultar" de arriba de cada panel (BarraLateral.astro, IndiceLateral.astro). */
+.mg-ocultar {
+  display: none;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--mg-linea-bronce);
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--sl-color-gray-3);
+  font-size: var(--sl-text-xs);
+  cursor: pointer;
+}
+.mg-ocultar:hover {
+  color: var(--sl-color-white);
+  border-color: var(--mg-linea-bronce-fuerte);
+}
+@media (min-width: 50rem) {
+  .mg-ocultar-barra {
+    display: block;
+    margin-inline-start: auto;
+  }
+}
+@media (min-width: 72rem) {
+  .mg-ocultar-indice {
+    display: block;
+    margin: 1rem var(--sl-sidebar-pad-x) 0;
+  }
+}
+
+/* Las pestañas del borde, para volver a mostrar un panel oculto (SelectorDeTema.astro). */
+.mg-mostrar {
+  display: none;
+  position: fixed;
+  top: calc(var(--sl-nav-height) + 1rem);
+  z-index: var(--sl-z-index-menu);
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #24170a;
+  background: var(--mg-metal-suave);
+  color: var(--mg-texto-sobre-bronce);
+  text-shadow: var(--mg-grabado);
+  box-shadow:
+    var(--mg-bisel),
+    0 6px 14px -6px rgb(0 0 0 / 0.8);
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.mg-mostrar:hover {
+  filter: brightness(1.12);
+}
+.mg-mostrar-barra {
+  left: 0;
+  border-left: 0;
+  border-radius: 0 0.35rem 0.35rem 0;
+}
+.mg-mostrar-indice {
+  right: 0;
+  border-right: 0;
+  border-radius: 0.35rem 0 0 0.35rem;
+}
+@media (min-width: 50rem) {
+  :root[data-has-sidebar][data-sin-barra] header .mg-mostrar-barra {
+    display: block;
+  }
+}
+@media (min-width: 72rem) {
+  :root[data-has-toc][data-sin-indice] header .mg-mostrar-indice {
+    display: block;
+  }
+}
+
 /* ------------------------------------------------------------------ los títulos */
 h1#_top {
   font-family: var(--mg-letra-titulo);

@@ -142,8 +142,8 @@ test('los paneles de los costados se ocultan y se recuerdan, y el ejemplo usa el
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('tutorial/etapa-0/03-paso-fijo/');
   const ejemplo = page.locator('.codigo-vivo').first();
-  const barra = page.locator('header .mg-panel[data-panel="barra"]');
-  const indice = page.locator('header .mg-panel[data-panel="indice"]');
+  const barra = page.locator('header .mg-paneles .mg-panel[data-panel="barra"]');
+  const indice = page.locator('header .mg-paneles .mg-panel[data-panel="indice"]');
   const columna = (await page.locator('.sl-markdown-content').boundingBox())!.width;
   expect((await ejemplo.boundingBox())!.width).toBeLessThan(columna + 40);
 
@@ -167,4 +167,18 @@ test('los paneles de los costados se ocultan y se recuerdan, y el ejemplo usa el
   await indice.click();
   await expect(page.locator('.sidebar-pane')).toBeVisible();
   await expect(page.locator('.right-sidebar-container')).toBeVisible();
+
+  // También se ocultan con el botón "Ocultar" que cada panel tiene arriba.
+  await page.locator('.sidebar-pane .mg-ocultar').click();
+  await page.locator('.right-sidebar .mg-ocultar').click();
+  await expect(page.locator('.sidebar-pane')).toBeHidden();
+  await expect(page.locator('.right-sidebar-container')).toBeHidden();
+  await expect(barra).toHaveAttribute('aria-pressed', 'false');
+
+  // Y siempre se pueden volver a mostrar con las pestañas del borde de la pantalla.
+  await page.locator('header .mg-mostrar-barra').click();
+  await page.locator('header .mg-mostrar-indice').click();
+  await expect(page.locator('.sidebar-pane')).toBeVisible();
+  await expect(page.locator('.right-sidebar-container')).toBeVisible();
+  await expect(page.locator('header .mg-mostrar-barra')).toBeHidden();
 });

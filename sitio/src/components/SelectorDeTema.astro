@@ -10,6 +10,10 @@
  *
  * Este componente también aparece en el menú del celular: ahí los botones no se muestran, porque
  * en una pantalla angosta los paneles ya no ocupan lugar al costado.
+ *
+ * El código de este componente atiende a todos los botones con `data-panel`: los de la cabecera,
+ * los "Ocultar" de arriba de cada panel (BarraLateral.astro e IndiceLateral.astro) y las pestañas
+ * del borde que los vuelven a mostrar.
  */
 import Default from '@astrojs/starlight/components/ThemeSelect.astro';
 ---
@@ -30,6 +34,13 @@ import Default from '@astrojs/starlight/components/ThemeSelect.astro';
     </svg>
   </button>
 </div>
+<!--
+  Cuando un panel está oculto, una pestaña en el borde de la pantalla lo vuelve a mostrar: siempre
+  hay un camino de vuelta, aunque la cabecera no se vea entera (con mucho zoom, por ejemplo).
+-->
+<!-- (Sin la clase "mg-panel": su estilo de aquí las mostraría siempre. Las esconde y muestra taller.css.) -->
+<button type="button" class="mg-mostrar mg-mostrar-barra" data-panel="barra">› Índice</button>
+<button type="button" class="mg-mostrar mg-mostrar-indice" data-panel="indice">En esta página ‹</button>
 <Default />
 
 <style>
@@ -92,15 +103,18 @@ import Default from '@astrojs/starlight/components/ThemeSelect.astro';
   const raiz = document.documentElement;
 
   function pintar() {
-    for (const boton of document.querySelectorAll<HTMLButtonElement>('.mg-panel')) {
+    for (const boton of document.querySelectorAll<HTMLButtonElement>('button[data-panel]')) {
       const panel = PANELES[boton.dataset.panel as Panel];
       const oculto = raiz.hasAttribute(panel.atributo);
-      boton.setAttribute('aria-pressed', String(!oculto));
       boton.title = `${oculto ? 'Mostrar' : 'Ocultar'} ${panel.nombre}`;
+      // Los de la cabecera prenden y apagan. Los de arriba de cada panel ("mg-ocultar") solo
+      // ocultan, y las pestañas del borde ("mg-mostrar") solo muestran.
+      const soloUnaCosa = boton.classList.contains('mg-ocultar') || boton.classList.contains('mg-mostrar');
+      if (!soloUnaCosa) boton.setAttribute('aria-pressed', String(!oculto));
     }
   }
 
-  for (const boton of document.querySelectorAll<HTMLButtonElement>('.mg-panel')) {
+  for (const boton of document.querySelectorAll<HTMLButtonElement>('button[data-panel]')) {
     boton.addEventListener('click', () => {
       const panel = PANELES[boton.dataset.panel as Panel];
       const ocultar = !raiz.hasAttribute(panel.atributo);
