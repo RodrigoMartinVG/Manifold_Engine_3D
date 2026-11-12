@@ -1,7 +1,8 @@
 import { Random, quat } from '@manifold/common';
+import { moveCharacter, newCharacter } from './character';
 import { EARTH, gravityAt } from './gravity';
 import { Physics } from './physics';
-import type { Components, Entity, Event, EntityId, GravityField } from './types';
+import type { Components, Entity, Event, EntityId, GravityField, PlayerInput } from './types';
 
 /** The fixed step: the simulation always advances 1/60 of a second, whatever the frame rate. */
 export const STEP = 1 / 60;
@@ -36,6 +37,11 @@ export class World {
    */
   stepEvents: Event[] = [];
   private pending: Event[] = [];
+  /**
+   * What each player asks for now (stage 1b), by player number: it enters through the session, at a
+   * concrete step, and it is part of the state (and of the hash), like everything else.
+   */
+  readonly inputs = new Map<number, PlayerInput>();
   /** Its gravity field: data, like the rest of its state (decision 0012). */
   private field: GravityField;
   /**
@@ -65,11 +71,15 @@ export class World {
   }
 
   createEntity(components: Components): Entity {
-    const { body, ...rest } = components;
+    const { body, character, ...rest } = components;
     const entity: Entity = { id: ++this.lastId, ...rest };
     if (body) {
       if (!entity.transform) throw new Error('A body needs a transform: where is it?');
       entity.body = this.physics.addBody(body, entity.transform);
+    }
+    if (character) {
+      if (entity.body?.type !== 'character') throw new Error("A character needs a body of type 'character'.");
+      entity.character = newCharacter(character);
     }
     this.entities.set(entity.id, entity);
     this.emit({ type: 'entityCreated', id: entity.id });
@@ -89,13 +99,15 @@ export class World {
    * creation order (a `Map` keeps insertion order): the order is part of determinism.
    *
    *   1. spin: what spins without a body turns here; a kinematic body gets its velocity;
-   *   2. physics: Rapier advances one step (gravity, collisions, bounces);
-   *   3. read back: every moving body's pose and velocities go to its components.
+   *   2. characters: each one decides where it can go, with what its player asks for (character.ts);
+   *   3. physics: Rapier advances one step (gravity, collisions, bounces; the characters move);
+   *   4. read back: every moving body's pose and velocities go to its components.
    */
   step() {
     this.stepEvents = [];
     this.tick++;
     this.spin();
+    for (const e of this.entities.values()) if (e.character && e.body?.type === 'character') moveCharacter(this, e, STEP);
     this.physics.step();
     for (const e of this.entities.values())
       if (e.body && e.transform && e.body.type !== 'fixed') this.physics.read(e.body.handle, e.transform, e.body);

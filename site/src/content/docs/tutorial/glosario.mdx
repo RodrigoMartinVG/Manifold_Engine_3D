@@ -116,6 +116,25 @@ El texto del tutorial está en español y el código, en inglés ([por qué](../
 | identificador (de un cuerpo) | _handle_           | lo que guarda la entidad, nunca el cuerpo (decisión 0004)          |
 | números de 32 bits           | _single precision_ | cómo cuenta Rapier: unos 7 dígitos significativos                  |
 
+## El personaje
+
+| En español               | En inglés              | Dónde aparece                                                                         |
+| ------------------------ | ---------------------- | ------------------------------------------------------------------------------------- |
+| personaje                | _character_            | el componente `character` de una entidad                                              |
+| jugador                  | _player_               | el número de quien maneja un personaje (`player`)                                     |
+| entrada                  | _input_                | lo que un jugador pide en un paso: hacia dónde ir, saltar, correr (`PlayerInput`)     |
+| controlador de personaje | _character controller_ | lo que mueve al personaje sin atravesar nada (Rapier: `KinematicCharacterController`) |
+| cápsula                  | _capsule_              | la forma del personaje: un cilindro con media esfera en cada punta                    |
+| en el suelo              | _grounded_             | `grounded`: si el personaje está parado sobre algo                                    |
+| tiempo de coyote         | _coyote time_          | un salto que todavía vale unos pasos después de dejar un borde                        |
+| salto guardado           | _jump buffering_       | un salto pedido un poco antes de tocar el piso, que se hace al tocarlo                |
+| escalón automático       | _autostep_             | subir escalones bajos caminando, sin saltar                                           |
+| pegarse al piso          | _snap to ground_       | al bajar un escalón o una rampa, seguir tocando el piso                               |
+| pendiente                | _slope_                | hasta qué inclinación se sube caminando                                               |
+| techo                    | _ceiling_              | lo que corta un salto: un choque arriba de la cabeza                                  |
+| cámara que sigue         | _follow camera_        | en la consola, `view.camera follow`                                                   |
+| mando                    | _gamepad_              | el joystick: stick izquierdo, A y B                                                   |
+
 ## La consola del Dojo
 
 La consola está en inglés y no se traduce: sus nombres son como las palabras de un lenguaje de programación. Todo esto se puede escribir en ella, y `help` lo explica desde adentro.
@@ -148,7 +167,8 @@ Y los nombres que hay hoy:
 | `clear`           | borra lo que está escrito en la consola                                                                                      |
 | `reset`           | vuelve una variable (o todas, sin nombre) a su valor de siempre: `reset dojo.cubes`                                          |
 | `inspect`         | de qué está hecha una entidad, con sus números: `inspect 1` (_inspect_: inspeccionar); un clic sobre un objeto hace lo mismo |
-| `camera.reset`    | la cámara vuelve a donde empezó                                                                                              |
+| `camera.reset`    | la cámara vuelve a donde empezó, o detrás del personaje                                                                      |
+| `view.camera`     | con un personaje: `follow` lo sigue, `free` deja la cámara donde está                                                        |
 | `seed`            | la semilla del azar del mundo                                                                                                |
 | `physics.gravity` | la gravedad, en m/s² en cada eje: la de la Tierra es `0 -9.81 0`                                                             |
 | `restart`         | el mundo vuelve a empezar, con los valores actuales                                                                          |
@@ -163,3 +183,4 @@ Y los nombres que hay hoy:
 | `dojo.cubes`      | cuántos cubos chicos caen al empezar (_cubes_: cubos)                                                                        |
 | `dojo.spin`       | cómo gira el cubo grande, en radianes por segundo alrededor de cada eje                                                      |
 | `dojo.spawn`      | tira una pelota desde un lugar: `dojo.spawn 2 5 0` (_spawn_: hacer aparecer)                                                 |
+| `dojo.level`      | lo que hay en el piso: `empty`, o `course`, un nivel chico con un personaje para manejar                                     |

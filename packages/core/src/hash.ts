@@ -64,6 +64,10 @@ export function stateHash(world: World): number {
   number(world.tick);
   for (const n of world.random.state) number(n);
   value(world.gravity);
+  for (const player of [...world.inputs.keys()].sort((a, b) => a - b)) {
+    number(player);
+    value(world.inputs.get(player));
+  }
   const ids = [...world.entities.keys()].sort((a, b) => a - b);
   for (const id of ids) value(world.entities.get(id));
   return h >>> 0;

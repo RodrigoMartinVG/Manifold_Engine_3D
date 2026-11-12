@@ -1,7 +1,9 @@
 import { Registry } from '@manifold/commands';
 import type { Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
+import { NO_INPUT } from './character';
 import { EARTH } from './gravity';
+import type { PlayerInput } from './types';
 import { World } from './world';
 
 export interface SessionOptions {
@@ -19,6 +21,25 @@ export interface WorldChange {
   step: number;
   line: string;
 }
+
+/** A player's input that entered the session, and at which step: the other half of a replay. */
+export interface InputChange {
+  step: number;
+  player: number;
+  input: PlayerInput;
+}
+
+/**
+ * An input as it travels (in a replay, in a link, over the network): the movement rounded to
+ * hundredths. Small, comparable, and without the noise of a camera that turns a little every frame.
+ */
+const quantize = (i: PlayerInput): PlayerInput => ({
+  move: [Math.round(i.move[0] * 100) / 100, Math.round(i.move[1] * 100) / 100, Math.round(i.move[2] * 100) / 100],
+  jump: i.jump,
+  run: i.run,
+});
+const sameInput = (a: PlayerInput, b: PlayerInput) =>
+  a.jump === b.jump && a.run === b.run && a.move.every((x, i) => x === b.move[i]);
 
 /** A registry with what the engine and the cartridge declare (without the presentation or the console). */
 export function registryFor(cartridge: Cartridge): Registry<World> {
@@ -64,7 +85,10 @@ export class Session {
   readonly registry: Registry<World>;
   /** Every world change that entered, with the step at which it was applied. */
   readonly history: WorldChange[] = [];
+  /** Every player input that entered (only when it changed), with the step at which it was applied. */
+  readonly inputs: InputChange[] = [];
   private scheduled: { line: string; apply: (world: World) => void }[] = [];
+  private pendingInputs = new Map<number, PlayerInput>();
 
   constructor(
     readonly cartridge: Cartridge,
@@ -79,6 +103,17 @@ export class Session {
     this.registry.scheduler = (line, apply) => this.scheduled.push({ line, apply });
   }
 
+  /**
+   * What a player asks for, from now on: it enters at the start of the next step (like a world
+   * change), and stays until it changes. Asking for the same again changes nothing, and is not kept.
+   */
+  setInput(player: number, input: PlayerInput) {
+    const next = quantize(input);
+    const current = this.pendingInputs.get(player) ?? this.world.inputs.get(player) ?? NO_INPUT;
+    if (sameInput(next, current)) return;
+    this.pendingInputs.set(player, next);
+  }
+
   step() {
     const step = this.world.tick + 1;
     const scheduled = this.scheduled;
@@ -87,6 +122,11 @@ export class Session {
       s.apply(this.world);
       this.history.push({ step, line: s.line });
     }
+    for (const [player, input] of this.pendingInputs) {
+      this.world.inputs.set(player, input);
+      this.inputs.push({ step, player, input });
+    }
+    this.pendingInputs.clear();
     this.world.step();
     this.cartridge.onStep?.(this.world, this.world.stepEvents);
   }

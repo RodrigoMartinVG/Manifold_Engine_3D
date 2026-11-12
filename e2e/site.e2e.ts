@@ -120,7 +120,8 @@ for (const room of dojoRooms()) {
     const list = errors(page);
     await page.goto(`jugar/dojo/${room.name}/`);
     await expect(page).toHaveTitle(new RegExp(escapeRegExp(room.title)));
-    await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(1 + room.cubes);
+    // The big cube and the room's cubes, at least (a room may bring a level, with more meshes).
+    await expect.poll(() => meshes(page), { timeout: 15_000 }).toBeGreaterThanOrEqual(1 + room.cubes);
     expect(list).toEqual([]);
   });
 }
@@ -210,4 +211,58 @@ test('reset puts everything back to its default value, and vars shows it by scop
   await typeInConsole(page, 'reset', 'changed');
   await expect.poll(() => meshes(page)).toBe(1);
   await expect(consoleLog(page)).toContainText('nothing changed: everything is at its default value');
+});
+
+// ---------------------------------------------------------------- the character (stage 1b)
+
+const position = async (page: Page, what: 'player' | 'camera') =>
+  ((await page.locator('#game').getAttribute(`data-${what}`)) ?? '').split(' ').map(Number);
+
+test('in the course, the keys drive the character: it walks where the camera looks, jumps, and the camera follows', async ({
+  page,
+}) => {
+  const list = errors(page);
+  await page.goto('jugar/dojo/course/');
+  // It falls onto the floor and stands still (its position stops changing).
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await expect
+    .poll(
+      async () => {
+        const a = await position(page, 'player');
+        await page.waitForTimeout(300);
+        const b = await position(page, 'player');
+        return a[1] === b[1];
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true);
+  const [, y0, z0] = await position(page, 'player');
+  const camera0 = await position(page, 'camera');
+  // W held: the camera is behind it, looking at the course (−Z), so it walks towards −Z. (Held until it
+  // advances 2 m, not for a fixed time: without a GPU, as in these tests, there are few frames per
+  // second, and the fixed step runs at most 5 steps per frame, so the world goes slower than the clock.)
+  await page.keyboard.down('KeyW');
+  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 20_000 }).toBeLessThan(z0! - 2);
+  await page.keyboard.up('KeyW');
+  // The camera came along.
+  expect((await position(page, 'camera'))[2]).toBeLessThan(camera0[2]! - 2);
+  // Space, pressed and released at once (maybe between two frames): it jumps all the same.
+  await page.keyboard.press('Space');
+  await expect.poll(async () => (await position(page, 'player'))[1]).toBeGreaterThan(y0! + 1);
+  expect(list).toEqual([]);
+});
+
+test('a link can leave the camera free: the character walks, and the camera stays', async ({ page }) => {
+  const list = errors(page);
+  // (A recipe runs before the world exists: view.camera must not need anything that comes later.)
+  await page.goto('jugar/dojo/course/#recipe=view.camera+free');
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  const [, , z0] = await position(page, 'player');
+  const camera0 = await position(page, 'camera');
+  await page.keyboard.down('KeyW');
+  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 20_000 }).toBeLessThan(z0! - 1.5);
+  await page.keyboard.up('KeyW');
+  expect(await position(page, 'camera')).toEqual(camera0);
+  expect(list).toEqual([]);
 });

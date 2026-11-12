@@ -4,20 +4,20 @@ Where Manifold Gaming is going, how far it got, and what is left. It is updated 
 
 **Legend:** ✅ done · 🔨 in progress · ⬜ to do · 🔒 a decision is needed first
 
-**Now:** phase 1. Done: 1a and the friendlier console. Next: step 1b, the character and its camera.
+**Now:** phase 1. Done: 1a, the friendlier console and 1b. Next: step 1c, replays and ghosts.
 
 ## The plan in one table
 
-| Phase                      | What it brings                                                                               | How it is shown                                                                   | Status       |
-| -------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------ |
-| 0. Foundations             | The repository and its tools, the site, the executable tutorial, the console, a minimal core | A cube spinning in the Dojo, computed by the simulation                           | ✅           |
-| 1. Physics and a character | Physics, a character and its camera, replays, an early networking skeleton                   | A character runs and jumps in a classic level, and its replay gives the same hash | 🔨 (1a done) |
-| 2. Capabilities            | Climbing, grabbing…, composed                                                                | Turning capabilities on and off live                                              | ⬜           |
-| 3. A world that responds   | Mechanisms, signals, breakables, light                                                       | Breaking a lamp changes what a guard sees                                         | ⬜           |
-| 4. Combat and bots         | Weapons, enemies that use the world, navigation                                              | A guard who calls the elevator                                                    | ⬜           |
-| 5. Games                   | Three classic games, complete: story, levels, graphics, sound                                | A platformer, an action adventure and a shooter, on the site                      | ⬜           |
-| 6. Networking and levels   | Networked matches, a level editor                                                            | The shooter, online                                                               | ⬜           |
-| 7. Strange worlds          | Gravity that changes from place to place, walking on walls, spaces glued to themselves       | Two games of the second wave                                                      | ⬜           |
+| Phase                      | What it brings                                                                               | How it is shown                                                                   | Status           |
+| -------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------- |
+| 0. Foundations             | The repository and its tools, the site, the executable tutorial, the console, a minimal core | A cube spinning in the Dojo, computed by the simulation                           | ✅               |
+| 1. Physics and a character | Physics, a character and its camera, replays, an early networking skeleton                   | A character runs and jumps in a classic level, and its replay gives the same hash | 🔨 (1a, 1b done) |
+| 2. Capabilities            | Climbing, grabbing…, composed                                                                | Turning capabilities on and off live                                              | ⬜               |
+| 3. A world that responds   | Mechanisms, signals, breakables, light                                                       | Breaking a lamp changes what a guard sees                                         | ⬜               |
+| 4. Combat and bots         | Weapons, enemies that use the world, navigation                                              | A guard who calls the elevator                                                    | ⬜               |
+| 5. Games                   | Three classic games, complete: story, levels, graphics, sound                                | A platformer, an action adventure and a shooter, on the site                      | ⬜               |
+| 6. Networking and levels   | Networked matches, a level editor                                                            | The shooter, online                                                               | ⬜               |
+| 7. Strange worlds          | Gravity that changes from place to place, walking on walls, spaces glued to themselves       | Two games of the second wave                                                      | ⬜               |
 
 The games (decision [0012](docs/decisions/0012-the-games.md)): first three classics that share one character, growing with the phases — the platformer with phases 1–2, the action adventure with 3–4, the shooter with 4–6 — and complete in phase 5. The strange ones come after, in phase 7.
 
@@ -34,7 +34,7 @@ The games (decision [0012](docs/decisions/0012-the-games.md)): first three class
 
 - ✅ **1a — The physics engine.** Rapier (its deterministic build) behind a small boundary; bodies as data; gravity as a field, stored as data; the Dojo with physics; the same hash in Chromium, Firefox, WebKit and Node.
 - ✅ **Before 1b — The console and the camera, friendlier:** a free camera in the Dojo (drag to orbit, wheel to zoom, `camera.reset`); `help` with the game's examples; console output that can be clicked (examples, rooms, Tab options, suggestions with the whole line corrected); `inspect <id>` and a click on an object to inspect it; `reset [name]`; `vars` grouped by scope; clearer usage messages; `show.stats` with the physics step's time and the number of bodies.
-- ⬜ **1b — The character and its camera:** a character that runs and jumps (kinematic controller), a third-person camera that follows it, its "up" received as data (always the same, for now), keyboard, mouse and gamepad.
+- ✅ **1b — The character and its camera:** a character as data (capsule, character controller: slides along walls, climbs 35 cm steps and 50° slopes, snaps to the ground, pushes cubes), coyote time and jump buffering, its "up" from the gravity (tested walking on a wall with gravity along −Z), player inputs through the session at concrete steps (kept only when they change, part of the hash), keyboard and gamepad turned into a world direction by where the camera looks, a follow camera (`view.camera`), and a classic level in the Dojo (`dojo.level course`).
 - ⬜ **1c — Replays and ghosts:** every input carries its player `(step, player, action)`; a replay is the seed plus the inputs, small enough to travel in a link; ghosts by link.
 - ⬜ **1d — The networking skeleton:** a client and a server that run the same world, early, so it shapes everything else (decision 0000, rule 6).
 - ⬜ **The phase's lessons:** a physics engine (Rapier in the live examples: it has to be added to `site/scripts/vendor.mjs`), the character and its camera, replays.

@@ -38,7 +38,7 @@ export async function startDojo(container: HTMLElement, o: DojoOptions = {}): Pr
       game: 'dojo',
       rooms: ROOMS,
       roomUrl: (name) => `${base}jugar/dojo/${name}/`,
-      examples: ['dojo.spawn 0 5 0', 'load rain', 'physics.gravity 0 -1.62 0', 'show.physics on', 'inspect 1'],
+      examples: ['load course', 'dojo.spawn 0 5 0', 'physics.gravity 0 -1.62 0', 'show.physics on', 'inspect 1'],
     },
   });
 }

@@ -2,8 +2,20 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Quat, Vec3 } from '@manifold/common';
 import { declareHelp, type Message, type Registry } from '@manifold/commands';
-import { Clock, registryFor, Session, stateHash, type Cartridge, type Entity, type EntityId, type World } from '@manifold/core';
+import {
+  Clock,
+  registryFor,
+  Session,
+  stateHash,
+  upAt,
+  type Appearance,
+  type Cartridge,
+  type Entity,
+  type EntityId,
+  type World,
+} from '@manifold/core';
 import { mountConsole, type ConsoleOptions, type GameConsole } from './console';
+import { mountPlayerControls } from './player';
 
 /** A recipe to start with, and where it comes from (for the warnings: "the link's recipe…"). */
 export interface InitialRecipe {
@@ -132,12 +144,35 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   const meshes = new Map<EntityId, THREE.Mesh>();
   const previous = new Map<EntityId, Pose>();
   const geometries = { box: new THREE.BoxGeometry(1, 1, 1), sphere: new THREE.SphereGeometry(0.5, 24, 16) };
+  /**
+   * A mesh for an appearance. Boxes and spheres are one shared shape, scaled; a capsule is built at
+   * its size (scaling would squash its round ends), with a visor that shows where it looks (−Z).
+   */
+  const meshFor = (a: Appearance) => {
+    const material = new THREE.MeshLambertMaterial({ color: a.color, wireframe });
+    if (a.shape !== 'capsule') {
+      const mesh = new THREE.Mesh(geometries[a.shape], material);
+      mesh.scale.set(...a.size);
+      return mesh;
+    }
+    const radius = a.size[0] / 2;
+    const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(radius, a.size[1] - a.size[0], 6, 16), material);
+    const visor = new THREE.Mesh(
+      new THREE.BoxGeometry(radius * 1.2, radius * 0.45, radius * 0.5),
+      new THREE.MeshLambertMaterial({ color: 0x1a1714, wireframe }),
+    );
+    visor.position.set(0, a.size[1] * 0.28, -radius * 0.85);
+    mesh.add(visor);
+    return mesh;
+  };
   let session: Session;
   let started = false;
   let clock = new Clock();
 
   // ---------- What the view lets people change (decision 0010: scope "view") ----------
   let wireframe = false;
+  // (Declared here, before the recipes run: a recipe may bring `view.camera free`.)
+  let follow = true;
   let timescale = 1;
   let paused = false;
   registry.declareVariable({
@@ -148,7 +183,10 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     default: false,
     onChange(v) {
       wireframe = v === true;
-      for (const mesh of meshes.values()) (mesh.material as THREE.MeshLambertMaterial).wireframe = wireframe;
+      for (const mesh of meshes.values())
+        mesh.traverse((o) => {
+          if (o instanceof THREE.Mesh) (o.material as THREE.MeshLambertMaterial).wireframe = wireframe;
+        });
     },
   });
   registry.declareVariable({
@@ -236,18 +274,22 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     run: ([id], out) => out.write(typeof id === 'number' ? inspectEntity(session.world, id) : countEntities(session.world)),
   });
   if (controls) {
+    registry.declareVariable({
+      name: 'view.camera',
+      description:
+        'With a character to drive: `follow` keeps the camera behind it (the mouse still turns it around); `free` leaves it where it is.',
+      scope: 'view',
+      type: { kind: 'option', options: ['follow', 'free'] },
+      default: 'follow',
+      onChange: (v) => (follow = v === 'follow'),
+    });
     registry.declareCommand({
       name: 'camera.reset',
-      description: 'The camera back to where it started (drag to look around; the wheel, or a pinch, gets closer).',
+      description:
+        'The camera back to where it started, or behind the character (drag to look around; the wheel, or a pinch, gets closer).',
       run: (_, out) => {
-        // With damping, what is left of a turn keeps being applied after reset(), and the camera drifts
-        // away again. Without damping, update() applies that rest at once and throws it away: first
-        // that, and then back to the start.
-        controls.enableDamping = false;
-        controls.update();
-        controls.reset();
-        controls.enableDamping = true;
-        out.write('the camera is back where it started');
+        resetCamera();
+        out.write(player() ? 'the camera is behind the character' : 'the camera is back where it started');
       },
     });
     // A click (not a drag: dragging turns the camera) on an object inspects it in the console.
@@ -289,9 +331,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     // TWICE, when walking the world and through their `entityCreated` event; the second mesh hid
     // the first one in the map, and the first stayed in the scene, forgotten at the origin.)
     if (!e.appearance || !e.transform || meshes.has(e.id)) return;
-    const geometry = geometries[e.appearance.shape];
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: e.appearance.color, wireframe }));
-    mesh.scale.set(...e.appearance.size);
+    const mesh = meshFor(e.appearance);
     scene.add(mesh);
     meshes.set(e.id, mesh);
   };
@@ -299,7 +339,12 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     const mesh = meshes.get(id);
     if (mesh) {
       scene.remove(mesh);
-      (mesh.material as THREE.Material).dispose();
+      mesh.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        (o.material as THREE.Material).dispose();
+        // Shared shapes (boxes, spheres) stay; a capsule's own shape and its visor's go.
+        if (o.geometry !== geometries.box && o.geometry !== geometries.sphere) o.geometry.dispose();
+      });
     }
     meshes.delete(id);
     previous.delete(id);
@@ -310,6 +355,36 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       previous.set(e.id, { position: [...e.transform.position], rotation: [...e.transform.rotation] });
     }
   };
+
+  // ---------- The player's character (stage 1b): its inputs, and the camera that follows it ----------
+  const playerControls = mountPlayerControls({ blocked: () => gameConsole?.isOpen ?? false });
+  /** Player 1's character, if the world has one (an entity with `character`). */
+  const player = () => [...session.world.entities.values()].find((e) => e.character?.player === 1);
+  /**
+   * Behind the character and a little above, looking at its head. Or, without a character, where it
+   * started. (With damping, what is left of a turn keeps being applied after a reset, and the camera
+   * drifts away again; without damping, update() applies that rest at once and throws it away: first
+   * that, and then the new place.)
+   */
+  function resetCamera() {
+    if (!controls) return;
+    controls.enableDamping = false;
+    controls.update();
+    const hero = player();
+    if (hero?.transform && hero.character) {
+      const up = upAt(session.world, hero.transform.position);
+      const head = new THREE.Vector3(...hero.transform.position).addScaledVector(new THREE.Vector3(...up), 0.6);
+      const behind = new THREE.Vector3(...hero.character.facing).multiplyScalar(-5.5);
+      controls.target.copy(head);
+      camera.position
+        .copy(head)
+        .add(behind)
+        .addScaledVector(new THREE.Vector3(...up), 2.2);
+      camera.up.set(...up);
+      controls.update();
+    } else controls.reset();
+    controls.enableDamping = true;
+  }
 
   /** Creates the world (at the start, and on restart), with the registry's current values. */
   function startSession() {
@@ -322,6 +397,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     for (const e of session.world.entities.values()) createMesh(e);
     savePrevious();
     clock = new Clock();
+    if (controls && player()) resetCamera();
   }
   function restart() {
     startSession();
@@ -355,6 +431,12 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     request = requestAnimationFrame(frame);
     const dt = (now - last) / 1000;
     last = now;
+    // What player 1 asks for: it enters the world at the next step (the session keeps only the changes).
+    const hero = player();
+    if (hero?.transform) {
+      const look = camera.getWorldDirection(new THREE.Vector3());
+      session.setInput(1, playerControls.read([look.x, look.y, look.z], upAt(session.world, hero.transform.position)));
+    }
     const steps = paused ? 0 : clock.advance(dt * timescale);
     for (let i = 0; i < steps; i++) advance();
     const world = session.world;
@@ -377,6 +459,15 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       const { vertices } = world.physics.debugLines();
       physicsLines.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     }
+    // The camera follows the character: it moves as much as its head moved (the mouse still turns it).
+    const heroMesh = hero && meshes.get(hero.id);
+    if (controls && follow && heroMesh && hero?.transform) {
+      const up = upAt(world, hero.transform.position);
+      const head = heroMesh.position.clone().addScaledVector(new THREE.Vector3(...up), 0.6);
+      const moved = head.sub(controls.target);
+      controls.target.add(moved);
+      camera.position.add(moved);
+    }
     controls?.update();
     renderer.render(scene, camera);
     framesThisSecond++;
@@ -394,6 +485,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       container.dataset.frames = String(frames);
       container.dataset.meshes = String(scene.children.filter((x) => x instanceof THREE.Mesh).length);
       container.dataset.step = String(world.tick);
+      if (hero?.transform) container.dataset.player = hero.transform.position.map((n) => n.toFixed(2)).join(' ');
       container.dataset.camera = camera.position
         .toArray()
         .map((n) => n.toFixed(2))
@@ -423,6 +515,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       cancelAnimationFrame(request);
       observer.disconnect();
       gameConsole?.stop();
+      playerControls.stop();
       controls?.dispose();
       session.world.dispose();
       renderer.dispose();

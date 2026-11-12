@@ -1,5 +1,4 @@
-import { quat } from '@manifold/common';
-import type { Vec3 } from '@manifold/commands';
+import { quat, type Quat, type Vec3 } from '@manifold/common';
 import type { Cartridge, World } from '@manifold/core';
 
 /** The big cube's spin at the start (a tilted axis: so it shows that it spins in 3D, not just "turns"). */
@@ -23,6 +22,47 @@ function randomCube(world: World) {
       angularVelocity: [r.between(-2, 2), r.between(-2, 2), r.between(-2, 2)],
     },
     appearance: { shape: 'box', size: [side, side, side], color: randomColor(world) },
+  });
+}
+
+/**
+ * THE COURSE (`dojo.level course`, stage 1b): a small classic level to try the character. Steps it
+ * climbs by walking, a ramp, platforms at growing heights that are reached by jumping, and a wall too
+ * high to climb. Every piece is a fixed box: `[center, half sizes, rotation?, color]`.
+ *
+ * The ramp's rotation is written as numbers (18° around X: sin 9° and cos 9°), not computed with
+ * `Math.sin`: the world must be born the same in every browser (decision 0012).
+ */
+const STONE = 0x6f6a62;
+const BRONZE = 0x8a6a42;
+const COURSE: [center: Vec3, half: Vec3, rotation: Quat | null, color: number][] = [
+  // Three steps of 30 cm, climbed by walking.
+  [[4, 0.15, 3], [1, 0.15, 1], null, STONE],
+  [[4, 0.3, 1], [1, 0.3, 1], null, STONE],
+  [[4, 0.45, -1], [1, 0.45, 1], null, STONE],
+  // A ramp of 18°.
+  [[-4, 0.62, 1.5], [1, 0.1, 2.2], [0.15643446504023087, 0, 0, 0.9876883405951378], STONE],
+  // Platforms: 1.2 m, 2.4 m and 3.6 m high, a meter apart: each one, one jump from the one before.
+  [[0, 0.6, -4], [1, 0.6, 1], null, BRONZE],
+  [[0, 1.2, -7], [1, 1.2, 1], null, BRONZE],
+  [[-3, 1.8, -7], [1, 1.8, 1], null, BRONZE],
+  // A wall of 2 m: too high to climb or to jump.
+  [[6.5, 1, -4], [0.25, 1, 2], null, STONE],
+];
+
+function buildCourse(world: World) {
+  for (const [center, half, rotation, color] of COURSE)
+    world.createEntity({
+      transform: { position: [...center], rotation: rotation ? [...rotation] : quat.identity() },
+      body: { type: 'fixed', shape: { kind: 'box', halfExtents: [...half] } },
+      appearance: { shape: 'box', size: [half[0] * 2, half[1] * 2, half[2] * 2], color },
+    });
+  // The character of player 1: a capsule 1.6 m tall, looking at the course.
+  world.createEntity({
+    transform: { position: [0, 1, 6], rotation: quat.identity() },
+    body: { type: 'character', shape: { kind: 'capsule', halfHeight: 0.5, radius: 0.3 } },
+    character: { player: 1, facing: [0, 0, -1] },
+    appearance: { shape: 'capsule', size: [0.6, 1.6, 0.6], color: 0x93d9c9 },
   });
 }
 
@@ -67,6 +107,14 @@ export const DojoCartridge: Cartridge = {
       default: 0,
     });
     registry.declareVariable({
+      name: 'dojo.level',
+      description:
+        'What there is on the floor: `empty`, or `course`, a small classic level with a character to drive (WASD or the arrows, Space to jump, Shift to run).',
+      scope: 'startup',
+      type: { kind: 'option', options: ['empty', 'course'] },
+      default: 'empty',
+    });
+    registry.declareVariable({
       name: 'dojo.spin',
       description: 'How the big cube spins: radians per second around each axis (x y z).',
       scope: 'world',
@@ -102,6 +150,7 @@ export const DojoCartridge: Cartridge = {
       transform: { position: [0, -0.5, 0], rotation: quat.identity() },
       body: { type: 'fixed', shape: { kind: 'box', halfExtents: [10, 0.5, 10] } },
     });
+    if (registry.value('dojo.level') === 'course') buildCourse(world);
     const cubes = Number(registry.value('dojo.cubes'));
     for (let i = 0; i < cubes; i++) randomCube(world);
   },

@@ -133,3 +133,19 @@ test('physics.gravity is a world value: it enters at the next step and goes into
   expect(10 - height(earth)).toBeGreaterThan(4.5);
   expect(10 - height(moon)).toBeLessThan(1);
 });
+
+test('dojo.level course builds a classic level with player 1 character, who lands and walks', () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+  const hero = [...session.world.entities.values()].find((e) => e.character?.player === 1)!;
+  expect(hero).toBeDefined();
+  for (let i = 0; i < 120; i++) session.step();
+  expect(hero.character!.grounded).toBe(true);
+  const start = hero.transform!.position[2];
+  // Forward (−Z, towards the course) for half a second.
+  for (let i = 0; i < 30; i++) {
+    session.setInput(1, { move: [0, 0, -1], jump: false, run: false });
+    session.step();
+  }
+  expect(hero.transform!.position[2]).toBeLessThan(start - 1.5);
+  session.world.dispose();
+});

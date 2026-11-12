@@ -53,3 +53,45 @@ describe('quaternions', () => {
     expect(vec3.length(quat.rotate(q, v))).toBeCloseTo(vec3.length(v), 12);
   });
 });
+
+describe('looking somewhere (for characters)', () => {
+  test('onPlane keeps the part of a vector that is perpendicular to the normal', () => {
+    close(vec3.onPlane([3, 5, -2], [0, 1, 0]), [3, 0, -2]);
+    const n = vec3.normalize([1, 1, 0]);
+    expect(Math.abs(vec3.dot(vec3.onPlane([2, -1, 4], n), n))).toBeLessThan(1e-12);
+  });
+
+  test('look: looking at −Z with +Y up is no rotation; any other way, the axes go where they should', () => {
+    close(quat.look([0, 0, -1], [0, 1, 0]), [0, 0, 0, 1]);
+    // Four directions around +Y, and three tilted "ups" (also with the forward opposite to each branch).
+    const cases: [Vec3, Vec3][] = [
+      [
+        [1, 0, 0],
+        [0, 1, 0],
+      ],
+      [
+        [0, 0, 1],
+        [0, 1, 0],
+      ],
+      [
+        [-1, 0, 0],
+        [0, 1, 0],
+      ],
+      [vec3.normalize([1, 0, -1]), [0, 1, 0]],
+      [
+        [0, 1, 0],
+        [0, 0, 1],
+      ],
+      [
+        [0, -1, 0],
+        [1, 0, 0],
+      ],
+      [vec3.normalize([1, 1, 0]), vec3.normalize([-1, 1, 0])],
+    ];
+    for (const [forward, up] of cases) {
+      const q = quat.look(forward, up);
+      close(quat.rotate(q, [0, 0, -1]), forward, 1e-12);
+      close(quat.rotate(q, [0, 1, 0]), up, 1e-12);
+    }
+  });
+});
