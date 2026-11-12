@@ -1,0 +1,10 @@
+# En alambre: los triángulos y los ejes
+# Lo que dibuja la placa de video, sin relleno: cada cubo son doce triángulos. Con los ejes
+# del mundo (x rojo, y verde, z azul) y las estadísticas del paso.
+semilla 3
+dojo.cubos 12
+
+# Lo que se ve
+ver.triangulos si
+ver.ejes si
+ver.estadisticas si

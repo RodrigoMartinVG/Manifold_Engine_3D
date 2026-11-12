@@ -1,5 +1,5 @@
 export { Mundo, PASO, type OpcionesMundo } from './mundo';
-export { Partida, type OpcionesPartida } from './partida';
+export { Partida, declararNucleo, registroDe, type CambioDelMundo, type OpcionesPartida } from './partida';
 export { Reloj } from './reloj';
 export { huella } from './huella';
 export type { Cartucho } from './cartucho';

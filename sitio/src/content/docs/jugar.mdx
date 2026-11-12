@@ -1,0 +1,44 @@
+---
+title: Jugar
+description: El Dojo y los juegos construidos sobre el motor.
+---
+
+import { RECETAS } from '@manifold/dojo/recetas';
+
+## El Dojo
+
+[**Entrar al Dojo →**](dojo/)
+
+El primer juego: el laboratorio del motor. Por ahora tiene un cubo que gira y cubos chicos sacados del azar del mundo. Con cada etapa del motor va a sumar salas para probar lo nuevo.
+
+### Sus salas
+
+Cada sala es una receta guardada, con su propia dirección:
+
+<ul>
+  {Object.entries(RECETAS).map(([nombre, receta]) => (
+    <li>
+      <a href={`dojo/${nombre}/`}>{receta.titulo}</a>
+    </li>
+  ))}
+</ul>
+
+### La consola
+
+Con la tecla **º** (la que está a la izquierda del 1), o con el botón de abajo a la izquierda, se abre la consola, como la de los juegos de antes. Ahí se ve y se cambia todo lo que el Dojo deja tocar:
+
+```
+] ayuda                      cómo se usa
+] dojo.cubos 20              veinte cubos más (el mundo vuelve a empezar)
+] ver.triangulos si          las mallas como alambre
+] cargar lluvia              una sala guardada
+] exportar                   un enlace para que otra persona vea lo mismo
+] inicio guardar             arrancar siempre así, en este navegador
+] atajo t alternar ver.ejes  la tecla t prende y apaga los ejes
+```
+
+Tab completa los nombres, las flechas recorren lo que escribiste, y Esc cierra. Cómo está pensada, en la [decisión 0010](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0010-la-consola-y-las-recetas.md).
+
+## Los juegos
+
+Todavía ninguno: llegan en la fase 5, cuando el motor sepa hacer lo que necesitan. Cada juego va a decidir si tiene consola, y qué deja tocar.

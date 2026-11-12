@@ -1,3 +1,4 @@
+import type { Registro } from '@manifold/comandos';
 import type { Evento } from './tipos';
 import type { Mundo } from './mundo';
 
@@ -16,8 +17,17 @@ export interface Cartucho {
   /** Para las direcciones y las repeticiones: "dojo". */
   readonly id: string;
   readonly titulo: string;
-  /** Una vez, con el mundo recién creado: poner lo que haya al empezar. */
-  alIniciar(mundo: Mundo, opciones: ReadonlyMap<string, string>): void;
+  /**
+   * Sus variables y comandos (decisión 0010): lo que este juego deja cambiar y hacer. Cada juego
+   * decide qué expone: el Dojo, todo; un juego competitivo, quizás nada. Se llama una vez por
+   * registro, antes de crear el mundo.
+   */
+  alDeclarar?(registro: Registro<Mundo>): void;
+  /**
+   * Una vez, con el mundo recién creado: poner lo que haya al empezar. Lo de ARRANQUE (cuántos
+   * cubos, qué sala) se lee del registro, que ya tiene aplicadas las recetas.
+   */
+  alIniciar(mundo: Mundo, registro: Registro<Mundo>): void;
   /** En cada paso, después de que el mundo avanzó, con los eventos de ese paso. */
   alAvanzar?(mundo: Mundo, eventos: readonly Evento[]): void;
 }

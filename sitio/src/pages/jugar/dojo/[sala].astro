@@ -1,0 +1,17 @@
+---
+/**
+ * UNA SALA GUARDADA DEL DOJO, con su propia dirección (decisión 0010): una página por cada
+ * receta de `juegos/dojo/recetas/`. Es el mismo Dojo, que nace con esa receta. Agregar una sala
+ * es agregar un archivo: la página sale sola.
+ */
+import { RECETAS } from '@manifold/dojo/recetas';
+import PaginaDojo from '../../../components/PaginaDojo.astro';
+
+export function getStaticPaths() {
+  return Object.entries(RECETAS).map(([sala, receta]) => ({ params: { sala }, props: { titulo: receta.titulo } }));
+}
+const { sala } = Astro.params;
+const { titulo } = Astro.props;
+---
+
+<PaginaDojo sala={sala} titulo={titulo} />

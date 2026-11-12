@@ -1,0 +1,13 @@
+{
+  "name": "@manifold/comandos",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Las variables y los comandos que declara cada parte, el intérprete de una línea y las recetas (decisión 0010). Sin pantalla, sin dependencias: lo usan la consola, los enlaces, las salas y las pruebas.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json"
+  }
+}

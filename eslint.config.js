@@ -50,6 +50,16 @@ export default defineConfig(
     },
   },
   {
+    // Las variables, los comandos y las recetas (decisión 0010): sin pantalla y sin depender de nadie.
+    files: ['paquetes/comandos/src/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [dibujo, { group: ['@manifold/*'], message: 'comandos no depende de ningún otro paquete.' }] },
+      ],
+    },
+  },
+  {
     files: ['paquetes/nucleo/src/**'],
     rules: { 'no-restricted-imports': ['error', { patterns: [dibujo, presentacion, juegos] }] },
   },
@@ -66,7 +76,7 @@ export default defineConfig(
         {
           patterns: [
             {
-              group: ['@manifold/*', '!@manifold/comun', '!@manifold/nucleo', '!@manifold/presentacion'],
+              group: ['@manifold/*', '!@manifold/comun', '!@manifold/comandos', '!@manifold/nucleo', '!@manifold/presentacion'],
               message: 'Un juego importa el motor, nunca otro juego (decisión 0003).',
             },
           ],

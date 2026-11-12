@@ -6,9 +6,11 @@
   "description": "El Dojo: el primer juego, que existe desde el primer día para usar el motor desde afuera. Un laboratorio de salas para experimentar.",
   "exports": {
     ".": "./src/index.ts",
-    "./cartucho": "./src/cartucho.ts"
+    "./cartucho": "./src/cartucho.ts",
+    "./recetas": "./src/recetas.ts"
   },
   "dependencies": {
+    "@manifold/comandos": "0.0.0",
     "@manifold/comun": "0.0.0",
     "@manifold/nucleo": "0.0.0",
     "@manifold/presentacion": "0.0.0"

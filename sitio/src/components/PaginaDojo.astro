@@ -1,11 +1,20 @@
 ---
 /**
- * La página del Dojo: pantalla completa, sin el marco del sitio. El juego se monta en #juego.
- * (Astro empaqueta el <script> con Vite, como cualquier página: importa el Dojo como un
- * paquete más del monorepo.)
+ * LA PÁGINA DEL DOJO: pantalla completa, sin el marco del sitio. El juego se monta en #juego.
+ * La usan dos páginas: `/jugar/dojo/` y la de cada sala guardada (`/jugar/dojo/lluvia/`), que
+ * le pasa su nombre (decisión 0010: cada sala tiene su dirección). Astro empaqueta el <script>
+ * con Vite, como cualquier página: importa el Dojo como un paquete más del monorepo.
  */
 import '@fontsource-variable/cinzel';
-import oxido from '../../assets/dibujos/oxido.svg';
+import oxido from '../assets/dibujos/oxido.svg';
+
+interface Props {
+  /** La sala guardada (el nombre de su receta), si se entró por la dirección de una. */
+  sala?: string;
+  /** Su título, para la pestaña del navegador. */
+  titulo?: string;
+}
+const { sala, titulo } = Astro.props;
 const inicio = import.meta.env.BASE_URL;
 ---
 
@@ -13,7 +22,7 @@ const inicio = import.meta.env.BASE_URL;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dojo · Manifold Gaming</title>
+    <title>{titulo ? `${titulo} · Dojo · Manifold Gaming` : 'Dojo · Manifold Gaming'}</title>
     <style>
       html,
       body {
@@ -28,11 +37,12 @@ const inicio = import.meta.env.BASE_URL;
         position: fixed;
         inset: 0;
       }
-      /* Volver: una plaquita de metal viejo, como los botones del sitio. */
+      /* Volver: una plaquita de metal viejo, como los botones del sitio. Abajo a la derecha: arriba
+         se abre la consola, y abajo a la izquierda está su botón. */
       #volver {
         position: fixed;
-        top: 12px;
-        left: 12px;
+        right: 12px;
+        bottom: 12px;
         padding: 0.35rem 0.9rem;
         border: 1px solid #24170a;
         border-radius: 0.35rem;
@@ -56,11 +66,12 @@ const inicio = import.meta.env.BASE_URL;
     </style>
   </head>
   <body>
-    <div id="juego"></div>
+    <div id="juego" data-sala={sala}></div>
     <a id="volver" href={inicio} style={`--oxido: url(${oxido.src})`}>← Manifold Gaming</a>
     <script>
       import { arrancarDojo } from '@manifold/dojo';
-      arrancarDojo(document.getElementById('juego')!);
+      const juego = document.getElementById('juego')!;
+      arrancarDojo(juego, { sala: juego.dataset.sala, base: import.meta.env.BASE_URL });
     </script>
   </body>
 </html>

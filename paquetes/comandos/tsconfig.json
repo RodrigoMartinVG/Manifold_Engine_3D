@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Sin "DOM": el registro y el intérprete corren igual en el navegador, en el servidor y en las pruebas.
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"]
+}

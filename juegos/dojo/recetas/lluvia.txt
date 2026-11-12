@@ -1,0 +1,5 @@
+# Lluvia de cubos
+# Ciento veinte cubos chicos, todos sacados del azar del mundo. Con la misma semilla, siempre
+# los mismos, en el mismo lugar: cambiá la semilla en la consola (semilla 8) y mirá.
+semilla 7
+dojo.cubos 120

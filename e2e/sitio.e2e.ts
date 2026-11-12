@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
 /** Junta los errores de la página (excepciones y `console.error`) para exigir que no haya. */
@@ -54,3 +56,91 @@ for (const [direccion, cubos] of [
     expect(lista).toEqual([]);
   });
 }
+
+// ---------------------------------------------------------------- la consola y las recetas (decisión 0010)
+
+const mallas = (page: Page) => page.locator('#juego').getAttribute('data-mallas').then(Number);
+const registroDeLaConsola = (page: Page) => page.locator('.mg-consola-registro');
+
+async function escribirEnLaConsola(page: Page, ...lineas: string[]) {
+  for (const linea of lineas) {
+    await page.locator('.mg-consola input').fill(linea);
+    await page.locator('.mg-consola input').press('Enter');
+  }
+}
+
+test('la consola del Dojo se abre con la tecla º y cambia el mundo', async ({ page }) => {
+  const lista = errores(page);
+  await page.goto('jugar/dojo/');
+  await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(1);
+  await page.keyboard.press('Backquote');
+  await expect(page.locator('.mg-consola')).toHaveAttribute('data-abierta', 'si');
+
+  // De arranque: el mundo vuelve a empezar con 20 cubos más.
+  await escribirEnLaConsola(page, 'dojo.cubos 20');
+  await expect.poll(() => mallas(page)).toBe(21);
+  // Del mundo: un cubo nuevo, en el paso siguiente.
+  await escribirEnLaConsola(page, 'dojo.crear 0 2 0');
+  await expect.poll(() => mallas(page)).toBe(22);
+  // Un nombre mal escrito sugiere el parecido.
+  await escribirEnLaConsola(page, 'dojo.cubo 3');
+  await expect(registroDeLaConsola(page)).toContainText('¿Quisiste decir "dojo.cubos"?');
+  // Exportar arma el enlace con la receta de lo cambiado.
+  await escribirEnLaConsola(page, 'exportar');
+  await expect(registroDeLaConsola(page)).toContainText('/jugar/dojo/#receta=dojo.cubos+20');
+  // Esc cierra.
+  await page.locator('.mg-consola input').press('Escape');
+  await expect(page.locator('.mg-consola')).toHaveAttribute('data-abierta', 'no');
+  expect(lista).toEqual([]);
+});
+
+/** Las salas guardadas del Dojo, leídas de sus archivos: una sala nueva queda probada sola. */
+function salasDelDojo() {
+  const carpeta = path.join(process.cwd(), 'juegos/dojo/recetas');
+  return readdirSync(carpeta)
+    .filter((f) => f.endsWith('.txt'))
+    .map((f) => {
+      const texto = readFileSync(path.join(carpeta, f), 'utf8');
+      return {
+        nombre: f.replace(/\.txt$/, ''),
+        titulo: texto.match(/^#\s*(.+)$/m)![1]!,
+        cubos: Number(texto.match(/^dojo\.cubos\s+(\d+)/m)?.[1] ?? 0),
+      };
+    });
+}
+
+for (const sala of salasDelDojo()) {
+  test(`la sala guardada "${sala.nombre}" tiene su dirección y nace con su receta`, async ({ page }) => {
+    const lista = errores(page);
+    await page.goto(`jugar/dojo/${sala.nombre}/`);
+    await expect(page).toHaveTitle(new RegExp(sala.titulo));
+    await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(1 + sala.cubos);
+    expect(lista).toEqual([]);
+  });
+}
+
+test('un enlace con la receta adentro: aplica lo que entiende, avisa lo demás, y no toca las preferencias', async ({ page }) => {
+  const lista = errores(page);
+  await page.goto('jugar/dojo/#receta=dojo.cubos+5;inicio+guardar;inventado+3');
+  await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(6);
+  await page.keyboard.press('Backquote');
+  await expect(registroDeLaConsola(page)).toContainText('la receta del enlace: 2 líneas no se entendieron');
+  await expect(registroDeLaConsola(page)).toContainText('"inicio" no se puede usar en una receta');
+  expect(await page.evaluate(() => localStorage.getItem('manifold.dojo.inicio'))).toBeNull();
+  expect(lista).toEqual([]);
+});
+
+test('la receta de inicio y los atajos se guardan, y valen la próxima vez', async ({ page }) => {
+  await page.goto('jugar/dojo/');
+  await page.keyboard.press('Backquote');
+  await escribirEnLaConsola(page, 'dojo.cubos 4', 'inicio guardar', 'atajo t alternar ver.triangulos');
+  await page.reload();
+  // Nace con la receta de inicio...
+  await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(5);
+  // ...y el atajo anda con la consola cerrada.
+  await page.locator('#juego canvas').click();
+  await page.keyboard.press('t');
+  await page.keyboard.press('Backquote');
+  await expect(registroDeLaConsola(page)).toContainText('(atajo t)');
+  await expect(registroDeLaConsola(page)).toContainText('ver.triangulos = si');
+});

@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@manifold/comandos": "0.0.0",
     "@manifold/comun": "0.0.0",
     "@manifold/nucleo": "0.0.0",
     "three": "^0.187.0"
