@@ -1,16 +1,17 @@
 /*
- * EL TALLER: la estética del sitio. Bronce, pátina y tinta sobre carbón en el modo oscuro;
- * pergamino y tinta sepia en el claro. Lo arcano de la matemática (construcciones con compás,
- * fórmulas) y lo mecánico (metal, remaches, engranajes), sin perder lo principal: que se lea bien.
+ * THE WORKSHOP: the site's look (decision 0008). Bronze, patina and ink on charcoal in dark mode;
+ * parchment and sepia ink in light mode. The arcane side of mathematics (compass constructions,
+ * formulas) and the mechanical one (metal, rivets, gears), without losing the main thing: that it
+ * reads well.
  *
- * Se suma a la de Starlight con `customCss` (astro.config.mjs). Starlight pone sus estilos en
- * capas (@layer) y estas reglas no están en ninguna, así que ganan siempre. Por eso cada color
- * se define DOS veces: para `:root` (el oscuro) y para `:root[data-theme='light']`.
+ * It is added to Starlight's with `customCss` (astro.config.mjs). Starlight puts its styles in
+ * layers (@layer) and these rules are in none, so they always win. That is why every color is
+ * defined TWICE: for `:root` (dark) and for `:root[data-theme='light']`.
  *
- * Los dibujos (src/assets/dibujos/) los genera `scripts/dibujar.mjs`.
+ * The drawings (src/assets/drawings/) are made by `scripts/draw.mjs`.
  */
 
-/* ------------------------------------------------------------------ colores: el taller (oscuro) */
+/* ------------------------------------------------------------------ colors: the workshop (dark) */
 :root {
   --sl-color-white: #fbf3e4;
   --sl-color-gray-1: #ece2d1;
@@ -21,12 +22,12 @@
   --sl-color-gray-6: #1d1915;
   --sl-color-black: #12100d;
 
-  /* El acento es la pátina (el verde del cobre viejo); el bronce va en marcos y títulos. */
+  /* The accent is the patina (old copper's green); the bronze goes in frames and titles. */
   --sl-color-accent-low: #163a34;
   --sl-color-accent: #3f9e8c;
   --sl-color-accent-high: #93d9c9;
 
-  /* Los avisos ("Sutilezas" usa el naranja, las notas el azul): bronce y pátina. */
+  /* The asides ("Sutilezas" uses the orange one, the notes the blue one): bronze and patina. */
   --sl-color-orange-low: #3b2914;
   --sl-color-orange: #d49b55;
   --sl-color-orange-high: #f2d5a8;
@@ -40,38 +41,38 @@
   --sl-color-hairline: #29231d;
   --sl-color-hairline-shade: #070605;
 
-  /* Lo propio del sitio (prefijo mg-). */
-  --mg-letra-titulo: 'Cinzel Variable', 'Cinzel', 'Iowan Old Style', Palatino, Georgia, serif;
-  --mg-letra-libro: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
-  --mg-titulo: #c4a06a;
-  --mg-titulo-2: #b8945f;
-  --mg-linea-bronce: rgb(150 108 64 / 0.3);
-  --mg-linea-bronce-fuerte: rgb(158 116 70 / 0.65);
-  --mg-tinta-dibujo: rgb(224 180 120 / 0.075);
-  --mg-brillo: rgb(63 158 140 / 0.11);
-  --mg-placa: #1a1713;
-  --mg-cabecera: linear-gradient(180deg, #221d18, #191612);
-  --mg-sombra: 0 14px 30px -14px rgb(0 0 0 / 0.9);
+  /* The site's own (prefix mg-). */
+  --mg-font-title: 'Cinzel Variable', 'Cinzel', 'Iowan Old Style', Palatino, Georgia, serif;
+  --mg-font-book: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --mg-title: #c4a06a;
+  --mg-title-2: #b8945f;
+  --mg-bronze-line: rgb(150 108 64 / 0.3);
+  --mg-bronze-line-strong: rgb(158 116 70 / 0.65);
+  --mg-drawing-ink: rgb(224 180 120 / 0.075);
+  --mg-glow: rgb(63 158 140 / 0.11);
+  --mg-plate: #1a1713;
+  --mg-header: linear-gradient(180deg, #221d18, #191612);
+  --mg-shadow: 0 14px 30px -14px rgb(0 0 0 / 0.9);
   /*
-   * EL METAL: bronce viejo, mate y oscuro, sin franjas de brillo. Encima, dos texturas que se
-   * repiten (scripts/dibujar.mjs): manchas de óxido con picado, y costras de pátina verde.
-   * `--mg-metal` es todo junto, capa sobre capa.
+   * THE METAL: old bronze, matte and dark, without shiny streaks. On top, two repeating textures
+   * (scripts/draw.mjs): rust stains with pitting, and crusts of green patina. `--mg-metal` is all
+   * of it together, layer over layer.
    */
-  --mg-bronce: linear-gradient(160deg, #3c2916 0%, #4c351f 35%, #553c24 55%, #48321c 80%, #3f2b17 100%);
-  --mg-oxido: url('../assets/dibujos/oxido.svg') 0 0 / 220px 220px;
-  --mg-patina: url('../assets/dibujos/patina.svg') 0 0 / 360px 360px;
-  --mg-metal: var(--mg-patina), var(--mg-oxido), var(--mg-bronce);
-  /* Para piezas chicas (un botón, la página actual del índice): sin costras, que ensucian la letra. */
-  --mg-metal-suave: var(--mg-oxido), var(--mg-bronce);
-  /* El borde de una placa: apenas una luz arriba y una sombra abajo (nada de brillo). */
-  --mg-bisel: inset 0 1px 0 rgb(255 225 180 / 0.1), inset 0 -1px 0 rgb(0 0 0 / 0.4);
-  /* Letras de metal envejecido, para los títulos grandes. */
-  --mg-texto-metal: linear-gradient(180deg, #b8935f 0%, #9c7646 55%, #84603a 100%);
-  /* Letras claras grabadas en el metal: la sombra arriba las hunde. */
-  --mg-texto-sobre-bronce: #ead5b0;
-  --mg-grabado: 0 -1px 0 rgb(0 0 0 / 0.65);
-  /* Un remache: una cabeza redonda y opaca. */
-  --mg-remache: radial-gradient(
+  --mg-bronze: linear-gradient(160deg, #3c2916 0%, #4c351f 35%, #553c24 55%, #48321c 80%, #3f2b17 100%);
+  --mg-rust: url('../assets/drawings/rust.svg') 0 0 / 220px 220px;
+  --mg-patina: url('../assets/drawings/patina.svg') 0 0 / 360px 360px;
+  --mg-metal: var(--mg-patina), var(--mg-rust), var(--mg-bronze);
+  /* For small pieces (a button, the index's current page): no crusts, they muddy the letters. */
+  --mg-metal-soft: var(--mg-rust), var(--mg-bronze);
+  /* A plate's edge: just a light on top and a shadow below (no shine). */
+  --mg-bevel: inset 0 1px 0 rgb(255 225 180 / 0.1), inset 0 -1px 0 rgb(0 0 0 / 0.4);
+  /* Aged metal letters, for the big titles. */
+  --mg-metal-text: linear-gradient(180deg, #b8935f 0%, #9c7646 55%, #84603a 100%);
+  /* Light letters engraved in the metal: the shadow on top sinks them. */
+  --mg-text-on-bronze: #ead5b0;
+  --mg-engraved: 0 -1px 0 rgb(0 0 0 / 0.65);
+  /* A rivet: a round, dull head. */
+  --mg-rivet: radial-gradient(
     circle at 40% 35%,
     #a68862 0 0.8px,
     #6f5233 1.6px,
@@ -81,7 +82,7 @@
   );
 }
 
-/* --------------------------------------------------------- colores: el pergamino (claro) */
+/* --------------------------------------------------------- colors: the parchment (light) */
 :root[data-theme='light'] {
   --sl-color-white: #1e1711;
   --sl-color-gray-1: #2c2219;
@@ -110,38 +111,38 @@
   --sl-color-hairline: #e3d6bc;
   --sl-color-hairline-shade: #cdbd9f;
 
-  --mg-titulo: #7a4a1d;
-  --mg-titulo-2: #85521f;
-  --mg-linea-bronce: rgb(138 86 38 / 0.3);
-  --mg-linea-bronce-fuerte: rgb(138 86 38 / 0.65);
-  --mg-tinta-dibujo: rgb(104 66 30 / 0.085);
-  --mg-brillo: rgb(201 144 80 / 0.16);
-  --mg-placa: #fbf5ea;
-  --mg-cabecera: linear-gradient(180deg, #f6ecd9, #efe4cf);
-  --mg-sombra: 0 14px 30px -18px rgb(80 50 20 / 0.45);
-  --mg-texto-metal: linear-gradient(180deg, #7d5a32 0%, #65431f 60%, #573a1c 100%);
+  --mg-title: #7a4a1d;
+  --mg-title-2: #85521f;
+  --mg-bronze-line: rgb(138 86 38 / 0.3);
+  --mg-bronze-line-strong: rgb(138 86 38 / 0.65);
+  --mg-drawing-ink: rgb(104 66 30 / 0.085);
+  --mg-glow: rgb(201 144 80 / 0.16);
+  --mg-plate: #fbf5ea;
+  --mg-header: linear-gradient(180deg, #f6ecd9, #efe4cf);
+  --mg-shadow: 0 14px 30px -18px rgb(80 50 20 / 0.45);
+  --mg-metal-text: linear-gradient(180deg, #7d5a32 0%, #65431f 60%, #573a1c 100%);
 }
 
-/* El inicio: el dibujo del fondo se ve más. En las lecciones queda apenas, para leer tranquilo. */
+/* The home page: the background drawing shows more. In the lessons it barely shows, to read in peace. */
 :root[data-has-hero] {
-  --mg-tinta-dibujo: rgb(224 180 120 / 0.13);
+  --mg-drawing-ink: rgb(224 180 120 / 0.13);
 }
 :root[data-has-hero][data-theme='light'] {
-  --mg-tinta-dibujo: rgb(104 66 30 / 0.14);
+  --mg-drawing-ink: rgb(104 66 30 / 0.14);
 }
 
-/* ------------------------------------------------------------------ el fondo */
+/* ------------------------------------------------------------------ the background */
 body {
-  /* Un brillo de pátina arriba (se va con la página al bajar) sobre el carbón. */
+  /* A patina glow at the top (it goes away with the page when scrolling) over the charcoal. */
   background:
-    radial-gradient(ellipse 70% 38rem at 78% -6rem, var(--mg-brillo), transparent 70%) no-repeat,
+    radial-gradient(ellipse 70% 38rem at 78% -6rem, var(--mg-glow), transparent 70%) no-repeat,
     var(--sl-color-bg);
 }
 
 /*
- * Las construcciones y las fórmulas: una capa FIJA detrás de todo (no se repinta al bajar). El
- * SVG es una máscara: deja pasar el color `--mg-tinta-dibujo` solo donde hay trazo, así el mismo
- * dibujo sirve con tinta clara sobre carbón o con tinta sepia sobre pergamino.
+ * The constructions and the formulas: a FIXED layer behind everything (it is not repainted when
+ * scrolling). The SVG is a mask: it lets the color `--mg-drawing-ink` through only where there is a
+ * stroke, so the same drawing works with light ink on charcoal or sepia ink on parchment.
  */
 body::before {
   content: '';
@@ -149,217 +150,217 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-color: var(--mg-tinta-dibujo);
-  -webkit-mask: url('../assets/dibujos/fondo.svg') center / cover no-repeat;
-  mask: url('../assets/dibujos/fondo.svg') center / cover no-repeat;
+  background-color: var(--mg-drawing-ink);
+  -webkit-mask: url('../assets/drawings/background.svg') center / cover no-repeat;
+  mask: url('../assets/drawings/background.svg') center / cover no-repeat;
 }
 
 ::selection {
   background-color: rgb(160 116 70 / 0.42);
 }
 
-/* ------------------------------------------------------------------ la cabecera y el título */
-/* Solo la cabecera de afuera: Starlight usa la clase "header" también para lo de adentro. */
+/* ------------------------------------------------------------------ the header and the title */
+/* Only the outer header: Starlight uses the "header" class for what is inside it too. */
 header.header {
-  background: var(--mg-cabecera);
-  /* Un solo filo de bronce debajo, y su sombra. */
-  border-bottom: 1px solid var(--mg-linea-bronce-fuerte);
+  background: var(--mg-header);
+  /* A single bronze edge below, and its shadow. */
+  border-bottom: 1px solid var(--mg-bronze-line-strong);
   box-shadow: 0 10px 24px -18px rgb(0 0 0 / 0.9);
 }
 
 .site-title {
-  font-family: var(--mg-letra-titulo);
+  font-family: var(--mg-font-title);
   font-size: clamp(1rem, 0.8rem + 0.9vw, 1.3rem);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .site-title span {
-  background: var(--mg-oxido), var(--mg-texto-metal);
+  background: var(--mg-rust), var(--mg-metal-text);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* El botón del menú (en el celular): un botón de metal viejo. */
+/* The menu button (on the phone): a button of old metal. */
 .sl-menu-button,
 [data-theme='light'] .sl-menu-button {
-  background: var(--mg-metal-suave);
-  color: var(--mg-texto-sobre-bronce);
+  background: var(--mg-metal-soft);
+  color: var(--mg-text-on-bronze);
   box-shadow:
     0 0 0 1px #24170a,
-    var(--mg-bisel);
+    var(--mg-bevel);
 }
 
-/* ------------------------------------------------------------------ la barra lateral */
+/* ------------------------------------------------------------------ the sidebar */
 @media (min-width: 50rem) {
   .sidebar-pane {
-    border-inline-end-color: var(--mg-linea-bronce);
+    border-inline-end-color: var(--mg-bronze-line);
   }
 }
 .sidebar-content .group-label .large,
 .sidebar-content .top-level > li > a.large {
-  font-family: var(--mg-letra-titulo);
+  font-family: var(--mg-font-title);
   font-weight: 600;
   letter-spacing: 0.03em;
 }
 .sidebar-content .group-label .large {
-  color: var(--mg-titulo-2);
+  color: var(--mg-title-2);
 }
-/* La página actual: una plaquita de metal viejo, con las letras grabadas. */
+/* The current page: a small plate of old metal, with engraved letters. */
 .sidebar-content [aria-current='page'],
 .sidebar-content [aria-current='page']:hover,
 .sidebar-content [aria-current='page']:focus {
-  color: var(--mg-texto-sobre-bronce);
-  background: var(--mg-metal-suave);
-  text-shadow: var(--mg-grabado);
+  color: var(--mg-text-on-bronze);
+  background: var(--mg-metal-soft);
+  text-shadow: var(--mg-engraved);
   box-shadow:
-    var(--mg-bisel),
+    var(--mg-bevel),
     0 2px 6px -2px rgb(0 0 0 / 0.6);
 }
 
-/* ------------------------------------------------------------------ los paneles que se ocultan */
+/* ------------------------------------------------------------------ the panels that hide */
 /*
- * Los botones de la cabecera (SelectorDeTema.astro) ponen `data-sin-barra` o `data-sin-indice` en
- * <html>. Sin el panel izquierdo, la columna central empieza en el borde; sin el derecho, ocupa
- * todo el ancho y el texto se centra. (El texto en sí no se ensancha: más de unos 75 caracteres
- * por renglón se leen peor. Los que sí se ensanchan son los ejemplos: ver CodigoVivo.astro.)
+ * The header's buttons (ThemeSelect.astro) put `data-no-sidebar` or `data-no-toc` on <html>.
+ * Without the left panel, the central column starts at the edge; without the right one, it takes
+ * the whole width and the text is centered. (The text itself does not widen: more than about 75
+ * characters per line read worse. The examples are what widens: see LiveCode.astro.)
  */
 @media (min-width: 50rem) {
-  :root[data-has-sidebar][data-sin-barra] {
+  :root[data-has-sidebar][data-no-sidebar] {
     --sl-content-inline-start: 0rem;
   }
-  :root[data-sin-barra] .sidebar-pane {
+  :root[data-no-sidebar] .sidebar-pane {
     display: none;
   }
 }
 @media (min-width: 72rem) {
-  :root[data-sin-indice] .right-sidebar-container {
+  :root[data-no-toc] .right-sidebar-container {
     display: none;
   }
-  :root[data-sin-indice] .main-pane {
+  :root[data-no-toc] .main-pane {
     width: 100%;
   }
-  :root:is([data-sin-indice], [data-sin-barra]) .main-pane {
+  :root:is([data-no-toc], [data-no-sidebar]) .main-pane {
     --sl-content-margin-inline: auto;
   }
 }
 
-/* Los botones "Ocultar" de arriba de cada panel (BarraLateral.astro, IndiceLateral.astro). */
-.mg-ocultar {
+/* The "Ocultar" (hide) buttons at the top of each panel (Sidebar.astro, PageSidebar.astro). */
+.mg-hide {
   display: none;
   padding: 0.15rem 0.5rem;
-  border: 1px solid var(--mg-linea-bronce);
+  border: 1px solid var(--mg-bronze-line);
   border-radius: 0.3rem;
   background: transparent;
   color: var(--sl-color-gray-3);
   font-size: var(--sl-text-xs);
   cursor: pointer;
 }
-.mg-ocultar:hover {
+.mg-hide:hover {
   color: var(--sl-color-white);
-  border-color: var(--mg-linea-bronce-fuerte);
+  border-color: var(--mg-bronze-line-strong);
 }
 @media (min-width: 50rem) {
-  .mg-ocultar-barra {
+  .mg-hide-sidebar {
     display: block;
     margin-inline-start: auto;
   }
 }
 @media (min-width: 72rem) {
-  .mg-ocultar-indice {
+  .mg-hide-toc {
     display: block;
     margin: 1rem var(--sl-sidebar-pad-x) 0;
   }
 }
 
-/* Las pestañas del borde, para volver a mostrar un panel oculto (SelectorDeTema.astro). */
-.mg-mostrar {
+/* The edge tabs, to show a hidden panel again (ThemeSelect.astro). */
+.mg-show {
   display: none;
   position: fixed;
   top: calc(var(--sl-nav-height) + 1rem);
   z-index: var(--sl-z-index-menu);
   padding: 0.45rem 0.7rem;
   border: 1px solid #24170a;
-  background: var(--mg-metal-suave);
-  color: var(--mg-texto-sobre-bronce);
-  text-shadow: var(--mg-grabado);
+  background: var(--mg-metal-soft);
+  color: var(--mg-text-on-bronze);
+  text-shadow: var(--mg-engraved);
   box-shadow:
-    var(--mg-bisel),
+    var(--mg-bevel),
     0 6px 14px -6px rgb(0 0 0 / 0.8);
   font-size: var(--sl-text-xs);
   font-weight: 600;
   cursor: pointer;
 }
-.mg-mostrar:hover {
+.mg-show:hover {
   filter: brightness(1.12);
 }
-.mg-mostrar-barra {
+.mg-show-sidebar {
   left: 0;
   border-left: 0;
   border-radius: 0 0.35rem 0.35rem 0;
 }
-.mg-mostrar-indice {
+.mg-show-toc {
   right: 0;
   border-right: 0;
   border-radius: 0.35rem 0 0 0.35rem;
 }
 @media (min-width: 50rem) {
-  :root[data-has-sidebar][data-sin-barra] header .mg-mostrar-barra {
+  :root[data-has-sidebar][data-no-sidebar] header .mg-show-sidebar {
     display: block;
   }
 }
 @media (min-width: 72rem) {
-  :root[data-has-toc][data-sin-indice] header .mg-mostrar-indice {
+  :root[data-has-toc][data-no-toc] header .mg-show-toc {
     display: block;
   }
 }
 
-/* ------------------------------------------------------------------ los títulos */
+/* ------------------------------------------------------------------ the titles */
 h1#_top {
-  font-family: var(--mg-letra-titulo);
+  font-family: var(--mg-font-title);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--mg-titulo);
+  color: var(--mg-title);
 }
 .sl-markdown-content h2:not(:where(.not-content *)) {
-  font-family: var(--mg-letra-titulo);
+  font-family: var(--mg-font-title);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--mg-titulo-2);
+  color: var(--mg-title-2);
 }
-/* Sin la línea que Starlight pone entre el título de la página y el contenido. */
+/* Without the line Starlight puts between the page's title and the content. */
 .content-panel + .content-panel {
   border-top: 0;
 }
 .sl-markdown-content h3:not(:where(.not-content *)) {
-  color: var(--mg-titulo-2);
+  color: var(--mg-title-2);
 }
 
-/* El título de "En esta página", a la derecha. */
+/* The title of "En esta página" (on this page), on the right. */
 #starlight__on-this-page {
-  font-family: var(--mg-letra-titulo);
+  font-family: var(--mg-font-title);
   font-weight: 600;
   letter-spacing: 0.03em;
-  color: var(--mg-titulo-2);
+  color: var(--mg-title-2);
 }
 
-/* ------------------------------------------------------------------ las tarjetas */
-/* Placas con marco de bronce (un borde transparente deja ver el degradado de atrás) y un remache en cada esquina. */
+/* ------------------------------------------------------------------ the cards */
+/* Plates with a bronze frame (a transparent border shows the gradient behind) and a rivet in each corner. */
 .card {
-  --sl-card-border: var(--mg-linea-bronce-fuerte);
+  --sl-card-border: var(--mg-bronze-line-strong);
   --sl-card-bg: rgb(63 158 140 / 0.14);
   position: relative;
   border: 2px solid transparent;
   border-radius: 0.6rem;
   background:
-    linear-gradient(var(--mg-placa), var(--mg-placa)) padding-box,
+    linear-gradient(var(--mg-plate), var(--mg-plate)) padding-box,
     var(--mg-patina) border-box,
-    var(--mg-oxido) border-box,
-    var(--mg-bronce) border-box;
+    var(--mg-rust) border-box,
+    var(--mg-bronze) border-box;
   box-shadow:
     inset 0 0 0 1px rgb(0 0 0 / 0.45),
-    var(--mg-sombra);
+    var(--mg-shadow);
 }
 .card::before {
   content: '';
@@ -367,54 +368,54 @@ h1#_top {
   inset: 5px;
   pointer-events: none;
   background:
-    var(--mg-remache) 0 0 / 8px 8px no-repeat,
-    var(--mg-remache) 100% 0 / 8px 8px no-repeat,
-    var(--mg-remache) 0 100% / 8px 8px no-repeat,
-    var(--mg-remache) 100% 100% / 8px 8px no-repeat;
+    var(--mg-rivet) 0 0 / 8px 8px no-repeat,
+    var(--mg-rivet) 100% 0 / 8px 8px no-repeat,
+    var(--mg-rivet) 0 100% / 8px 8px no-repeat,
+    var(--mg-rivet) 100% 100% / 8px 8px no-repeat;
 }
 .card .title {
-  font-family: var(--mg-letra-titulo);
-  color: var(--mg-titulo);
+  font-family: var(--mg-font-title);
+  color: var(--mg-title);
   letter-spacing: 0.02em;
 }
 .card .icon {
   color: var(--sl-color-accent-high);
 }
 
-/* ------------------------------------------------------------------ los botones */
-/* El principal: una placa de metal viejo con dos remaches, y las letras grabadas. */
+/* ------------------------------------------------------------------ the buttons */
+/* The main one: a plate of old metal with two rivets, and engraved letters. */
 .sl-link-button.primary,
 .sl-link-button.primary:hover {
-  color: var(--mg-texto-sobre-bronce);
+  color: var(--mg-text-on-bronze);
   border: 1px solid #24170a;
   border-radius: 0.4rem;
   padding-inline: 1.6rem;
   background:
-    var(--mg-remache) 0.45rem 50% / 8px 8px no-repeat,
-    var(--mg-remache) calc(100% - 0.45rem) 50% / 8px 8px no-repeat,
+    var(--mg-rivet) 0.45rem 50% / 8px 8px no-repeat,
+    var(--mg-rivet) calc(100% - 0.45rem) 50% / 8px 8px no-repeat,
     var(--mg-metal);
   box-shadow:
-    var(--mg-bisel),
+    var(--mg-bevel),
     0 8px 18px -8px rgb(0 0 0 / 0.8);
-  font-family: var(--mg-letra-titulo);
+  font-family: var(--mg-font-title);
   font-weight: 700;
   letter-spacing: 0.05em;
-  text-shadow: var(--mg-grabado);
+  text-shadow: var(--mg-engraved);
 }
 .sl-link-button.primary:hover {
   filter: brightness(1.08);
 }
 
-/* ------------------------------------------------------------------ el resto */
+/* ------------------------------------------------------------------ the rest */
 .pagination-links a {
-  border-color: var(--mg-linea-bronce);
-  background-color: color-mix(in srgb, var(--mg-placa) 85%, transparent);
+  border-color: var(--mg-bronze-line);
+  background-color: color-mix(in srgb, var(--mg-plate) 85%, transparent);
 }
 .pagination-links a:hover {
-  border-color: var(--mg-linea-bronce-fuerte);
+  border-color: var(--mg-bronze-line-strong);
 }
 .pagination-links .link-title {
-  color: var(--mg-titulo);
+  color: var(--mg-title);
 }
 
 @media print {

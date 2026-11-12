@@ -1,92 +1,94 @@
 /**
- * LA PANTALLA COMPLETA de un ejemplo: el código y lo que dibuja, lado a lado, ocupando toda la
- * pantalla. La disposición la hace el CSS (CodigoVivo.astro) a partir de `data-ampliado`; aquí
- * solo se entra, se sale y se arrastra el divisor.
+ * AN EXAMPLE IN FULL SCREEN: the code and what it draws, side by side, taking the whole screen.
+ * The layout is done by the CSS (LiveCode.astro) from `data-expanded`; here we only enter, leave and
+ * drag the divider.
  *
- * Dos maneras de ampliar:
- * - "pantalla": la pantalla completa del navegador (`requestFullscreen`). Se sale con Esc o con
- *   el botón; el navegador avisa con el evento `fullscreenchange`.
- * - "ventana": cuando no la hay (en el iPhone, solo los videos pueden), el ejemplo se estira
- *   sobre toda la ventana con `position: fixed`. Se sale con Esc o con el botón.
+ * Two ways to expand:
+ * - "screen": the browser's full screen (`requestFullscreen`). It is left with Esc or the button;
+ *   the browser says so with the `fullscreenchange` event.
+ * - "window": when there is none (on the iPhone, only videos can), the example stretches over the
+ *   whole window with `position: fixed`. It is left with Esc or the button.
  *
- * En ningún caso el ejemplo cambia de lugar en la página: si el iframe cambiara de padre, el
- * navegador lo recargaría y el ejemplo empezaría de cero.
+ * In no case does the example move in the page: if the iframe changed parent, the browser would
+ * reload it and the example would start from scratch.
+ *
+ * (The labels are the site's text, in Spanish.)
  */
 
-type Modo = 'pantalla' | 'ventana';
+type Mode = 'screen' | 'window';
 
-const LIMITES = { min: 20, max: 80 }; // el ancho del código, en % de la pantalla
+const LIMITS = { min: 20, max: 80 }; // the code's width, in % of the screen
 
-export function montarPantallaCompleta(raiz: HTMLElement, { alEntrar }: { alEntrar: () => void }) {
-  const boton = raiz.querySelector<HTMLButtonElement>('.cv-ampliar')!;
-  const texto = boton.querySelector<HTMLElement>('.cv-texto');
-  const divisor = raiz.querySelector<HTMLElement>('.cv-divisor')!;
+export function mountFullscreen(root: HTMLElement, { onEnter }: { onEnter: () => void }) {
+  const button = root.querySelector<HTMLButtonElement>('.lc-expand')!;
+  const label = button.querySelector<HTMLElement>('.lc-label');
+  const divider = root.querySelector<HTMLElement>('.lc-divider')!;
 
-  const marcar = (modo: Modo | null) => {
-    if (modo) raiz.dataset.ampliado = modo;
-    else delete raiz.dataset.ampliado;
-    document.documentElement.classList.toggle('cv-con-ampliado', modo === 'ventana');
-    boton.setAttribute('aria-pressed', String(modo !== null));
-    boton.title = modo ? 'Volver a la página (Esc)' : 'El código y lo que dibuja, en pantalla completa';
-    boton.firstElementChild!.textContent = modo ? '✕' : '⛶';
-    if (texto) texto.textContent = modo ? ' Salir' : ' Pantalla completa';
+  const mark = (mode: Mode | null) => {
+    if (mode) root.dataset.expanded = mode;
+    else delete root.dataset.expanded;
+    document.documentElement.classList.toggle('lc-has-expanded', mode === 'window');
+    button.setAttribute('aria-pressed', String(mode !== null));
+    button.title = mode ? 'Volver a la página (Esc)' : 'El código y lo que dibuja, en pantalla completa';
+    button.firstElementChild!.textContent = mode ? '✕' : '⛶';
+    if (label) label.textContent = mode ? ' Salir' : ' Pantalla completa';
   };
 
-  async function entrar() {
-    let modo: Modo = 'ventana';
+  async function enter() {
+    let mode: Mode = 'window';
     if (document.fullscreenEnabled) {
       try {
-        await raiz.requestFullscreen({ navigationUI: 'hide' });
-        modo = 'pantalla';
+        await root.requestFullscreen({ navigationUI: 'hide' });
+        mode = 'screen';
       } catch {
-        // El navegador no quiso (por ejemplo, sin un clic de por medio): queda la ventana.
+        // The browser refused (for example, without a click in between): the window stays.
       }
     }
-    marcar(modo);
-    alEntrar();
+    mark(mode);
+    onEnter();
   }
 
-  function salir() {
-    // De la pantalla completa del navegador se sale pidiéndoselo; él avisa con fullscreenchange.
-    if (document.fullscreenElement === raiz) void document.exitFullscreen();
-    else marcar(null);
+  function leave() {
+    // The browser's full screen is left by asking it; it says so with fullscreenchange.
+    if (document.fullscreenElement === root) void document.exitFullscreen();
+    else mark(null);
   }
 
-  boton.addEventListener('click', () => (raiz.dataset.ampliado ? salir() : void entrar()));
+  button.addEventListener('click', () => (root.dataset.expanded ? leave() : void enter()));
 
-  // Esc en la pantalla completa la cierra el navegador: aquí solo se acompaña.
+  // Esc in full screen is handled by the browser: here we only follow along.
   document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement !== raiz && raiz.dataset.ampliado === 'pantalla') marcar(null);
+    if (document.fullscreenElement !== root && root.dataset.expanded === 'screen') mark(null);
   });
-  // Esc en la "ventana" hay que atenderlo a mano (salvo que el editor ya lo usó, p. ej. para
-  // cerrar el autocompletado).
+  // Esc in the "window" must be handled by hand (unless the editor already used it, e.g. to close
+  // the autocompletion).
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !e.defaultPrevented && raiz.dataset.ampliado === 'ventana') salir();
+    if (e.key === 'Escape' && !e.defaultPrevented && root.dataset.expanded === 'window') leave();
   });
 
-  // ---------- El divisor: arrastrarlo cambia cuánto ocupa el código ----------
-  const ponerAncho = (porcentaje: number) => {
-    const p = Math.round(Math.min(LIMITES.max, Math.max(LIMITES.min, porcentaje)));
-    raiz.style.setProperty('--cv-codigo', `${p}%`);
-    divisor.setAttribute('aria-valuenow', String(p));
+  // ---------- The divider: dragging it changes how much the code takes ----------
+  const setWidth = (percent: number) => {
+    const p = Math.round(Math.min(LIMITS.max, Math.max(LIMITS.min, percent)));
+    root.style.setProperty('--lc-code', `${p}%`);
+    divider.setAttribute('aria-valuenow', String(p));
   };
-  divisor.addEventListener('pointerdown', (e) => {
-    divisor.setPointerCapture(e.pointerId);
-    raiz.dataset.arrastrando = '1'; // el CSS le saca el puntero al iframe mientras tanto
+  divider.addEventListener('pointerdown', (e) => {
+    divider.setPointerCapture(e.pointerId);
+    root.dataset.dragging = '1'; // meanwhile, the CSS takes the pointer away from the iframe
   });
-  divisor.addEventListener('pointermove', (e) => {
-    if (!divisor.hasPointerCapture(e.pointerId)) return;
-    const caja = raiz.getBoundingClientRect();
-    ponerAncho(((e.clientX - caja.left) / caja.width) * 100);
+  divider.addEventListener('pointermove', (e) => {
+    if (!divider.hasPointerCapture(e.pointerId)) return;
+    const box = root.getBoundingClientRect();
+    setWidth(((e.clientX - box.left) / box.width) * 100);
   });
-  const soltar = () => delete raiz.dataset.arrastrando;
-  divisor.addEventListener('pointerup', soltar);
-  divisor.addEventListener('pointercancel', soltar);
-  // Con el teclado: las flechas lo mueven de a 5 %.
-  divisor.addEventListener('keydown', (e) => {
-    const paso = e.key === 'ArrowLeft' ? -5 : e.key === 'ArrowRight' ? 5 : 0;
-    if (!paso) return;
+  const release = () => delete root.dataset.dragging;
+  divider.addEventListener('pointerup', release);
+  divider.addEventListener('pointercancel', release);
+  // With the keyboard: the arrows move it by 5 %.
+  divider.addEventListener('keydown', (e) => {
+    const step = e.key === 'ArrowLeft' ? -5 : e.key === 'ArrowRight' ? 5 : 0;
+    if (!step) return;
     e.preventDefault();
-    ponerAncho(Number(divisor.getAttribute('aria-valuenow')) + paso);
+    setWidth(Number(divider.getAttribute('aria-valuenow')) + step);
   });
 }

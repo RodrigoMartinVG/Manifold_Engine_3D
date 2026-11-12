@@ -3,9 +3,9 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 /**
- * El sitio de Manifold Gaming (decisión 0002): Astro, con Starlight para el tutorial.
- * Se publica en GitHub Pages, en https://rodrigomartinvg.github.io/Manifold_Gaming/ :
- * por eso todas las direcciones empiezan con `base`.
+ * The Manifold Gaming site (decision 0002): Astro, with Starlight for the tutorial. It is published
+ * on GitHub Pages, at https://rodrigomartinvg.github.io/Manifold_Gaming/ : that is why every address
+ * starts with `base`. The site's TEXT is in Spanish (decision 0011); its code, in English.
  */
 export default defineConfig({
   site: 'https://rodrigomartinvg.github.io',
@@ -18,25 +18,25 @@ export default defineConfig({
       defaultLocale: 'root',
       locales: { root: { label: 'Español', lang: 'es' } },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/RodrigoMartinVG/Manifold_Gaming' }],
-      // La estética del "taller" (bronce, pátina y construcciones con compás): src/estilos/taller.css.
-      logo: { src: './src/assets/dibujos/marca.svg', alt: '' },
+      // The "workshop" look (bronze, patina and compass constructions): src/styles/workshop.css.
+      logo: { src: './src/assets/drawings/logo.svg', alt: '' },
       favicon: '/favicon.svg',
-      customCss: ['@fontsource-variable/cinzel', './src/estilos/taller.css'],
-      // El inicio tiene su propia portada, con la vitrina 3D en vivo. Junto al selector de tema,
-      // los botones que ocultan los paneles de los costados.
+      customCss: ['@fontsource-variable/cinzel', './src/styles/workshop.css'],
       components: {
-        Hero: './src/components/Heroe.astro',
-        ThemeSelect: './src/components/SelectorDeTema.astro',
-        // Cada panel de los costados, con su botón "Ocultar" arriba.
-        Sidebar: './src/components/BarraLateral.astro',
-        PageSidebar: './src/components/IndiceLateral.astro',
+        // The home page has its own hero, with the live 3D showcase.
+        Hero: './src/components/Hero.astro',
+        // Next to the theme selector, the buttons that hide the side panels.
+        ThemeSelect: './src/components/ThemeSelect.astro',
+        // Each side panel, with its "Ocultar" button on top.
+        Sidebar: './src/components/Sidebar.astro',
+        PageSidebar: './src/components/PageSidebar.astro',
       },
-      // Los paneles que se ocultaron en otra página: se aplica antes de dibujar, para que no parpadee.
+      // The panels hidden on another page: applied before drawing, so nothing flickers.
       head: [
         {
           tag: 'script',
           content:
-            "try{for(const[c,a]of[['mg-sin-barra','data-sin-barra'],['mg-sin-indice','data-sin-indice']])if(localStorage.getItem(c)==='1')document.documentElement.setAttribute(a,'')}catch{}",
+            "try{for(const[k,a]of[['mg-no-sidebar','data-no-sidebar'],['mg-no-toc','data-no-toc']])if(localStorage.getItem(k)==='1')document.documentElement.setAttribute(a,'')}catch{}",
         },
       ],
       sidebar: [
@@ -47,6 +47,7 @@ export default defineConfig({
           items: [
             { label: 'Empezar aquí', link: '/tutorial/' },
             { label: 'Etapa 0: cimientos', items: [{ autogenerate: { directory: 'tutorial/etapa-0' } }] },
+            { label: 'Glosario', link: '/tutorial/glosario/' },
           ],
         },
         { label: 'Bitácora', items: [{ autogenerate: { directory: 'bitacora' } }] },

@@ -1,16 +1,16 @@
-## Qué cambia
+## What changes
 
-<!-- Una o dos frases. Si es un paso del motor: cuál, y su demostración. -->
+<!-- One or two sentences. If it is an engine stage: which one, and its demo. -->
 
-## Cómo se verificó
+## How it was verified
 
-- [ ] `npm run verificar` (tipos, linter, formato, pruebas)
-- [ ] `npm run e2e` (el sitio y el Dojo en el navegador)
-- [ ] Cada prueba nueva se rompió a propósito una vez, y falló
+- [ ] `npm run verify` (types, linter, format, tests)
+- [ ] `npm run e2e` (the site and the Dojo in the browser)
+- [ ] Every new test was broken on purpose once, and failed
 
-## Si es un paso del motor
+## If it is an engine stage
 
-- [ ] Su informe en la bitácora (`sitio/src/content/docs/bitacora/`)
-- [ ] Sus lecciones, si trae ideas nuevas (`sitio/src/lecciones/` y `sitio/src/content/docs/tutorial/`)
-- [ ] Las decisiones nuevas, en `docs/decisiones/`
-- [ ] Lo que se midió, con su escenario
+- [ ] Its report in the Bitácora (`site/src/content/docs/bitacora/`)
+- [ ] Its lessons, if it brings new ideas (`site/src/lessons/` and `site/src/content/docs/tutorial/`)
+- [ ] The new decisions, in `docs/decisions/`
+- [ ] What was measured, with its scenario

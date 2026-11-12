@@ -1,46 +1,56 @@
-import { separarLineas } from './valores';
+import { splitLines } from './values';
 
 /**
- * LAS RECETAS EN UN ENLACE (decisión 0010). Una receta es texto plano: una línea por comando,
- * con comentarios (`#`). En un enlace va después de `#receta=`: las líneas se separan con `;` y
- * los espacios se escriben `+`, así el enlace se lee y se corrige a mano. Lo demás se escapa como
- * en cualquier dirección (un `+` de verdad queda como `%2B`).
+ * RECIPES IN A LINK (decision 0010). A recipe is plain text: one command per line, with comments
+ * (`#`). In a link it goes after `#recipe=`: lines are separated by `;` and spaces are written `+`,
+ * so the link can be read and fixed by hand. Everything else is escaped as in any address (a real
+ * `+` becomes `%2B`).
  *
- *   dojo.cubos 20            →   #receta=dojo.cubos+20;ver.triangulos+si
- *   ver.triangulos si
+ *   dojo.cubes 20           →   #recipe=dojo.cubes+20;show.wireframe+on
+ *   show.wireframe on
  *
- * Va en el FRAGMENTO (`#`), que no viaja al servidor: no hace falta ninguno que lo entienda.
+ * It goes in the FRAGMENT (`#`), which never travels to the server: no server needs to understand it.
  */
-export const PREFIJO_DEL_ENLACE = 'receta=';
+export const LINK_PREFIX = 'recipe=';
 
-/** La receta para un enlace: sin comentarios ni líneas vacías. */
-export function recetaParaEnlace(texto: string): string {
-  return separarLineas(texto)
-    .map((linea) => encodeURIComponent(linea).replace(/%20/g, '+'))
+/** The recipe for a link: without comments or empty lines. */
+export function recipeToLink(text: string): string {
+  return splitLines(text)
+    .map((line) => encodeURIComponent(line).replace(/%20/g, '+'))
     .join(';');
 }
 
-/** De vuelta a texto, una línea por comando. Si el fragmento no trae una receta, null. */
-export function recetaDelEnlace(fragmento: string): string | null {
-  const sinNumeral = fragmento.replace(/^#/, '');
-  if (!sinNumeral.startsWith(PREFIJO_DEL_ENLACE)) return null;
-  return sinNumeral
-    .slice(PREFIJO_DEL_ENLACE.length)
+/** Back to text, one command per line. If the fragment carries no recipe, null. */
+export function recipeFromLink(fragment: string): string | null {
+  const withoutHash = fragment.replace(/^#/, '');
+  if (!withoutHash.startsWith(LINK_PREFIX)) return null;
+  return withoutHash
+    .slice(LINK_PREFIX.length)
     .split(';')
-    .map((parte) => {
-      const conEspacios = parte.replace(/\+/g, ' ');
+    .map((part) => {
+      const withSpaces = part.replace(/\+/g, ' ');
       try {
-        return decodeURIComponent(conEspacios);
+        return decodeURIComponent(withSpaces);
       } catch {
-        return conEspacios; // un escape roto: la línea se intenta igual, y si no se entiende, se avisa
+        return withSpaces; // a broken escape: the line is tried anyway, and if it is not understood, it is reported
       }
     })
-    .filter((linea) => linea.trim() !== '')
+    .filter((line) => line.trim() !== '')
     .join('\n');
 }
 
-/** El título de una receta: su primer comentario (`# Lluvia de cubos`). */
-export function tituloDeReceta(texto: string): string | null {
-  const primero = texto.split(/\r?\n/).find((l) => l.trim() !== '');
-  return primero?.trim().startsWith('#') ? primero.trim().replace(/^#\s*/, '') : null;
+/**
+ * A recipe's title: its first comment, if it comes before the first command. Like everything in
+ * the console, it is in English (decision 0011).
+ *
+ *   # Cube rain
+ *   seed 7
+ */
+export function recipeTitle(text: string): string | null {
+  for (const row of text.split(/\r?\n/)) {
+    const line = row.trim();
+    if (line.startsWith('#')) return line.replace(/^#\s*/, '') || null;
+    if (line !== '') return null; // a command first: the recipe has no title
+  }
+  return null;
 }

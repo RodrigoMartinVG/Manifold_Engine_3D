@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // Sin "DOM": si algo de aquí usa `document` o `window`, no compila (decisión 0003).
+    // No "DOM": if something here uses `document` or `window`, it does not compile (decision 0003).
     "lib": ["ES2023"],
     "types": []
   },

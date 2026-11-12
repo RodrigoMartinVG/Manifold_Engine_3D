@@ -1,36 +1,32 @@
-import type { Registro } from './registro';
-import { escribirValor } from './valores';
+import type { Registry } from './registry';
+import { formatValue } from './values';
 
-/** Sin tildes ni mayúsculas, para buscar: "física" encuentra "fisica". */
-const normalizar = (t: string) =>
-  t
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
+/** Without accents or capitals, for searching: "Gravity" finds "gravity". */
+const normalize = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
- * LOS COMANDOS PARA ORIENTARSE en la consola: `ayuda`, `buscar`, `variables`, `cambiadas` y
- * `alternar`. Los declara quien monta una consola (un juego sin consola no los necesita).
+ * THE COMMANDS TO FIND YOUR WAY in the console: `help`, `find`, `vars`, `changed` and `toggle`.
+ * Declared by whoever mounts a console (a game without a console does not need them).
  */
-export function declararAyudas<M>(registro: Registro<M>) {
-  registro.declararComando({
-    nombre: 'ayuda',
-    descripcion: { es: 'Cómo se usa la consola, o la ayuda de un nombre.' },
-    argumentos: [{ nombre: 'nombre', tipo: { tipo: 'texto' }, opcional: true }],
-    ejecutar([nombre], salida) {
-      if (typeof nombre === 'string') {
-        salida.escribir(registro.ayudaDe(nombre.toLowerCase()) ?? `no existe "${nombre}". Probá "buscar ${nombre}".`);
+export function declareHelp<W>(registry: Registry<W>) {
+  registry.declareCommand({
+    name: 'help',
+    description: 'How to use the console, or the help for a name.',
+    args: [{ name: 'name', type: { kind: 'text' }, optional: true }],
+    run([name], out) {
+      if (typeof name === 'string') {
+        out.write(registry.helpFor(name.toLowerCase()) ?? `no such name "${name}". Try "find ${name}".`);
         return;
       }
-      salida.escribir(
+      out.write(
         [
-          'Escribí un nombre para ver su valor, o el nombre y un valor para cambiarlo:',
-          '  dojo.cubos            dojo.cubos 20            ver.triangulos si',
-          'Tab completa, las flechas recorren lo que escribiste, y Esc cierra.',
-          'Para orientarse: buscar <texto>, variables [prefijo], cambiadas, ayuda <nombre>.',
-          `Comandos: ${registro
-            .listaDeComandos()
-            .map((c) => c.nombre)
+          'Type a name to see its value, or the name and a value to change it:',
+          '  dojo.cubes            dojo.cubes 20            show.wireframe on',
+          'Tab completes, the arrows go through what you typed, and Esc closes.',
+          'To find your way: find <text>, vars [prefix], changed, help <name>.',
+          `Commands: ${registry
+            .commands()
+            .map((c) => c.name)
             .sort()
             .join(', ')}`,
         ].join('\n'),
@@ -38,57 +34,57 @@ export function declararAyudas<M>(registro: Registro<M>) {
     },
   });
 
-  registro.declararComando({
-    nombre: 'buscar',
-    descripcion: { es: 'Busca en los nombres y en las descripciones.' },
-    argumentos: [{ nombre: 'texto', tipo: { tipo: 'resto' } }],
-    ejecutar([texto], salida) {
-      const buscado = normalizar(String(texto));
-      const lineas = [
-        ...registro.listaDeVariables().map((v) => ({ nombre: v.decl.nombre, d: registro.texto(v.decl.descripcion) })),
-        ...registro.listaDeComandos().map((c) => ({ nombre: c.nombre, d: registro.texto(c.descripcion) })),
+  registry.declareCommand({
+    name: 'find',
+    description: 'Searches the names and the descriptions.',
+    args: [{ name: 'text', type: { kind: 'rest' } }],
+    run([text], out) {
+      const wanted = normalize(String(text));
+      const lines = [
+        ...registry.variables().map((v) => ({ name: v.decl.name, d: v.decl.description })),
+        ...registry.commands().map((c) => ({ name: c.name, d: c.description })),
       ]
-        .filter((x) => normalizar(`${x.nombre} ${x.d}`).includes(buscado))
-        .map((x) => `${x.nombre.padEnd(22)} ${x.d}`);
-      salida.escribir(lineas.length ? lineas.join('\n') : `nada con "${texto}"`);
+        .filter((x) => normalize(`${x.name} ${x.d}`).includes(wanted))
+        .map((x) => `${x.name.padEnd(22)} ${x.d}`);
+      out.write(lines.length ? lines.join('\n') : `nothing with "${text}"`);
     },
   });
 
-  registro.declararComando({
-    nombre: 'variables',
-    descripcion: { es: 'Las variables y sus valores (todas, o las que empiezan con un prefijo: "variables ver.").' },
-    argumentos: [{ nombre: 'prefijo', tipo: { tipo: 'texto' }, opcional: true }],
-    ejecutar([prefijo], salida) {
-      const p = typeof prefijo === 'string' ? prefijo.toLowerCase() : '';
-      const lineas = registro
-        .listaDeVariables()
-        .filter((v) => v.decl.nombre.startsWith(p))
-        .map((v) => `${v.decl.nombre.padEnd(22)} ${escribirValor(v.valor)}`);
-      salida.escribir(lineas.length ? lineas.join('\n') : `ninguna empieza con "${p}"`);
+  registry.declareCommand({
+    name: 'vars',
+    description: 'The variables and their values (all of them, or the ones starting with a prefix: "vars show.").',
+    args: [{ name: 'prefix', type: { kind: 'text' }, optional: true }],
+    run([prefix], out) {
+      const p = typeof prefix === 'string' ? prefix.toLowerCase() : '';
+      const lines = registry
+        .variables()
+        .filter((v) => v.decl.name.startsWith(p))
+        .map((v) => `${v.decl.name.padEnd(22)} ${formatValue(v.value)}`);
+      out.write(lines.length ? lines.join('\n') : `none starts with "${p}"`);
     },
   });
 
-  registro.declararComando({
-    nombre: 'cambiadas',
-    descripcion: { es: 'Solo las variables que no tienen su valor por defecto.' },
-    ejecutar(_, salida) {
-      const lineas = registro.cambiadas().map((v) => `${v.decl.nombre.padEnd(22)} ${escribirValor(v.valor)}`);
-      salida.escribir(lineas.length ? lineas.join('\n') : 'nada cambiado: todo está en su valor por defecto');
+  registry.declareCommand({
+    name: 'changed',
+    description: 'Only the variables that are not at their default value.',
+    run(_, out) {
+      const lines = registry.changed().map((v) => `${v.decl.name.padEnd(22)} ${formatValue(v.value)}`);
+      out.write(lines.length ? lines.join('\n') : 'nothing changed: everything is at its default value');
     },
   });
 
-  registro.declararComando({
-    nombre: 'alternar',
-    descripcion: { es: 'Da vuelta una variable de si o no: "alternar ver.ejes".' },
-    argumentos: [{ nombre: 'nombre', tipo: { tipo: 'texto' } }],
-    ejecutar([nombre], salida) {
-      const n = String(nombre).toLowerCase();
-      const v = registro.listaDeVariables().find((x) => x.decl.nombre === n);
-      if (!v || v.decl.tipo.tipo !== 'booleano') {
-        salida.escribir(`alternar: "${n}" no es una variable de si o no`, 'error');
+  registry.declareCommand({
+    name: 'toggle',
+    description: 'Flips an on/off variable: "toggle show.axes".',
+    args: [{ name: 'name', type: { kind: 'text' } }],
+    run([name], out) {
+      const n = String(name).toLowerCase();
+      const v = registry.variables().find((x) => x.decl.name === n);
+      if (!v || v.decl.type.kind !== 'boolean') {
+        out.write(`toggle: "${n}" is not an on/off variable`, 'error');
         return;
       }
-      for (const m of registro.ejecutar(`${n} ${v.valor ? 'no' : 'si'}`)) salida.escribir(m.texto, m.nivel);
+      for (const m of registry.run(`${n} ${v.value ? 'off' : 'on'}`)) out.write(m.text, m.level);
     },
   });
 }

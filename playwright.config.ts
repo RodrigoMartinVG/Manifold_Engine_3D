@@ -3,9 +3,9 @@ import { defineConfig, devices } from '@playwright/test';
 const BASE = 'http://localhost:4321/Manifold_Gaming/';
 
 /**
- * Las pruebas EN UN NAVEGADOR DE VERDAD (decisión 0001): el sitio armado como se publica, cada
- * página abre sin errores y el Dojo dibuja. Es la lección de la V1 (paso 14): un cambio en el
- * arranque rompió todas las teclas y ninguna prueba sin pantalla lo vio.
+ * The tests IN A REAL BROWSER (decision 0001): the site built as it is published, every page opens
+ * without errors and the Dojo draws. It is V1's lesson (step 14): a change in the start-up broke
+ * every key, and no headless test saw it.
  */
 export default defineConfig({
   testDir: 'e2e',
@@ -22,15 +22,15 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Sin GPU (en la integración continua), WebGL corre en la CPU con SwiftShader.
+        // Without a GPU (in continuous integration), WebGL runs on the CPU with SwiftShader.
         launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
       },
     },
   ],
   webServer: {
-    // (El servidor de Vite y no `astro preview`: Astro 7, fuera de una terminal, se va a
-    // segundo plano solo, y Playwright cree que terminó.)
-    command: 'npm run build && npm run servir-sitio',
+    // (Vite's server and not `astro preview`: outside a terminal, Astro 7 goes to the background
+    // by itself, and Playwright thinks it exited.)
+    command: 'npm run build && npm run serve:site',
     url: BASE,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,

@@ -1,349 +1,325 @@
-import { parecido } from './parecido';
-import type { Alcance, Argumento, Comando, Mensaje, Nivel, Origen, Salida, Texto, Valor, Variable } from './tipos';
-import { describirTipo, escribirValor, leerValor, mismoValor, palabrasQueUsa, partir, separarLineas } from './valores';
+import { closest } from './closest';
+import type { Argument, Command, Message, Level, Output, Scope, Source, Value, Variable } from './types';
+import { describeType, formatValue, parseValue, sameValue, tokenize, wordsUsed, splitLines, type Word } from './values';
 
-const NOMBRE = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+const NAME = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 
-interface Guardada<M> {
-  decl: Variable<M>;
-  valor: Valor;
+interface Stored<W> {
+  decl: Variable<W>;
+  value: Value;
 }
 
-/** Un cambio del mundo, listo para aplicar en el paso que le toque. */
-export type Programador<M> = (linea: string, aplicar: (mundo: M) => void) => void;
+/** A world change, ready to be applied at the step it belongs to. */
+export type Scheduler<W> = (line: string, apply: (world: W) => void) => void;
 
 /**
- * EL REGISTRO (decisión 0010): las variables y los comandos que declaró cada parte, y el
- * intérprete que ejecuta una línea. No es un lenguaje: una línea es un comando con sus
- * argumentos (o varias, separadas por `;`). Sin variables propias, sin condiciones, sin bucles.
+ * THE REGISTRY (decision 0010): the variables and commands every part declared, and the
+ * interpreter that runs a line. It is not a language: a line is a command with its arguments (or
+ * several, separated by `;`). No variables of its own, no conditions, no loops.
  *
- * Cómo se aplica cada cambio depende de su alcance (ver `Alcance`):
- * - `arranque`: se anota, y al terminar la línea avisa a `alCambiarArranque` (quien monta el
- *   juego lo reinicia). Antes de que haya un mundo, solo se anota: el mundo nace con ese valor.
- * - `mundo`: se anota, y se le pasa al `programador` (lo pone la partida), que lo aplica al
- *   empezar el paso siguiente y lo guarda en su historia. Sin partida todavía, solo se anota, y
- *   la partida lo aplica al crear el mundo (`aplicarAlMundo`).
- * - `vista`: se anota y se aplica enseguida (`alCambiar`).
+ * How each change is applied depends on its scope (see `Scope`):
+ * - `startup`: it is stored, and when the text ends it tells `onStartupChange` (whoever mounts the
+ *   game restarts it). Before there is a world, it is only stored: the world is born with that value.
+ * - `world`: it is stored and handed to the `scheduler` (set by the session), which applies it at
+ *   the start of the next step and keeps it in its history. Without a session yet, it is only
+ *   stored, and the session applies it when the world is created (`applyToWorld`).
+ * - `view`: it is stored and applied right away (`onChange`).
  *
- * `M` es el tipo del mundo (el núcleo usa `Registro<Mundo>`); este paquete no lo conoce.
+ * `W` is the type of the world (the core uses `Registry<World>`); this package does not know it.
  */
-export class Registro<M = unknown> {
-  private readonly variables = new Map<string, Guardada<M>>();
-  private readonly comandos = new Map<string, Comando<M>>();
-  private readonly alias = new Map<string, string>();
-  /** Lo pone la partida: cómo programar un cambio del mundo para el paso siguiente. */
-  programador: Programador<M> | null = null;
-  /** Lo pone quien monta el juego: qué hacer cuando cambia algo de arranque (reiniciar). */
-  alCambiarArranque: (() => void) | null = null;
-  /** En qué idioma se escriben las descripciones (los nombres no cambian nunca). */
-  idioma: keyof Texto = 'es';
+export class Registry<W = unknown> {
+  private readonly vars = new Map<string, Stored<W>>();
+  private readonly cmds = new Map<string, Command<W>>();
+  /** Set by the session: how to schedule a world change for the next step. */
+  scheduler: Scheduler<W> | null = null;
+  /** Set by whoever mounts the game: what to do when a startup value changes (restart). */
+  onStartupChange: (() => void) | null = null;
 
-  // ---------------------------------------------------------------- declarar
+  // ---------------------------------------------------------------- declaring
 
-  declararVariable(v: Variable<M>) {
-    this.comprobarNombre(v.nombre);
-    const leido = this.validar(v.tipo, v.porDefecto);
-    if (!leido) throw new Error(`${v.nombre}: el valor por defecto no es ${describirTipo(v.tipo)}`);
-    this.variables.set(v.nombre, { decl: v, valor: copiar(v.porDefecto) });
+  declareVariable(v: Variable<W>) {
+    this.checkName(v.name);
+    if (
+      !parseValue(
+        v.type,
+        tokenize(formatValue(v.default)).map((w) => w.text),
+      ).ok
+    )
+      throw new Error(`${v.name}: the default value is not ${describeType(v.type)}`);
+    this.vars.set(v.name, { decl: v, value: copy(v.default) });
   }
 
-  declararComando(c: Comando<M>) {
-    this.comprobarNombre(c.nombre);
-    const args = c.argumentos ?? [];
+  declareCommand(c: Command<W>) {
+    this.checkName(c.name);
+    const args = c.args ?? [];
     args.forEach((a, i) => {
-      if (a.tipo.tipo === 'resto' && i !== args.length - 1)
-        throw new Error(`${c.nombre}: un argumento "resto" solo puede ir al final`);
+      if (a.type.kind === 'rest' && i !== args.length - 1) throw new Error(`${c.name}: a "rest" argument can only go last`);
     });
-    this.comandos.set(c.nombre, c);
+    this.cmds.set(c.name, c);
   }
 
-  /** Otro nombre para lo mismo (por ejemplo, en inglés). Las recetas siempre se escriben con el original. */
-  declararAlias(alias: string, original: string) {
-    this.comprobarNombre(alias);
-    if (!this.variables.has(original) && !this.comandos.has(original))
-      throw new Error(`alias de algo que no existe: ${original}`);
-    this.alias.set(alias, original);
+  private checkName(name: string) {
+    if (!NAME.test(name)) throw new Error(`invalid name: "${name}" (lowercase letters, digits, "_" and dots)`);
+    if (this.vars.has(name) || this.cmds.has(name)) throw new Error(`already declared: ${name}`);
   }
 
-  private comprobarNombre(nombre: string) {
-    if (!NOMBRE.test(nombre)) throw new Error(`nombre no válido: "${nombre}" (minúsculas, números, "_" y puntos)`);
-    if (this.variables.has(nombre) || this.comandos.has(nombre) || this.alias.has(nombre))
-      throw new Error(`ya está declarado: ${nombre}`);
+  // ---------------------------------------------------------------- reading
+
+  /** A variable's current value. Asking for one that does not exist is a programming error. */
+  value(name: string): Value {
+    const s = this.vars.get(name);
+    if (!s) throw new Error(`no such variable: ${name}`);
+    return copy(s.value);
   }
 
-  private validar(t: Variable<M>['tipo'], v: Valor): boolean {
-    const r = leerValor(
-      t,
-      partir(escribirValor(v)).map((p) => p.texto),
-    );
-    return r.ok;
+  /** Every variable, in declaration order, with its current value. */
+  variables(): { decl: Variable<W>; value: Value }[] {
+    return [...this.vars.values()].map((s) => ({ decl: s.decl, value: copy(s.value) }));
   }
 
-  // ---------------------------------------------------------------- leer
-
-  /** El valor actual de una variable. Pedir una que no existe es un error de programación. */
-  valor(nombre: string): Valor {
-    const g = this.variables.get(nombre);
-    if (!g) throw new Error(`no existe la variable ${nombre}`);
-    return copiar(g.valor);
+  commands(): Command<W>[] {
+    return [...this.cmds.values()];
   }
 
-  /** Todas las variables, en el orden en que se declararon, con su valor actual. */
-  listaDeVariables(): { decl: Variable<M>; valor: Valor }[] {
-    return [...this.variables.values()].map((g) => ({ decl: g.decl, valor: copiar(g.valor) }));
-  }
-
-  listaDeComandos(): Comando<M>[] {
-    return [...this.comandos.values()];
-  }
-
-  /** Las que no tienen su valor por defecto. */
-  cambiadas(): { decl: Variable<M>; valor: Valor }[] {
-    return this.listaDeVariables().filter((v) => !mismoValor(v.valor, v.decl.porDefecto));
-  }
-
-  /** El texto de la descripción, en el idioma elegido (o en castellano, si no está traducida). */
-  texto(t: Texto): string {
-    return t[this.idioma] ?? t.es;
+  /** The ones that are not at their default value. */
+  changed(): { decl: Variable<W>; value: Value }[] {
+    return this.variables().filter((v) => !sameValue(v.value, v.decl.default));
   }
 
   /**
-   * La receta de lo que se cambió (decisión 0010): lo de arranque y lo del mundo con sus valores
-   * finales, y lo de la vista en una sección aparte. Una receta es un AJUSTE, no una historia:
-   * los comandos que se ejecutaron no van.
+   * The recipe of what was changed (decision 0010): startup and world values with their final
+   * values, and view values in a separate section. A recipe is a SETTING, not a story: the
+   * commands that were run are not included.
    */
-  receta(titulo?: string): string {
-    const cambiadas = this.cambiadas();
-    const linea = (v: { decl: Variable<M>; valor: Valor }) => `${v.decl.nombre} ${escribirValor(v.valor)}`;
-    const delMundo = cambiadas.filter((v) => v.decl.alcance !== 'vista').map(linea);
-    const deLaVista = cambiadas.filter((v) => v.decl.alcance === 'vista').map(linea);
-    const partes: string[] = [];
-    if (titulo) partes.push(`# ${titulo}`);
-    partes.push(...delMundo);
-    if (deLaVista.length) partes.push('', '# Lo que se ve', ...deLaVista);
-    return partes.join('\n') + '\n';
+  recipe(title?: string): string {
+    const changed = this.changed();
+    const line = (v: { decl: Variable<W>; value: Value }) => `${v.decl.name} ${formatValue(v.value)}`;
+    const world = changed.filter((v) => v.decl.scope !== 'view').map(line);
+    const view = changed.filter((v) => v.decl.scope === 'view').map(line);
+    const parts: string[] = [];
+    if (title) parts.push(`# ${title}`);
+    parts.push(...world);
+    if (view.length) parts.push('', '# What is seen', ...view);
+    return parts.join('\n') + '\n';
   }
 
-  // ---------------------------------------------------------------- cambiar
+  // ---------------------------------------------------------------- changing
 
-  /** Todo a su valor por defecto (lo de la vista se aplica enseguida; lo demás, al reiniciar). */
-  restablecer() {
-    for (const g of this.variables.values()) {
-      if (mismoValor(g.valor, g.decl.porDefecto)) continue;
-      g.valor = copiar(g.decl.porDefecto);
-      if (g.decl.alcance === 'vista') g.decl.alCambiar?.(copiar(g.valor));
+  /** Everything back to its default value (view values are applied right away; the rest, on restart). */
+  reset() {
+    for (const s of this.vars.values()) {
+      if (sameValue(s.value, s.decl.default)) continue;
+      s.value = copy(s.decl.default);
+      if (s.decl.scope === 'view') s.decl.onChange?.(copy(s.value));
     }
   }
 
-  /** Lo del mundo que no está en su valor por defecto, aplicado a un mundo recién creado. */
-  aplicarAlMundo(mundo: M) {
-    for (const g of this.variables.values())
-      if (g.decl.alcance === 'mundo' && !mismoValor(g.valor, g.decl.porDefecto)) g.decl.alMundo?.(mundo, copiar(g.valor));
+  /** The world values that are not at their default, applied to a freshly created world. */
+  applyToWorld(world: W) {
+    for (const s of this.vars.values())
+      if (s.decl.scope === 'world' && !sameValue(s.value, s.decl.default)) s.decl.onWorld?.(world, copy(s.value));
   }
 
   /**
-   * Ejecuta un texto: una o varias líneas (separadas por renglón o por `;`), con comentarios
-   * (`#`). Devuelve lo que habría que mostrar. Si algo de arranque cambió, avisa una sola vez al
-   * final, aunque haya cambiado en varias líneas.
+   * Runs a text: one or more lines (separated by line breaks or by `;`), with comments (`#`).
+   * Returns what should be shown. If a startup value changed, it says so once at the end, even if
+   * it changed on several lines.
    */
-  ejecutar(texto: string, origen: Origen = 'consola'): Mensaje[] {
-    const mensajes: Mensaje[] = [];
-    const salida: Salida = { escribir: (t, nivel: Nivel = 'info') => mensajes.push({ nivel, texto: t }) };
-    let reiniciar = false;
-    for (const linea of separarLineas(texto)) if (this.ejecutarLinea(linea, origen, salida)) reiniciar = true;
-    if (reiniciar) this.alCambiarArranque?.();
-    return mensajes;
+  run(text: string, source: Source = 'console'): Message[] {
+    const messages: Message[] = [];
+    const out: Output = { write: (t, level: Level = 'info') => messages.push({ level, text: t }) };
+    let restart = false;
+    for (const line of splitLines(text)) if (this.runLine(line, source, out)) restart = true;
+    if (restart) this.onStartupChange?.();
+    return messages;
   }
 
-  /** Una línea. Devuelve si cambió algo de arranque. */
-  private ejecutarLinea(linea: string, origen: Origen, salida: Salida): boolean {
-    const palabras = partir(linea);
-    const primera = palabras[0];
-    if (!primera) return false;
-    const nombre = this.alias.get(primera.texto.toLowerCase()) ?? primera.texto.toLowerCase();
-    const resto = palabras.slice(1);
+  /** One line. Returns whether a startup value changed. */
+  private runLine(line: string, source: Source, out: Output): boolean {
+    const words = tokenize(line);
+    const first = words[0];
+    if (!first) return false;
+    const name = first.text.toLowerCase();
+    const rest = words.slice(1);
 
-    const variable = this.variables.get(nombre);
+    const variable = this.vars.get(name);
     if (variable) {
-      if (resto.length === 0) {
-        salida.escribir(this.describirVariable(variable));
+      if (rest.length === 0) {
+        out.write(this.describe(variable));
         return false;
       }
-      const leido = leerValor(
-        variable.decl.tipo,
-        resto.map((p) => p.texto),
+      const parsed = parseValue(
+        variable.decl.type,
+        rest.map((w) => w.text),
       );
-      if (!leido.ok) {
-        salida.escribir(`${nombre}: ${leido.error}`, 'error');
+      if (!parsed.ok) {
+        out.write(`${name}: ${parsed.error}`, 'error');
         return false;
       }
-      const usadas = palabrasQueUsa(variable.decl.tipo);
-      if (resto.length > usadas) {
-        salida.escribir(`${nombre}: sobra "${resto[usadas]!.texto}"`, 'error');
+      const used = wordsUsed(variable.decl.type);
+      if (rest.length > used) {
+        out.write(`${name}: extra "${rest[used]!.text}"`, 'error');
         return false;
       }
-      return this.fijar(variable, leido.valor, salida);
+      return this.set(variable, parsed.value, out);
     }
 
-    const comando = this.comandos.get(nombre);
-    if (comando) {
-      if (origen === 'receta' && !comando.enRecetas) {
-        salida.escribir(`"${nombre}" no se puede usar en una receta: solo desde la consola`, 'error');
+    const command = this.cmds.get(name);
+    if (command) {
+      if (source === 'recipe' && !command.inRecipes) {
+        out.write(`"${name}" cannot be used in a recipe: console only`, 'error');
         return false;
       }
-      const args = this.leerArgumentos(comando, linea, resto, salida);
+      const args = this.parseArgs(command, line, rest, out);
       if (!args) return false;
-      if (comando.alMundo) {
-        const alMundo = comando.alMundo;
-        const lineaCanonica = [nombre, ...args.map(escribirValor)].join(' ');
-        if (this.programador) this.programador(lineaCanonica, (mundo) => alMundo(mundo, args));
-        else salida.escribir(`${nombre}: todavía no hay un mundo donde hacerlo`, 'error');
+      if (command.onWorld) {
+        const onWorld = command.onWorld;
+        const canonical = [name, ...args.map(formatValue)].join(' ');
+        if (this.scheduler) this.scheduler(canonical, (world) => onWorld(world, args));
+        else out.write(`${name}: there is no world to do it in yet`, 'error');
         return false;
       }
-      comando.ejecutar?.(args, salida);
+      command.run?.(args, out);
       return false;
     }
 
-    const sugerencia = parecido(nombre, this.nombres());
-    salida.escribir(
-      sugerencia
-        ? `no existe "${nombre}". ¿Quisiste decir "${sugerencia}"?`
-        : `no existe "${nombre}". Probá "buscar ${nombre}" o "ayuda".`,
+    const suggestion = closest(name, this.names());
+    out.write(
+      suggestion
+        ? `no such name "${name}". Did you mean "${suggestion}"?`
+        : `no such name "${name}". Try "find ${name}" or "help".`,
       'error',
     );
     return false;
   }
 
-  private fijar(g: Guardada<M>, valor: Valor, salida: Salida): boolean {
-    const nombre = g.decl.nombre;
-    const cambio = !mismoValor(g.valor, valor);
-    g.valor = copiar(valor);
-    const escrito = escribirValor(valor);
-    switch (g.decl.alcance) {
-      case 'arranque':
-        salida.escribir(`${nombre} = ${escrito}${cambio && this.alCambiarArranque ? ' (el mundo vuelve a empezar)' : ''}`);
-        return cambio;
-      case 'mundo': {
-        const alMundo = g.decl.alMundo;
-        if (this.programador && alMundo) this.programador(`${nombre} ${escrito}`, (mundo) => alMundo(mundo, copiar(valor)));
-        salida.escribir(`${nombre} = ${escrito}${this.programador ? ' (desde el paso siguiente)' : ''}`);
+  private set(s: Stored<W>, value: Value, out: Output): boolean {
+    const name = s.decl.name;
+    const changed = !sameValue(s.value, value);
+    s.value = copy(value);
+    const written = formatValue(value);
+    switch (s.decl.scope) {
+      case 'startup':
+        out.write(`${name} = ${written}${changed && this.onStartupChange ? ' (the world starts over)' : ''}`);
+        return changed;
+      case 'world': {
+        const onWorld = s.decl.onWorld;
+        if (this.scheduler && onWorld) this.scheduler(`${name} ${written}`, (world) => onWorld(world, copy(value)));
+        out.write(`${name} = ${written}${this.scheduler ? ' (from the next step)' : ''}`);
         return false;
       }
-      case 'vista':
-        g.decl.alCambiar?.(copiar(valor));
-        salida.escribir(`${nombre} = ${escrito}`);
+      case 'view':
+        s.decl.onChange?.(copy(value));
+        out.write(`${name} = ${written}`);
         return false;
     }
   }
 
-  private leerArgumentos(c: Comando<M>, linea: string, resto: ReturnType<typeof partir>, salida: Salida): Valor[] | null {
-    const args: Valor[] = [];
+  private parseArgs(c: Command<W>, line: string, rest: Word[], out: Output): Value[] | null {
+    const args: Value[] = [];
     let i = 0;
-    for (const a of c.argumentos ?? []) {
-      if (i >= resto.length) {
-        if (a.opcional) break;
-        salida.escribir(`${c.nombre}: falta ${a.nombre} (${describirTipo(a.tipo)}). Se usa así: ${this.uso(c)}`, 'error');
+    for (const a of c.args ?? []) {
+      if (i >= rest.length) {
+        if (a.optional) break;
+        out.write(`${c.name}: missing ${a.name} (${describeType(a.type)}). Usage: ${this.usage(c)}`, 'error');
         return null;
       }
-      if (a.tipo.tipo === 'resto') {
-        args.push(linea.slice(resto[i]!.inicio).trim());
-        i = resto.length;
+      if (a.type.kind === 'rest') {
+        args.push(line.slice(rest[i]!.start).trim());
+        i = rest.length;
         break;
       }
-      const usadas = palabrasQueUsa(a.tipo);
-      const leido = leerValor(
-        a.tipo,
-        resto.slice(i, i + usadas).map((p) => p.texto),
+      const used = wordsUsed(a.type);
+      const parsed = parseValue(
+        a.type,
+        rest.slice(i, i + used).map((w) => w.text),
       );
-      if (!leido.ok) {
-        salida.escribir(`${c.nombre}: ${a.nombre}: ${leido.error}`, 'error');
+      if (!parsed.ok) {
+        out.write(`${c.name}: ${a.name}: ${parsed.error}`, 'error');
         return null;
       }
-      args.push(leido.valor);
-      i += usadas;
+      args.push(parsed.value);
+      i += used;
     }
-    if (i < resto.length) {
-      salida.escribir(`${c.nombre}: sobra "${resto[i]!.texto}". Se usa así: ${this.uso(c)}`, 'error');
+    if (i < rest.length) {
+      out.write(`${c.name}: extra "${rest[i]!.text}". Usage: ${this.usage(c)}`, 'error');
       return null;
     }
     return args;
   }
 
-  // ---------------------------------------------------------------- ayuda y autocompletado
+  // ---------------------------------------------------------------- help and completion
 
-  /** Todos los nombres que se pueden escribir (sin los alias). */
-  nombres(): string[] {
-    return [...this.variables.keys(), ...this.comandos.keys()].sort();
+  /** Every name that can be typed. */
+  names(): string[] {
+    return [...this.vars.keys(), ...this.cmds.keys()].sort();
   }
 
-  uso(c: Comando<M>): string {
-    const args = (c.argumentos ?? []).map((a: Argumento) => (a.opcional ? `[${a.nombre}]` : a.nombre));
-    return [c.nombre, ...args].join(' ');
+  usage(c: Command<W>): string {
+    const args = (c.args ?? []).map((a: Argument) => (a.optional ? `[${a.name}]` : a.name));
+    return [c.name, ...args].join(' ');
   }
 
-  describirVariable(g: { decl: Variable<M>; valor: Valor }): string {
-    const { decl } = g;
-    const alcances: Record<Alcance, string> = {
-      arranque: 'de arranque: cambiarla reinicia el mundo',
-      mundo: 'del mundo: entra en el paso siguiente',
-      vista: 'de la vista',
+  describe(v: { decl: Variable<W>; value: Value }): string {
+    const { decl } = v;
+    const scopes: Record<Scope, string> = {
+      startup: 'startup: changing it restarts the world',
+      world: 'world: it enters at the next step',
+      view: 'view',
     };
     return [
-      `${decl.nombre} = ${escribirValor(g.valor)}   (por defecto ${escribirValor(decl.porDefecto)} · ${describirTipo(decl.tipo)} · ${alcances[decl.alcance]})`,
-      `  ${this.texto(decl.descripcion)}`,
+      `${decl.name} = ${formatValue(v.value)}   (default ${formatValue(decl.default)} · ${describeType(decl.type)} · ${scopes[decl.scope]})`,
+      `  ${decl.description}`,
     ].join('\n');
   }
 
-  /** La ayuda de un nombre (variable o comando), o null si no existe. */
-  ayudaDe(nombre: string): string | null {
-    const original = this.alias.get(nombre) ?? nombre;
-    const v = this.variables.get(original);
-    if (v) return this.describirVariable(v);
-    const c = this.comandos.get(original);
-    if (c) return `${this.uso(c)}\n  ${this.texto(c.descripcion)}`;
+  /** The help for a name (variable or command), or null if it does not exist. */
+  helpFor(name: string): string | null {
+    const v = this.vars.get(name);
+    if (v) return this.describe(v);
+    const c = this.cmds.get(name);
+    if (c) return `${this.usage(c)}\n  ${c.description}`;
     return null;
   }
 
   /**
-   * Autocompletar (la tecla Tab): el nombre, o el valor si el nombre ya está escrito y su tipo
-   * tiene opciones (si/no, una lista). Devuelve los candidatos y la línea completada hasta donde
-   * todos coinciden.
+   * Completion (the Tab key): the name, or the value if the name is already typed and its type has
+   * options (on/off, a list). Returns the candidates and the line completed as far as they all agree.
    */
-  completar(linea: string): { candidatos: string[]; linea: string } {
-    const palabras = partir(linea);
-    const terminaEnEspacio = /\s$/.test(linea);
-    if (palabras.length === 0 || (palabras.length === 1 && !terminaEnEspacio)) {
-      const parcial = (palabras[0]?.texto ?? '').toLowerCase();
-      const candidatos = [...this.nombres(), ...this.alias.keys()].filter((n) => n.startsWith(parcial)).sort();
-      return { candidatos, linea: completarHasta(parcial, candidatos, '') };
+  complete(line: string): { candidates: string[]; line: string } {
+    const words = tokenize(line);
+    const endsWithSpace = /\s$/.test(line);
+    if (words.length === 0 || (words.length === 1 && !endsWithSpace)) {
+      const partial = (words[0]?.text ?? '').toLowerCase();
+      const candidates = this.names().filter((n) => n.startsWith(partial));
+      return { candidates, line: completeUpTo(partial, candidates, '') };
     }
-    const nombre = this.alias.get(palabras[0]!.texto.toLowerCase()) ?? palabras[0]!.texto.toLowerCase();
-    const tipo = this.variables.get(nombre)?.decl.tipo ?? this.comandos.get(nombre)?.argumentos?.[0]?.tipo;
-    const opciones =
-      tipo?.tipo === 'booleano'
-        ? ['si', 'no']
-        : tipo?.tipo === 'opcion'
-          ? [...tipo.opciones]
-          : nombre === 'ayuda' || nombre === 'alternar'
-            ? this.nombres()
+    const name = words[0]!.text.toLowerCase();
+    const type = this.vars.get(name)?.decl.type ?? this.cmds.get(name)?.args?.[0]?.type;
+    const options =
+      type?.kind === 'boolean'
+        ? ['on', 'off']
+        : type?.kind === 'option'
+          ? [...type.options]
+          : name === 'help' || name === 'toggle'
+            ? this.names()
             : [];
-    const parcial = terminaEnEspacio ? '' : (palabras[palabras.length - 1]?.texto ?? '').toLowerCase();
-    if (palabras.length > (terminaEnEspacio ? 1 : 2)) return { candidatos: [], linea };
-    const candidatos = opciones.filter((o) => o.startsWith(parcial));
-    const antes = `${palabras[0]!.texto} `;
-    return { candidatos, linea: completarHasta(parcial, candidatos, antes) };
+    const partial = endsWithSpace ? '' : (words[words.length - 1]?.text ?? '').toLowerCase();
+    if (words.length > (endsWithSpace ? 1 : 2)) return { candidates: [], line };
+    const candidates = options.filter((o) => o.startsWith(partial));
+    return { candidates, line: completeUpTo(partial, candidates, `${words[0]!.text} `) };
   }
 }
 
-/** Lo más largo que tienen en común todos los candidatos (y un espacio, si hay uno solo). */
-function completarHasta(parcial: string, candidatos: string[], antes: string): string {
-  if (candidatos.length === 0) return antes + parcial;
-  if (candidatos.length === 1) return `${antes}${candidatos[0]} `;
-  let comun = candidatos[0]!;
-  for (const c of candidatos) while (!c.startsWith(comun)) comun = comun.slice(0, -1);
-  return antes + (comun.length > parcial.length ? comun : parcial);
+/** The longest start that all the candidates share (and a space, if there is only one). */
+function completeUpTo(partial: string, candidates: string[], before: string): string {
+  if (candidates.length === 0) return before + partial;
+  if (candidates.length === 1) return `${before}${candidates[0]} `;
+  let common = candidates[0]!;
+  for (const c of candidates) while (!c.startsWith(common)) common = common.slice(0, -1);
+  return before + (common.length > partial.length ? common : partial);
 }
 
-function copiar(v: Valor): Valor {
+function copy(v: Value): Value {
   return Array.isArray(v) ? [v[0], v[1], v[2]] : v;
 }

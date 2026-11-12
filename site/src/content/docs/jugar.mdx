@@ -3,41 +3,43 @@ title: Jugar
 description: El Dojo y los juegos construidos sobre el motor.
 ---
 
-import { RECETAS } from '@manifold/dojo/recetas';
+import { ROOMS } from '@manifold/dojo/rooms';
 
 ## El Dojo
 
 [**Entrar al Dojo →**](dojo/)
 
-El primer juego: el laboratorio del motor. Por ahora tiene un cubo que gira y cubos chicos sacados del azar del mundo. Con cada etapa del motor va a sumar salas para probar lo nuevo.
+El primer juego: el laboratorio del motor. Por ahora tiene un cubo que gira y cubos chicos sacados del azar del mundo. Con cada etapa del motor va a sumar salas (_rooms_) para probar lo nuevo.
 
 ### Sus salas
 
-Cada sala es una receta guardada, con su propia dirección:
+Cada sala es una receta (_recipe_) guardada, con su propia dirección. Como todo lo de la consola, sus nombres están en inglés:
 
 <ul>
-  {Object.entries(RECETAS).map(([nombre, receta]) => (
+  {Object.entries(ROOMS).map(([name, room]) => (
     <li>
-      <a href={`dojo/${nombre}/`}>{receta.titulo}</a>
+      <a href={`dojo/${name}/`}>{room.title}</a> (<code>load {name}</code>)
     </li>
   ))}
 </ul>
 
 ### La consola
 
-Con la tecla **º** (la que está a la izquierda del 1), o con el botón de abajo a la izquierda, se abre la consola, como la de los juegos de antes. Ahí se ve y se cambia todo lo que el Dojo deja tocar:
+Con la tecla **º** (la que está a la izquierda del 1), o con el botón de abajo a la izquierda, se abre la consola, como la de los juegos de antes. Ahí se ve y se cambia todo lo que el Dojo deja tocar.
+
+La consola está **en inglés, y no se traduce**: sus nombres son como las palabras de un lenguaje de programación, que son las mismas en todo el mundo (`if` no se traduce por `si`). Así, una receta escrita por cualquiera funciona para todos. El [glosario](../tutorial/glosario/#la-consola-del-dojo) dice qué significa cada nombre.
 
 ```
-] ayuda                      cómo se usa
-] dojo.cubos 20              veinte cubos más (el mundo vuelve a empezar)
-] ver.triangulos si          las mallas como alambre
-] cargar lluvia              una sala guardada
-] exportar                   un enlace para que otra persona vea lo mismo
-] inicio guardar             arrancar siempre así, en este navegador
-] atajo t alternar ver.ejes  la tecla t prende y apaga los ejes
+] help                        cómo se usa
+] dojo.cubes 20               veinte cubos chicos (el mundo vuelve a empezar)
+] show.wireframe on           las mallas como alambre
+] load rain                   una sala guardada
+] export                      un enlace para que otra persona vea lo mismo
+] startup save                arrancar siempre así, en este navegador
+] bind t toggle show.axes     la tecla t prende y apaga los ejes
 ```
 
-Tab completa los nombres, las flechas recorren lo que escribiste, y Esc cierra. Cómo está pensada, en la [decisión 0010](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0010-la-consola-y-las-recetas.md).
+Tab completa los nombres, las flechas recorren lo que escribiste, y Esc cierra. Cómo está pensada, en la [decisión 0010](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0010-the-console-and-recipes.md) (en inglés).
 
 ## Los juegos
 

@@ -3,182 +3,195 @@ import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 /**
- * EL TUTORIAL, PROBADO (decisión 0007): cada ejemplo de cada lección se ejecuta en Chromium y
- * tiene que andar sin errores. Si una actualización de Three.js (o un cambio nuestro) rompe una
- * lección, se ve aquí, en el pull request, y no lo descubre un lector.
+ * THE TUTORIAL, TESTED (decision 0007): every example of every lesson runs in Chromium and has to
+ * work without errors. If a Three.js update (or a change of ours) breaks a lesson, it shows here,
+ * before it is published, and a reader does not find it.
+ *
+ * The site's texts are in Spanish (decision 0011): its addresses and labels are looked for in Spanish.
  */
-const DOCS = join(import.meta.dirname, '..', 'sitio', 'src', 'content', 'docs');
+const DOCS = join(import.meta.dirname, '..', 'site', 'src', 'content', 'docs');
 
-/** Las páginas del tutorial, como direcciones: `tutorial/`, `tutorial/etapa-0/01-primer-cubo/`... */
-function paginasDelTutorial(): string[] {
-  const paginas: string[] = [];
-  const recorrer = (carpeta: string) => {
-    for (const e of readdirSync(carpeta, { withFileTypes: true })) {
-      const ruta = join(carpeta, e.name);
-      if (e.isDirectory()) recorrer(ruta);
+/** Tutorial pages that are not lessons: they have no examples to run. */
+const NOT_LESSONS = new Set(['tutorial/glosario/']);
+
+/** The tutorial's lessons, as addresses: `tutorial/`, `tutorial/etapa-0/01-primer-cubo/`... */
+function tutorialLessons(): string[] {
+  const pages: string[] = [];
+  const walk = (folder: string) => {
+    for (const e of readdirSync(folder, { withFileTypes: true })) {
+      const file = join(folder, e.name);
+      if (e.isDirectory()) walk(file);
       else if (/\.mdx?$/.test(e.name))
-        paginas.push(
-          relative(DOCS, ruta)
+        pages.push(
+          relative(DOCS, file)
             .replace(/(index)?\.mdx?$/, '')
             .replace(/\/?$/, '/'),
         );
     }
   };
-  recorrer(join(DOCS, 'tutorial'));
-  return paginas.sort();
+  walk(join(DOCS, 'tutorial'));
+  return pages.filter((p) => !NOT_LESSONS.has(p)).sort();
 }
 
-/** Ejecuta un ejemplo y espera a que ande: que dibuje 20 cuadros, o (si no anima) que escriba en la consola. */
-async function ejecutarYEsperar(ejemplo: Locator) {
-  await ejemplo.locator('.cv-ejecutar').click();
-  // Chrome no le da cuadros a un iframe de otro origen que está fuera de la pantalla.
-  await ejemplo.locator('.cv-resultado').scrollIntoViewIfNeeded();
-  await expect(ejemplo).toHaveAttribute('data-estado', 'corriendo');
+/** Runs an example and waits until it works: until it draws 20 frames, or (if it does not animate) writes to the console. */
+async function runAndWait(example: Locator) {
+  await example.locator('.lc-run').click();
+  // Chrome gives no frames to a cross-origin iframe that is off screen.
+  await example.locator('.lc-result').scrollIntoViewIfNeeded();
+  await expect(example).toHaveAttribute('data-state', 'running');
   await expect
     .poll(
       async () =>
-        Number(await ejemplo.getAttribute('data-cuadros')) >= 20 || (await ejemplo.locator('.cv-consola .cv-linea').count()) > 0,
+        Number(await example.getAttribute('data-frames')) >= 20 || (await example.locator('.lc-console .lc-line').count()) > 0,
       { timeout: 20_000 },
     )
     .toBe(true);
 }
 
-/** Reemplaza el código del archivo abierto en el editor, tecleando como una persona. */
-async function escribirCodigo(page: Page, ejemplo: Locator, codigo: string) {
-  await ejemplo.locator('.cm-content').click();
+/** Replaces the code of the file open in the editor, typing like a person. */
+async function typeCode(page: Page, example: Locator, code: string) {
+  await example.locator('.cm-content').click();
   await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.press('Delete');
-  await page.keyboard.insertText(codigo);
+  await page.keyboard.insertText(code);
 }
 
-for (const pagina of paginasDelTutorial()) {
-  test(`cada ejemplo de ${pagina} se ejecuta sin errores`, async ({ page }) => {
-    const errores: string[] = [];
-    page.on('pageerror', (e) => errores.push(e.message));
-    await page.goto(pagina);
-    const ejemplos = page.locator('.codigo-vivo');
-    const cantidad = await ejemplos.count();
-    expect(cantidad, 'una lección sin código no es una lección').toBeGreaterThan(0);
-    for (let i = 0; i < cantidad; i++) {
-      const ejemplo = ejemplos.nth(i);
-      await ejecutarYEsperar(ejemplo);
-      const consola = await ejemplo.locator('.cv-consola').innerText();
-      expect(await ejemplo.getAttribute('data-errores'), `errores en la consola del ejemplo:\n${consola}`).toBe('0');
+for (const lesson of tutorialLessons()) {
+  test(`every example of ${lesson} runs without errors`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(lesson);
+    const examples = page.locator('.live-code');
+    const count = await examples.count();
+    expect(count, 'a lesson without code is not a lesson').toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const example = examples.nth(i);
+      await runAndWait(example);
+      const output = await example.locator('.lc-console').innerText();
+      expect(await example.getAttribute('data-errors'), `errors in the example's console:\n${output}`).toBe('0');
     }
-    expect(errores).toEqual([]);
+    expect(errors).toEqual([]);
   });
 }
 
-test('editar el código y ejecutarlo; un error aparece con su archivo y su línea', async ({ page }) => {
-  await page.goto('tutorial/');
-  const ejemplo = page.locator('.codigo-vivo').first();
-  await escribirCodigo(page, ejemplo, "console.log('editado en la prueba', { x: 1.23456789 });");
-  await ejemplo.locator('.cv-ejecutar').click();
-  await expect(ejemplo.locator('.cv-consola')).toContainText('editado en la prueba {"x":1.2346}');
-
-  await escribirCodigo(page, ejemplo, "const x = 1;\nthrow new Error('a propósito ' + x);");
-  await page.keyboard.press('ControlOrMeta+Enter'); // el atajo también ejecuta
-  await expect(ejemplo.locator('.cv-consola')).toContainText('a propósito 1 (main.ts, línea 2)');
-  await expect(ejemplo).toHaveAttribute('data-errores', '1');
-
-  // ↺ Restaurar vuelve al código original, que anda.
-  await ejemplo.locator('.cv-restaurar').click();
-  await ejecutarYEsperar(ejemplo);
-  await expect(ejemplo.locator('.cv-consola')).toContainText('hola 1');
+test('the glossary is not a lesson: it has no examples', async ({ page }) => {
+  for (const p of NOT_LESSONS) {
+    await page.goto(p);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.locator('.live-code')).toHaveCount(0);
+  }
 });
 
-test('pantalla completa: el código y lo que dibuja, lado a lado, sin reiniciar el ejemplo', async ({ page }) => {
+test('editing the code and running it; an error shows up with its file and its line', async ({ page }) => {
+  await page.goto('tutorial/');
+  const example = page.locator('.live-code').first();
+  await typeCode(page, example, "console.log('edited in the test', { x: 1.23456789 });");
+  await example.locator('.lc-run').click();
+  await expect(example.locator('.lc-console')).toContainText('edited in the test {"x":1.2346}');
+
+  await typeCode(page, example, "const x = 1;\nthrow new Error('on purpose ' + x);");
+  await page.keyboard.press('ControlOrMeta+Enter'); // the shortcut runs it too
+  await expect(example.locator('.lc-console')).toContainText('on purpose 1 (main.ts, línea 2)');
+  await expect(example).toHaveAttribute('data-errors', '1');
+
+  // ↺ Restaurar (reset) brings back the original code, which works.
+  await example.locator('.lc-reset').click();
+  await runAndWait(example);
+  await expect(example.locator('.lc-console')).toContainText('hello 1');
+});
+
+test('full screen: the code and what it draws, side by side, without restarting the example', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('tutorial/etapa-0/01-primer-cubo/');
-  const ejemplo = page.locator('.codigo-vivo').first();
-  await ejecutarYEsperar(ejemplo);
-  // Si el iframe cambiara de lugar en la página, el navegador lo recargaría: se cuentan sus navegaciones.
-  let recargas = 0;
-  page.on('framenavigated', (marco) => marco !== page.mainFrame() && recargas++);
+  const example = page.locator('.live-code').first();
+  await runAndWait(example);
+  // If the iframe moved in the page, the browser would reload it: its navigations are counted.
+  let reloads = 0;
+  page.on('framenavigated', (frame) => frame !== page.mainFrame() && reloads++);
 
-  await ejemplo.locator('.cv-ampliar').click();
-  await expect(ejemplo).toHaveAttribute('data-ampliado', /^(pantalla|ventana)$/);
-  await expect(ejemplo.locator('.cv-ampliar')).toHaveAttribute('aria-pressed', 'true');
-  // Ocupa la pantalla, con el código a la izquierda de lo que dibuja.
-  const editor = (await ejemplo.locator('.cv-editor').boundingBox())!;
-  const resultado = (await ejemplo.locator('.cv-resultado').boundingBox())!;
-  expect(editor.x + editor.width).toBeLessThanOrEqual(resultado.x);
-  expect(resultado.x + resultado.width).toBeGreaterThan(1270);
-  expect(resultado.height).toBeGreaterThan(650);
-  // Sigue dibujando, y es el mismo ejemplo de antes.
-  const cuadros = Number(await ejemplo.getAttribute('data-cuadros'));
-  await expect.poll(async () => Number(await ejemplo.getAttribute('data-cuadros'))).toBeGreaterThan(cuadros + 20);
-  expect(recargas).toBe(0);
+  await example.locator('.lc-expand').click();
+  await expect(example).toHaveAttribute('data-expanded', /^(screen|window)$/);
+  await expect(example.locator('.lc-expand')).toHaveAttribute('aria-pressed', 'true');
+  // It takes the screen, with the code to the left of what it draws.
+  const editor = (await example.locator('.lc-editor').boundingBox())!;
+  const result = (await example.locator('.lc-result').boundingBox())!;
+  expect(editor.x + editor.width).toBeLessThanOrEqual(result.x);
+  expect(result.x + result.width).toBeGreaterThan(1270);
+  expect(result.height).toBeGreaterThan(650);
+  // It keeps drawing, and it is the same example as before.
+  const frames = Number(await example.getAttribute('data-frames'));
+  await expect.poll(async () => Number(await example.getAttribute('data-frames'))).toBeGreaterThan(frames + 20);
+  expect(reloads).toBe(0);
 
-  // El divisor, con el teclado: dos veces → le da un 10 % más al código.
-  const divisor = ejemplo.locator('.cv-divisor');
-  await divisor.focus();
+  // The divider, with the keyboard: twice → it gives the code 10 % more.
+  const divider = example.locator('.lc-divider');
+  await divider.focus();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
-  await expect(divisor).toHaveAttribute('aria-valuenow', '52');
-  const editorMasAncho = (await ejemplo.locator('.cv-editor').boundingBox())!;
-  expect(editorMasAncho.width).toBeGreaterThan(editor.width + 100);
+  await expect(divider).toHaveAttribute('aria-valuenow', '52');
+  const widerEditor = (await example.locator('.lc-editor').boundingBox())!;
+  expect(widerEditor.width).toBeGreaterThan(editor.width + 100);
 
-  await ejemplo.locator('.cv-ampliar').click();
-  await expect(ejemplo).not.toHaveAttribute('data-ampliado');
+  await example.locator('.lc-expand').click();
+  await expect(example).not.toHaveAttribute('data-expanded');
   expect(await page.evaluate(() => document.fullscreenElement)).toBeNull();
-  expect(recargas).toBe(0);
+  expect(reloads).toBe(0);
 });
 
-test('sin pantalla completa (como en el iPhone), el ejemplo ocupa la ventana, y Esc lo devuelve', async ({ page }) => {
+test('without full screen (like on the iPhone), the example takes the window, and Esc brings it back', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(Document.prototype, 'fullscreenEnabled', { get: () => false }));
   await page.goto('tutorial/etapa-0/01-primer-cubo/');
-  const ejemplo = page.locator('.codigo-vivo').first();
-  await ejemplo.locator('.cv-ampliar').click();
-  await expect(ejemplo).toHaveAttribute('data-ampliado', 'ventana');
-  const caja = (await ejemplo.boundingBox())!;
-  const ventana = page.viewportSize()!;
-  expect([caja.x, caja.y, caja.width, caja.height]).toEqual([0, 0, ventana.width, ventana.height]);
+  const example = page.locator('.live-code').first();
+  await example.locator('.lc-expand').click();
+  await expect(example).toHaveAttribute('data-expanded', 'window');
+  const box = (await example.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect([box.x, box.y, box.width, box.height]).toEqual([0, 0, viewport.width, viewport.height]);
   await page.keyboard.press('Escape');
-  await expect(ejemplo).not.toHaveAttribute('data-ampliado');
+  await expect(example).not.toHaveAttribute('data-expanded');
 });
 
-test('los paneles de los costados se ocultan y se recuerdan, y el ejemplo usa el ancho que queda', async ({ page }) => {
+test('the side panels hide and are remembered, and the example uses the width that is left', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('tutorial/etapa-0/03-paso-fijo/');
-  const ejemplo = page.locator('.codigo-vivo').first();
-  const barra = page.locator('header .mg-paneles .mg-panel[data-panel="barra"]');
-  const indice = page.locator('header .mg-paneles .mg-panel[data-panel="indice"]');
-  const columna = (await page.locator('.sl-markdown-content').boundingBox())!.width;
-  expect((await ejemplo.boundingBox())!.width).toBeLessThan(columna + 40);
+  const example = page.locator('.live-code').first();
+  const sidebar = page.locator('header .mg-panels .mg-panel[data-panel="sidebar"]');
+  const toc = page.locator('header .mg-panels .mg-panel[data-panel="toc"]');
+  const column = (await page.locator('.sl-markdown-content').boundingBox())!.width;
+  expect((await example.boundingBox())!.width).toBeLessThan(column + 40);
 
-  await barra.click();
-  await indice.click();
+  await sidebar.click();
+  await toc.click();
   await expect(page.locator('.sidebar-pane')).toBeHidden();
   await expect(page.locator('.right-sidebar-container')).toBeHidden();
-  // El ejemplo sale de la columna del texto, y pone el código y lo que dibuja lado a lado.
-  await expect(ejemplo).toHaveAttribute('data-lado-a-lado', '');
-  expect((await ejemplo.boundingBox())!.width).toBeGreaterThan(1300);
-  const editor = (await ejemplo.locator('.cv-editor').boundingBox())!;
-  const resultado = (await ejemplo.locator('.cv-resultado').boundingBox())!;
-  expect(editor.x + editor.width).toBeLessThanOrEqual(resultado.x);
+  // The example breaks out of the text's column, and puts the code and what it draws side by side.
+  await expect(example).toHaveAttribute('data-side-by-side', '');
+  expect((await example.boundingBox())!.width).toBeGreaterThan(1300);
+  const editor = (await example.locator('.lc-editor').boundingBox())!;
+  const result = (await example.locator('.lc-result').boundingBox())!;
+  expect(editor.x + editor.width).toBeLessThanOrEqual(result.x);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(1440);
 
-  // En otra página siguen ocultos (se recuerda), hasta que se los vuelve a mostrar.
+  // On another page they are still hidden (it is remembered), until they are shown again.
   await page.goto('tutorial/etapa-0/01-primer-cubo/');
   await expect(page.locator('.sidebar-pane')).toBeHidden();
-  await expect(barra).toHaveAttribute('aria-pressed', 'false');
-  await barra.click();
-  await indice.click();
+  await expect(sidebar).toHaveAttribute('aria-pressed', 'false');
+  await sidebar.click();
+  await toc.click();
   await expect(page.locator('.sidebar-pane')).toBeVisible();
   await expect(page.locator('.right-sidebar-container')).toBeVisible();
 
-  // También se ocultan con el botón "Ocultar" que cada panel tiene arriba.
-  await page.locator('.sidebar-pane .mg-ocultar').click();
-  await page.locator('.right-sidebar .mg-ocultar').click();
+  // They also hide with the "Ocultar" (hide) button each panel has at the top.
+  await page.locator('.sidebar-pane .mg-hide').click();
+  await page.locator('.right-sidebar .mg-hide').click();
   await expect(page.locator('.sidebar-pane')).toBeHidden();
   await expect(page.locator('.right-sidebar-container')).toBeHidden();
-  await expect(barra).toHaveAttribute('aria-pressed', 'false');
+  await expect(sidebar).toHaveAttribute('aria-pressed', 'false');
 
-  // Y siempre se pueden volver a mostrar con las pestañas del borde de la pantalla.
-  await page.locator('header .mg-mostrar-barra').click();
-  await page.locator('header .mg-mostrar-indice').click();
+  // And they can always be shown again with the tabs at the screen's edge.
+  await page.locator('header .mg-show-sidebar').click();
+  await page.locator('header .mg-show-toc').click();
   await expect(page.locator('.sidebar-pane')).toBeVisible();
   await expect(page.locator('.right-sidebar-container')).toBeVisible();
-  await expect(page.locator('header .mg-mostrar-barra')).toBeHidden();
+  await expect(page.locator('header .mg-show-sidebar')).toBeHidden();
 });

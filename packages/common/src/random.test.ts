@@ -1,52 +1,52 @@
 import { describe, expect, test } from 'vitest';
-import { Azar } from './azar';
+import { Random } from './random';
 
-describe('Azar con semilla', () => {
-  test('la misma semilla da la misma secuencia; otra semilla, otra', () => {
-    const a = new Azar(42);
-    const b = new Azar(42);
-    const c = new Azar(43);
-    const sa = Array.from({ length: 100 }, () => a.entero());
-    const sb = Array.from({ length: 100 }, () => b.entero());
-    const sc = Array.from({ length: 100 }, () => c.entero());
+describe('seeded random', () => {
+  test('the same seed gives the same sequence; another seed, another one', () => {
+    const a = new Random(42);
+    const b = new Random(42);
+    const c = new Random(43);
+    const sa = Array.from({ length: 100 }, () => a.uint32());
+    const sb = Array.from({ length: 100 }, () => b.uint32());
+    const sc = Array.from({ length: 100 }, () => c.uint32());
     expect(sb).toEqual(sa);
     expect(sc).not.toEqual(sa);
   });
 
-  test('semillas vecinas (1, 2, 3) dan secuencias que no se parecen', () => {
-    const primeros = [1, 2, 3].map((s) => new Azar(s).siguiente());
-    // Si el reparto de la semilla fuera malo, los tres primeros números serían casi iguales.
-    expect(Math.abs(primeros[0]! - primeros[1]!)).toBeGreaterThan(0.01);
-    expect(Math.abs(primeros[1]! - primeros[2]!)).toBeGreaterThan(0.01);
+  test('neighbouring seeds (1, 2, 3) give sequences that do not look alike', () => {
+    const firsts = [1, 2, 3].map((s) => new Random(s).next());
+    // If the seed were spread badly, the three first numbers would be almost equal.
+    expect(Math.abs(firsts[0]! - firsts[1]!)).toBeGreaterThan(0.01);
+    expect(Math.abs(firsts[1]! - firsts[2]!)).toBeGreaterThan(0.01);
   });
 
-  test('reparte parejo: 100.000 números en 10 casilleros, cada uno con su 10 % (±0,5 %)', () => {
-    const azar = new Azar(7);
-    const casilleros = new Array(10).fill(0);
-    for (let i = 0; i < 100_000; i++) casilleros[Math.floor(azar.siguiente() * 10)]++;
-    for (const c of casilleros) expect(Math.abs(c / 100_000 - 0.1)).toBeLessThan(0.005);
+  test('spreads evenly: 100,000 numbers in 10 buckets, each with its 10 % (±0.5 %)', () => {
+    const random = new Random(7);
+    const buckets = new Array(10).fill(0);
+    for (let i = 0; i < 100_000; i++) buckets[Math.floor(random.next() * 10)]++;
+    for (const b of buckets) expect(Math.abs(b / 100_000 - 0.1)).toBeLessThan(0.005);
   });
 
-  test('siguiente() siempre en [0, 1); entre() y elegir() respetan sus límites', () => {
-    const azar = new Azar(1);
+  test('next() is always in [0, 1); between() and pick() respect their limits', () => {
+    const random = new Random(1);
     for (let i = 0; i < 10_000; i++) {
-      const x = azar.siguiente();
+      const x = random.next();
       expect(x).toBeGreaterThanOrEqual(0);
       expect(x).toBeLessThan(1);
-      const y = azar.entre(-2, 3);
+      const y = random.between(-2, 3);
       expect(y).toBeGreaterThanOrEqual(-2);
       expect(y).toBeLessThan(3);
     }
-    expect(['a', 'b', 'c']).toContain(azar.elegir(['a', 'b', 'c']));
-    expect(() => azar.elegir([])).toThrow();
+    expect(['a', 'b', 'c']).toContain(random.pick(['a', 'b', 'c']));
+    expect(() => random.pick([])).toThrow();
   });
 
-  test('guardar el estado y restaurarlo repite la secuencia desde ese punto', () => {
-    const azar = new Azar(99);
-    for (let i = 0; i < 37; i++) azar.entero();
-    const foto = azar.estado;
-    const despues = Array.from({ length: 20 }, () => azar.entero());
-    azar.restaurar(foto);
-    expect(Array.from({ length: 20 }, () => azar.entero())).toEqual(despues);
+  test('saving the state and restoring it repeats the sequence from that point', () => {
+    const random = new Random(99);
+    for (let i = 0; i < 37; i++) random.uint32();
+    const snapshot = random.state;
+    const after = Array.from({ length: 20 }, () => random.uint32());
+    random.restore(snapshot);
+    expect(Array.from({ length: 20 }, () => random.uint32())).toEqual(after);
   });
 });

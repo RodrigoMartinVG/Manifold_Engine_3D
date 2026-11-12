@@ -1,16 +1,16 @@
 {
-  "name": "@manifold/presentacion",
+  "name": "@manifold/presentation",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Lo que se ve y se oye: dibuja el mundo de la simulación con Three.js. Lee el núcleo; el núcleo nunca la lee a ella.",
+  "description": "What is seen and heard: draws the simulation's world with Three.js. It reads the core; the core never reads it.",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@manifold/comandos": "0.0.0",
-    "@manifold/comun": "0.0.0",
-    "@manifold/nucleo": "0.0.0",
+    "@manifold/commands": "0.0.0",
+    "@manifold/common": "0.0.0",
+    "@manifold/core": "0.0.0",
     "three": "^0.187.0"
   },
   "devDependencies": {

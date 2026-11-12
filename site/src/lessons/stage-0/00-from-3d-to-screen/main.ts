@@ -1,112 +1,108 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import GUI from 'three/addons/libs/lil-gui.module.min.js';
-import { etiqueta } from './etiqueta';
+import { label } from './label';
 
-// El renderer, la escena y la cámara: la lección siguiente los arma uno por uno.
+// The renderer, the scene and the camera: the next lesson builds them one by one.
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 document.body.append(renderer.domElement);
-const escena = new THREE.Scene();
-escena.background = new THREE.Color(0x15120f);
-const camara = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-camara.position.set(3.2, 2.4, 4.2);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x15120f);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+camera.position.set(3.2, 2.4, 4.2);
 
-// Arrastrar gira la cámara alrededor de un punto; la rueda (o pellizcar) acerca y aleja.
-const controles = new OrbitControls(camara, renderer.domElement);
-controles.target.set(0, 0.6, 0);
-controles.enableDamping = true; // que frene suave al soltar
+// Dragging turns the camera around a point; the wheel (or a pinch) zooms in and out.
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.6, 0);
+controls.enableDamping = true; // it slows down smoothly when released
 
-// 1. LAS COORDENADAS: tres ejes que salen del origen (0, 0, 0). Rojo = x, verde = y, azul = z.
-escena.add(new THREE.AxesHelper(2));
-escena.add(
-  etiqueta('x', '#e06c75', 2.25, 0, 0),
-  etiqueta('y', '#98c379', 0, 2.25, 0),
-  etiqueta('z', '#61afef', 0, 0, 2.25),
+// 1. THE COORDINATES: three axes coming out of the origin (0, 0, 0). Red = x, green = y, blue = z.
+scene.add(new THREE.AxesHelper(2));
+scene.add(
+  label('x', '#e06c75', 2.25, 0, 0),
+  label('y', '#98c379', 0, 2.25, 0),
+  label('z', '#61afef', 0, 0, 2.25),
 );
-escena.add(new THREE.GridHelper(6, 6, 0x5a5044, 0x2e2822)); // el piso: cuadrados de 1 metro
+scene.add(new THREE.GridHelper(6, 6, 0x5a5044, 0x2e2822)); // the floor: 1-meter squares
 
-// 2. UNA FORMA HECHA DE TRIÁNGULOS: una esfera (la geometría) con un material que refleja la luz.
-// `flatShading`: cada triángulo de un solo tono, para que se vean.
+// 2. A SHAPE MADE OF TRIANGLES: a sphere (the geometry) with a material that reflects light.
+// `flatShading`: each triangle in a single tone, so they show.
 const material = new THREE.MeshStandardMaterial({ color: 0xe0a040, flatShading: true });
-const esfera = new THREE.Mesh(new THREE.SphereGeometry(0.8, 8, 6), material);
-esfera.position.set(0, 0.8, 0); // en el centro, 80 cm arriba del piso
-escena.add(esfera);
-// Los mismos triángulos, dibujados como líneas. Es HIJA de la esfera: se mueve con ella.
-const alambre = new THREE.LineSegments(
-  new THREE.WireframeGeometry(esfera.geometry),
+const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.8, 8, 6), material);
+sphere.position.set(0, 0.8, 0); // in the center, 80 cm above the floor
+scene.add(sphere);
+// The same triangles, drawn as lines. It is a CHILD of the sphere: it moves with it.
+const wireframe = new THREE.LineSegments(
+  new THREE.WireframeGeometry(sphere.geometry),
   new THREE.LineBasicMaterial({ color: 0x2a1a0b }),
 );
-esfera.add(alambre);
+sphere.add(wireframe);
 
-// 3. LA LUZ: una tenue que viene de todos lados (cielo y suelo), y un sol.
-escena.add(new THREE.HemisphereLight(0xc8d4ff, 0x3a3028, 0.5));
-const sol = new THREE.DirectionalLight(0xffffff, 2.5);
-sol.position.set(3, 4, 2);
-escena.add(sol);
+// 3. THE LIGHT: a faint one that comes from everywhere (sky and ground), and a sun.
+scene.add(new THREE.HemisphereLight(0xc8d4ff, 0x3a3028, 0.5));
+const sun = new THREE.DirectionalLight(0xffffff, 2.5);
+sun.position.set(3, 4, 2);
+scene.add(sun);
 
-// ---------- Los controles ----------
-const opciones = { detalle: 8, verTriangulos: true, campoDeVision: 50 };
-const lectura = { triangulos: 0, vertices: 0, cuadrosPorSegundo: 0 };
+// ---------- The controls ----------
+const options = { detail: 8, showTriangles: true, fieldOfView: 50 };
+const readout = { triangles: 0, vertices: 0, framesPerSecond: 0 };
 
-/** Rehace la esfera con otro detalle: más divisiones = más triángulos. */
-function rehacer() {
-  esfera.geometry.dispose(); // la geometría vieja ocupa memoria en la GPU: se libera
-  esfera.geometry = new THREE.SphereGeometry(
-    0.8,
-    opciones.detalle,
-    Math.ceil(opciones.detalle * 0.75),
-  );
-  alambre.geometry.dispose();
-  alambre.geometry = new THREE.WireframeGeometry(esfera.geometry);
-  lectura.triangulos = esfera.geometry.index!.count / 3; // cada triángulo son tres vértices
-  lectura.vertices = esfera.geometry.attributes.position!.count;
+/** Rebuilds the sphere with another detail: more divisions = more triangles. */
+function rebuild() {
+  sphere.geometry.dispose(); // the old geometry takes memory on the GPU: it is freed
+  sphere.geometry = new THREE.SphereGeometry(0.8, options.detail, Math.ceil(options.detail * 0.75));
+  wireframe.geometry.dispose();
+  wireframe.geometry = new THREE.WireframeGeometry(sphere.geometry);
+  readout.triangles = sphere.geometry.index!.count / 3; // each triangle is three vertices
+  readout.vertices = sphere.geometry.attributes.position!.count;
 }
-rehacer();
+rebuild();
 
-const gui = new GUI({ title: 'Del 3D a la pantalla' });
-gui.add(opciones, 'detalle', 3, 64, 1).name('detalle de la esfera').onChange(rehacer);
+const gui = new GUI({ title: 'From 3D to the screen' });
+gui.add(options, 'detail', 3, 64, 1).name('sphere detail').onChange(rebuild);
 gui
-  .add(opciones, 'verTriangulos')
-  .name('ver los triángulos')
-  .onChange((v: boolean) => (alambre.visible = v));
+  .add(options, 'showTriangles')
+  .name('show the triangles')
+  .onChange((v: boolean) => (wireframe.visible = v));
 gui
-  .add(opciones, 'campoDeVision', 15, 110, 1)
-  .name('campo de visión (°)')
-  .onChange((grados: number) => {
-    camara.fov = grados;
-    camara.updateProjectionMatrix(); // la cámara recalcula cómo proyecta
+  .add(options, 'fieldOfView', 15, 110, 1)
+  .name('field of view (°)')
+  .onChange((degrees: number) => {
+    camera.fov = degrees;
+    camera.updateProjectionMatrix(); // the camera recomputes how it projects
   });
-gui.add(sol, 'intensity', 0, 5, 0.1).name('fuerza del sol');
-const cuentas = gui.addFolder('Lo que dibuja la GPU');
-cuentas.add(lectura, 'triangulos').name('triángulos').listen().disable();
-cuentas.add(lectura, 'vertices').name('vértices').listen().disable();
-cuentas.add(lectura, 'cuadrosPorSegundo').name('cuadros por segundo').listen().disable();
+gui.add(sun, 'intensity', 0, 5, 0.1).name('sun strength');
+const counts = gui.addFolder('What the GPU draws');
+counts.add(readout, 'triangles').name('triangles').listen().disable();
+counts.add(readout, 'vertices').name('vertices').listen().disable();
+counts.add(readout, 'framesPerSecond').name('frames per second').listen().disable();
 
-// ---------- El tamaño y el bucle ----------
-function ajustar() {
+// ---------- The size and the loop ----------
+function fit() {
   renderer.setSize(innerWidth, innerHeight);
-  camara.aspect = innerWidth / innerHeight;
-  camara.updateProjectionMatrix();
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
 }
-addEventListener('resize', ajustar);
-ajustar();
+addEventListener('resize', fit);
+fit();
 
-// 4. LOS CUADROS: todo se vuelve a dibujar una y otra vez. Aquí se cuentan, de a un segundo.
-let cuadros = 0;
-let desde = performance.now();
-function cuadro(ahora: number) {
-  controles.update();
-  renderer.render(escena, camara);
-  cuadros++;
-  if (ahora - desde >= 1000) {
-    lectura.cuadrosPorSegundo = Math.round((cuadros * 1000) / (ahora - desde));
-    cuadros = 0;
-    desde = ahora;
+// 4. THE FRAMES: everything is drawn again and again. Here they are counted, one second at a time.
+let frames = 0;
+let since = performance.now();
+function frame(now: number) {
+  controls.update();
+  renderer.render(scene, camera);
+  frames++;
+  if (now - since >= 1000) {
+    readout.framesPerSecond = Math.round((frames * 1000) / (now - since));
+    frames = 0;
+    since = now;
   }
-  requestAnimationFrame(cuadro);
+  requestAnimationFrame(frame);
 }
-requestAnimationFrame(cuadro);
+requestAnimationFrame(frame);
 
-// Probá: detalle en 3 y en 64 (mirá cuántos triángulos). Campo de visión en 15 y en 110.
-// Acercate con la rueda hasta entrar en la esfera: ¿qué pasa con sus caras?
+// Try: detail at 3 and at 64 (look at how many triangles). Field of view at 15 and at 110.
+// Zoom in with the wheel until you enter the sphere: what happens to its faces?

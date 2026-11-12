@@ -1,24 +1,25 @@
-# 0002. El sitio: Astro con Starlight, en GitHub Pages
+# 0002. The site: Astro with Starlight, on GitHub Pages
 
-- **Estado:** aceptada
-- **Fecha:** 2026-11-11
+- **Status:** accepted
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-La plataforma es también una **web**: un inicio, la descripción del proyecto, un **tutorial que crece con el motor** y las páginas desde las que se juega (el Dojo y los juegos). El tutorial necesita escribirse en Markdown y poder mostrar demos en vivo.
+The platform is also a **website**: a home page, the project's description, a **tutorial that grows with the engine** and the pages to play from (the Dojo and the games). The tutorial has to be written in Markdown and be able to show live demos.
 
-## Decisión
+## Decision
 
-- **Astro**, con su tema de documentación **Starlight** para el tutorial y las páginas de texto. Los juegos son **páginas de Astro a pantalla completa** (`/jugar/dojo/`) que importan su paquete: Astro los empaqueta con Vite, como al resto. Una sola compilación arma todo el sitio.
-- Se publica en **GitHub Pages**, en `https://rodrigomartinvg.github.io/Manifold_Gaming/`. Por eso el sitio tiene `base: '/Manifold_Gaming'`, y los enlaces internos se escriben relativos.
-- El tutorial vive en `sitio/src/content/docs/tutorial/`. (La [0007](0007-tutorial-ejecutable.md) cambió su forma: lecciones cortas con código ejecutable, y los informes de cada etapa en una bitácora.)
+- **Astro**, with its documentation theme **Starlight** for the tutorial and the text pages. The games are **full-screen Astro pages** (`/jugar/dojo/`) that import their package: Astro bundles them with Vite, like everything else. A single build makes the whole site.
+- It is published on **GitHub Pages**, at `https://rodrigomartinvg.github.io/Manifold_Gaming/`. That is why the site has `base: '/Manifold_Gaming'`, and internal links are written relative.
+- The tutorial lives in `site/src/content/docs/tutorial/`. ([0007](0007-executable-tutorial.md) changed its shape: short lessons with executable code, and each stage's reports in a log, the Bitácora.)
+- The site's texts and addresses are in Spanish; everything else is in English ([0011](0011-languages.md)).
 
-## Consecuencias
+## Consequences
 
-- Escribir un capítulo es escribir Markdown; Starlight agrega el índice, la búsqueda y el modo oscuro.
-- Todo es estático: Pages lo sirve gratis. El servidor de los juegos en red (fase 6) va a necesitar otro lugar.
+- Writing a chapter is writing Markdown; Starlight adds the index, the search and dark mode.
+- Everything is static: Pages serves it for free. The server for networked games (phase 6) will need another place.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-- **VitePress:** también sirve y es más simple, pero está pensado solo para documentación; aquí hay también una página de inicio y páginas de juegos.
-- **Páginas HTML sueltas con Vite** (como en la V1): el tutorial necesitaría armarse a mano.
+- **VitePress:** it would also do and it is simpler, but it is meant for documentation only; here there is also a home page and game pages.
+- **Loose HTML pages with Vite** (as in V1): the tutorial would have to be put together by hand.

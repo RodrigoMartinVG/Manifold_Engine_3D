@@ -1,33 +1,33 @@
-import type { Registro } from '@manifold/comandos';
-import type { Evento } from './tipos';
-import type { Mundo } from './mundo';
+import type { Registry } from '@manifold/commands';
+import type { Event } from './types';
+import type { World } from './world';
 
 /**
- * EL CONTRATO ENTRE EL MOTOR Y UN JUEGO (decisión 0000: "mecanismo y política").
+ * THE CONTRACT BETWEEN THE ENGINE AND A GAME (decision 0000: "mechanism and policy").
  *
- * El motor simula; no sabe a qué se juega. Un juego (el Dojo es el primero) es un CARTUCHO
- * que el motor recibe: dice qué hay en el mundo al empezar y qué significa lo que pasa.
- * El motor nunca importa un juego (lo vigilan el compilador y el linter: decisión 0003).
+ * The engine simulates; it does not know what is being played. A game (the Dojo is the first) is a
+ * CARTRIDGE the engine receives: it says what is in the world at the start and what happenings
+ * mean. The engine never imports a game (the compiler and the linter watch it: decision 0003).
  *
- * Fase 0: lo mínimo. Va a crecer con lo que pidan los juegos (en la V1 hicieron falta:
- * capacidades, armas, guardar la partida, viajar entre niveles, el fin, los equipos...), y
- * cada cosa nueva entra con su prueba y su capítulo del tutorial.
+ * Stage 0: the minimum. It will grow with what games ask for (in V1 they needed: capabilities,
+ * weapons, saving the game, travelling between levels, the ending, teams...), and every new thing
+ * comes with its test and its tutorial lesson.
  */
-export interface Cartucho {
-  /** Para las direcciones y las repeticiones: "dojo". */
+export interface Cartridge {
+  /** For addresses and replays: "dojo". */
   readonly id: string;
-  readonly titulo: string;
+  readonly title: string;
   /**
-   * Sus variables y comandos (decisión 0010): lo que este juego deja cambiar y hacer. Cada juego
-   * decide qué expone: el Dojo, todo; un juego competitivo, quizás nada. Se llama una vez por
-   * registro, antes de crear el mundo.
+   * Its variables and commands (decision 0010): what this game lets people change and do. Each
+   * game decides what it exposes: the Dojo, everything; a competitive game, maybe nothing. Called
+   * once per registry, before the world is created.
    */
-  alDeclarar?(registro: Registro<Mundo>): void;
+  onDeclare?(registry: Registry<World>): void;
   /**
-   * Una vez, con el mundo recién creado: poner lo que haya al empezar. Lo de ARRANQUE (cuántos
-   * cubos, qué sala) se lee del registro, que ya tiene aplicadas las recetas.
+   * Once, with the freshly created world: put whatever there is at the start. STARTUP values (how
+   * many cubes, which room) are read from the registry, which already has the recipes applied.
    */
-  alIniciar(mundo: Mundo, registro: Registro<Mundo>): void;
-  /** En cada paso, después de que el mundo avanzó, con los eventos de ese paso. */
-  alAvanzar?(mundo: Mundo, eventos: readonly Evento[]): void;
+  onStart(world: World, registry: Registry<World>): void;
+  /** On every step, after the world advanced, with that step's events. */
+  onStep?(world: World, events: readonly Event[]): void;
 }

@@ -1,95 +1,95 @@
 import * as THREE from 'three';
-import type { Quat, Vec3 } from '@manifold/comun';
-import { declararAyudas, type Mensaje, type Registro } from '@manifold/comandos';
-import { huella, Partida, registroDe, Reloj, type Cartucho, type Entidad, type IdEntidad, type Mundo } from '@manifold/nucleo';
-import { montarConsola, type Consola, type OpcionesConsola } from './consola';
+import type { Quat, Vec3 } from '@manifold/common';
+import { declareHelp, type Message, type Registry } from '@manifold/commands';
+import { Clock, registryFor, Session, stateHash, type Cartridge, type Entity, type EntityId, type World } from '@manifold/core';
+import { mountConsole, type ConsoleOptions, type GameConsole } from './console';
 
-/** Una receta para empezar, y de dónde viene (para los avisos: "la receta del enlace…"). */
-export interface RecetaInicial {
-  de: string;
-  texto: string;
+/** A recipe to start with, and where it comes from (for the warnings: "the link's recipe…"). */
+export interface InitialRecipe {
+  from: string;
+  text: string;
 }
 
-export interface OpcionesMontaje {
+export interface MountOptions {
   /**
-   * Las recetas con que nace el mundo, en orden (la de la sala, la del enlace…): las junta el
-   * JUEGO, que sabe de dónde vienen (decisión 0010). La presentación no lee la dirección.
+   * The recipes the world is born with, in order (the room's, the link's…): the GAME gathers them,
+   * because it knows where they come from (decision 0010). The presentation does not read the address.
    */
-  recetas?: readonly RecetaInicial[];
-  /** Si el juego monta la consola, y cómo. Cada juego decide (decisión 0010). */
-  consola?: OpcionesConsola | false;
+  recipes?: readonly InitialRecipe[];
+  /** Whether the game mounts the console, and how. Each game decides (decision 0010). */
+  console?: ConsoleOptions | false;
 }
 
-export interface Montaje {
-  readonly registro: Registro<Mundo>;
-  /** La partida actual (cambia al reiniciar). */
-  readonly partida: Partida;
-  readonly consola: Consola | null;
-  /** Vuelve a crear el mundo, con los valores actuales del registro. */
-  reiniciar(): void;
-  /** Para de dibujar y libera la GPU (al salir de la página, o en las pruebas). */
-  detener(): void;
+export interface Mount {
+  readonly registry: Registry<World>;
+  /** The current session (it changes on restart). */
+  readonly session: Session;
+  readonly console: GameConsole | null;
+  /** Creates the world again, with the registry's current values. */
+  restart(): void;
+  /** Stops drawing and frees the GPU (when leaving the page, or in tests). */
+  stop(): void;
 }
 
-/** La pose de una entidad en el paso anterior: se dibuja a mitad de camino entre esa y la actual. */
+/** An entity's pose at the previous step: it is drawn halfway between that one and the current one. */
 interface Pose {
-  posicion: Vec3;
-  rotacion: Quat;
+  position: Vec3;
+  rotation: Quat;
 }
 
 /**
- * EL CLIENTE: monta un cartucho en un elemento de la página y lo hace andar.
+ * THE CLIENT: mounts a cartridge in an element of the page and makes it run.
  *
- * En cada cuadro de la pantalla:
- *   1. el reloj dice cuántos pasos fijos tocan (paso 1 de la V1: la simulación no depende de los FPS);
- *   2. antes de cada paso se guarda la pose de cada cosa (la "anterior");
- *   3. la partida avanza;
- *   4. se dibuja cada cosa entre su pose anterior y la actual, según `alfa` (interpolar).
+ * On every screen frame:
+ *   1. the clock says how many fixed steps are due (V1's step 1: the simulation does not depend on FPS);
+ *   2. before each step, every thing's pose is saved (the "previous" one);
+ *   3. the session advances;
+ *   4. every thing is drawn between its previous pose and the current one, by `alpha` (interpolation).
  *
- * La presentación LEE el mundo y nunca lo escribe: lo que se ve es una consecuencia de la
- * simulación, no al revés. Lo que se puede cambiar de la vista lo declara aquí (`ver.*`,
- * `vista.*`), y el juego decide si monta una consola para tocarlo (decisión 0010).
+ * The presentation READS the world and never writes it: what is seen is a consequence of the
+ * simulation, not the other way round. What can be changed in the view is declared here (`show.*`,
+ * `view.*`), and the game decides whether to mount a console to touch it (decision 0010).
  *
- * `contenedor` tiene que estar posicionado (`position` fixed, absolute o relative): las
- * estadísticas y la consola se dibujan encima, adentro de él.
+ * `container` must be positioned (`position` fixed, absolute or relative): the stats and the
+ * console are drawn on top, inside it.
  */
-export function montar(cartucho: Cartucho, contenedor: HTMLElement, o: OpcionesMontaje = {}): Montaje {
-  const registro = registroDe(cartucho);
+export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOptions = {}): Mount {
+  const registry = registryFor(cartridge);
 
-  // Resolución 1× (una gráfica integrada, como la Iris Plus, sufre con 2×: cuatro veces más píxeles).
+  // 1× resolution (an integrated GPU, like the Iris Plus, struggles with 2×: four times the pixels).
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(1);
-  contenedor.append(renderer.domElement);
+  container.append(renderer.domElement);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x14161c);
   const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 200);
   camera.position.set(3.2, 2.4, 4.2);
   camera.lookAt(0, 1, 0);
   scene.add(new THREE.HemisphereLight(0xc8d4ff, 0x3a3028, 1.4));
-  const sol = new THREE.DirectionalLight(0xfff2e0, 1.8);
-  sol.position.set(4, 8, 3);
-  scene.add(sol);
+  const sun = new THREE.DirectionalLight(0xfff2e0, 1.8);
+  sun.position.set(4, 8, 3);
+  scene.add(sun);
   scene.add(new THREE.GridHelper(20, 20, 0x3a4050, 0x262a33));
-  const ejes = new THREE.AxesHelper(3);
-  ejes.visible = false;
-  scene.add(ejes);
+  const axes = new THREE.AxesHelper(3);
+  axes.visible = false;
+  scene.add(axes);
 
-  const ajustarTamano = () => {
-    const ancho = Math.max(1, contenedor.clientWidth);
-    const alto = Math.max(1, contenedor.clientHeight);
-    renderer.setSize(ancho, alto);
-    camera.aspect = ancho / alto;
+  const fitSize = () => {
+    const width = Math.max(1, container.clientWidth);
+    const height = Math.max(1, container.clientHeight);
+    renderer.setSize(width, height);
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
   };
-  const observador = new ResizeObserver(ajustarTamano);
-  observador.observe(contenedor);
-  ajustarTamano();
+  const observer = new ResizeObserver(fitSize);
+  observer.observe(container);
+  fitSize();
 
-  // ---------- Las estadísticas (ver.estadisticas): el paso, la huella, los cuadros por segundo ----------
-  const estadisticas = document.createElement('div');
-  estadisticas.className = 'mg-estadisticas';
-  estadisticas.hidden = true;
-  Object.assign(estadisticas.style, {
+  // ---------- The stats (show.stats): the step, the hash, the frames per second ----------
+  const stats = document.createElement('div');
+  stats.className = 'mg-stats';
+  stats.hidden = true;
+  Object.assign(stats.style, {
     position: 'absolute',
     top: '12px',
     right: '12px',
@@ -101,240 +101,232 @@ export function montar(cartucho: Cartucho, contenedor: HTMLElement, o: OpcionesM
     pointerEvents: 'none',
     whiteSpace: 'pre',
   });
-  contenedor.append(estadisticas);
+  container.append(stats);
 
-  // El mundo y sus mallas (antes que nada: una receta puede pedir ver.triangulos, que las recorre).
-  const mallas = new Map<IdEntidad, THREE.Mesh>();
-  const anteriores = new Map<IdEntidad, Pose>();
-  const geometriaCaja = new THREE.BoxGeometry(1, 1, 1);
-  let partida: Partida;
-  let reloj = new Reloj();
+  // The world and its meshes (before anything else: a recipe can ask for show.wireframe, which walks them).
+  const meshes = new Map<EntityId, THREE.Mesh>();
+  const previous = new Map<EntityId, Pose>();
+  const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+  let session: Session;
+  let clock = new Clock();
 
-  // ---------- Lo que la vista deja cambiar (decisión 0010: alcance "vista") ----------
-  let triangulos = false;
-  let lento = 1;
-  let pausa = false;
-  registro.declararVariable({
-    nombre: 'ver.triangulos',
-    descripcion: { es: 'Las mallas como alambre: los triángulos que dibuja la placa de video.' },
-    alcance: 'vista',
-    tipo: { tipo: 'booleano' },
-    porDefecto: false,
-    alCambiar(v) {
-      triangulos = v === true;
-      for (const malla of mallas.values()) (malla.material as THREE.MeshLambertMaterial).wireframe = triangulos;
+  // ---------- What the view lets people change (decision 0010: scope "view") ----------
+  let wireframe = false;
+  let timescale = 1;
+  let paused = false;
+  registry.declareVariable({
+    name: 'show.wireframe',
+    description: 'Meshes as wire: the triangles the graphics card draws.',
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange(v) {
+      wireframe = v === true;
+      for (const mesh of meshes.values()) (mesh.material as THREE.MeshLambertMaterial).wireframe = wireframe;
     },
   });
-  registro.declararVariable({
-    nombre: 'ver.ejes',
-    descripcion: { es: 'Los ejes del mundo en el origen: x rojo, y verde, z azul (3 metros).' },
-    alcance: 'vista',
-    tipo: { tipo: 'booleano' },
-    porDefecto: false,
-    alCambiar: (v) => (ejes.visible = v === true),
+  registry.declareVariable({
+    name: 'show.axes',
+    description: "The world's axes at the origin: x red, y green, z blue (3 meters).",
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => (axes.visible = v === true),
   });
-  registro.declararVariable({
-    nombre: 'ver.estadisticas',
-    descripcion: { es: 'El paso, la huella del mundo, las cosas que hay y los cuadros por segundo.' },
-    alcance: 'vista',
-    tipo: { tipo: 'booleano' },
-    porDefecto: false,
-    alCambiar: (v) => (estadisticas.hidden = v !== true),
+  registry.declareVariable({
+    name: 'show.stats',
+    description: "The step, the world's hash, the entities and the frames per second.",
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => (stats.hidden = v !== true),
   });
-  registro.declararVariable({
-    nombre: 'vista.lento',
-    descripcion: {
-      es: 'Mostrar el mundo más lento (0.2) o más rápido (2). El mundo avanza igual, de a pasos fijos: no cambia la física ni la huella.',
-    },
-    alcance: 'vista',
-    tipo: { tipo: 'numero', min: 0.05, max: 4 },
-    porDefecto: 1,
-    alCambiar: (v) => (lento = Number(v)),
+  registry.declareVariable({
+    name: 'view.timescale',
+    description:
+      'Show the world slower (0.2) or faster (2). The world advances the same, by fixed steps: it does not change the physics or the hash.',
+    scope: 'view',
+    type: { kind: 'number', min: 0.05, max: 4 },
+    default: 1,
+    onChange: (v) => (timescale = Number(v)),
   });
-  registro.declararVariable({
-    nombre: 'vista.pausa',
-    descripcion: { es: 'Detener el mundo (con "paso" se avanza de a uno).' },
-    alcance: 'vista',
-    tipo: { tipo: 'booleano' },
-    porDefecto: false,
-    alCambiar: (v) => (pausa = v === true),
+  registry.declareVariable({
+    name: 'view.paused',
+    description: 'Stop the world (with "step" it advances one at a time).',
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => (paused = v === true),
   });
-  registro.declararComando({
-    nombre: 'pausa',
-    descripcion: { es: 'Detiene o reanuda el mundo (lo mismo que alternar vista.pausa).' },
-    ejecutar: (_, salida) => {
-      for (const m of registro.ejecutar(`vista.pausa ${pausa ? 'no' : 'si'}`)) salida.escribir(m.texto, m.nivel);
-    },
-  });
-  registro.declararComando({
-    nombre: 'paso',
-    descripcion: { es: 'Avanza el mundo n pasos (1, si no se dice), y lo deja en pausa.' },
-    argumentos: [{ nombre: 'n', tipo: { tipo: 'entero', min: 1, max: 600 }, opcional: true }],
-    ejecutar: ([n], salida) => {
-      registro.ejecutar('vista.pausa si');
-      for (let i = 0; i < (typeof n === 'number' ? n : 1); i++) avanzar();
-      salida.escribir(`paso ${partida.mundo.tick}`);
+  registry.declareCommand({
+    name: 'pause',
+    description: 'Stops or resumes the world (the same as toggle view.paused).',
+    run: (_, out) => {
+      for (const m of registry.run(`view.paused ${paused ? 'off' : 'on'}`)) out.write(m.text, m.level);
     },
   });
-  registro.declararComando({
-    nombre: 'huella',
-    descripcion: { es: 'El paso del mundo y su huella: un número que resume todo su estado.' },
-    ejecutar: (_, salida) => salida.escribir(`paso ${partida.mundo.tick} · huella ${hex(huella(partida.mundo))}`),
+  registry.declareCommand({
+    name: 'step',
+    description: 'Advances the world n steps (1, if not said), and leaves it paused.',
+    args: [{ name: 'n', type: { kind: 'integer', min: 1, max: 600 }, optional: true }],
+    run: ([n], out) => {
+      registry.run('view.paused on');
+      for (let i = 0; i < (typeof n === 'number' ? n : 1); i++) advance();
+      out.write(`step ${session.world.tick}`);
+    },
   });
-  registro.declararComando({
-    nombre: 'reiniciar',
-    descripcion: { es: 'El mundo vuelve a empezar, con los valores actuales.' },
-    ejecutar: (_, salida) => {
-      reiniciar();
-      salida.escribir('el mundo volvió a empezar');
+  registry.declareCommand({
+    name: 'hash',
+    description: "The world's step and its hash: a number that sums up its whole state.",
+    run: (_, out) => out.write(`step ${session.world.tick} · hash ${hex(stateHash(session.world))}`),
+  });
+  registry.declareCommand({
+    name: 'restart',
+    description: 'The world starts over, with the current values.',
+    run: (_, out) => {
+      restart();
+      out.write('the world started over');
     },
   });
 
-  // ---------- La consola, si el juego la monta ----------
-  const consola = o.consola ? montarConsola(contenedor, registro, o.consola, { reiniciar: () => reiniciar() }) : null;
-  if (consola) declararAyudas(registro);
+  // ---------- The console, if the game mounts it ----------
+  const gameConsole = o.console ? mountConsole(container, registry, o.console, { restart: () => restart() }) : null;
+  if (gameConsole) declareHelp(registry);
 
-  // ---------- Las recetas con que nace el mundo (la de inicio, si hay consola; después, las del juego) ----------
-  const recetas = [
-    ...(consola?.recetaDeInicio() ? [{ de: 'tu receta de inicio', texto: consola.recetaDeInicio()! }] : []),
-    ...(o.recetas ?? []),
-  ];
-  for (const receta of recetas) avisar(receta.de, registro.ejecutar(receta.texto, 'receta'));
+  // ---------- The recipes the world is born with (the startup one, if there is a console; then the game's) ----------
+  const startup = gameConsole?.startupRecipe();
+  const recipes = [...(startup ? [{ from: 'your startup recipe', text: startup }] : []), ...(o.recipes ?? [])];
+  for (const recipe of recipes) warn(recipe.from, registry.run(recipe.text, 'recipe'));
 
-  function avisar(de: string, mensajes: Mensaje[]) {
-    const errores = mensajes.filter((m) => m.nivel === 'error');
-    if (!errores.length) return;
-    const titulo = `${de}: ${errores.length === 1 ? 'una línea no se entendió' : `${errores.length} líneas no se entendieron`}`;
-    if (consola) {
-      consola.escribir(titulo, 'aviso');
-      for (const e of errores) consola.escribir(`  ${e.texto}`, 'aviso');
-    } else console.warn([titulo, ...errores.map((e) => e.texto)].join('\n'));
+  function warn(from: string, messages: Message[]) {
+    const errors = messages.filter((m) => m.level === 'error');
+    if (!errors.length) return;
+    const title = `${from}: ${errors.length === 1 ? 'one line was not understood' : `${errors.length} lines were not understood`}`;
+    if (gameConsole) {
+      gameConsole.write(title, 'warn');
+      for (const e of errors) gameConsole.write(`  ${e.text}`, 'warn');
+    } else console.warn([title, ...errors.map((e) => e.text)].join('\n'));
   }
 
-  // ---------- El mundo y sus mallas ----------
-
-  const crearMalla = (e: Entidad) => {
-    // Una sola vez por entidad. (Error encontrado en el paso 0: las que puso el cartucho al
-    // empezar llegaban DOS veces, al recorrer el mundo y por su evento `entidadCreada`; la
-    // segunda malla tapaba a la primera en el registro, y la primera quedaba en la escena,
-    // olvidada en el origen.)
-    if (!e.apariencia || !e.transformacion || mallas.has(e.id)) return;
-    const malla = new THREE.Mesh(
-      geometriaCaja,
-      new THREE.MeshLambertMaterial({ color: e.apariencia.color, wireframe: triangulos }),
-    );
-    malla.scale.set(...e.apariencia.tamano);
-    scene.add(malla);
-    mallas.set(e.id, malla);
+  // ---------- The world and its meshes ----------
+  const createMesh = (e: Entity) => {
+    // Only once per entity. (Bug found in step 0: the ones the cartridge put at the start arrived
+    // TWICE, when walking the world and through their `entityCreated` event; the second mesh hid
+    // the first one in the map, and the first stayed in the scene, forgotten at the origin.)
+    if (!e.appearance || !e.transform || meshes.has(e.id)) return;
+    const mesh = new THREE.Mesh(boxGeometry, new THREE.MeshLambertMaterial({ color: e.appearance.color, wireframe }));
+    mesh.scale.set(...e.appearance.size);
+    scene.add(mesh);
+    meshes.set(e.id, mesh);
   };
-  const quitarMalla = (id: IdEntidad) => {
-    const malla = mallas.get(id);
-    if (malla) {
-      scene.remove(malla);
-      (malla.material as THREE.Material).dispose();
+  const removeMesh = (id: EntityId) => {
+    const mesh = meshes.get(id);
+    if (mesh) {
+      scene.remove(mesh);
+      (mesh.material as THREE.Material).dispose();
     }
-    mallas.delete(id);
-    anteriores.delete(id);
+    meshes.delete(id);
+    previous.delete(id);
   };
-  const guardarAnteriores = () => {
-    for (const e of partida.mundo.entidades.values()) {
-      if (!e.transformacion) continue;
-      anteriores.set(e.id, { posicion: [...e.transformacion.posicion], rotacion: [...e.transformacion.rotacion] });
+  const savePrevious = () => {
+    for (const e of session.world.entities.values()) {
+      if (!e.transform) continue;
+      previous.set(e.id, { position: [...e.transform.position], rotation: [...e.transform.rotation] });
     }
   };
 
-  /** Crea el mundo (al empezar, y al reiniciar), con los valores actuales del registro. */
-  function iniciarPartida() {
-    for (const id of [...mallas.keys()]) quitarMalla(id);
-    partida = new Partida(cartucho, { registro });
-    partida.mundo.tomarEventos(); // los de su creación: sus mallas se crean recorriendo el mundo
-    for (const e of partida.mundo.entidades.values()) crearMalla(e);
-    guardarAnteriores();
-    reloj = new Reloj();
+  /** Creates the world (at the start, and on restart), with the registry's current values. */
+  function startSession() {
+    for (const id of [...meshes.keys()]) removeMesh(id);
+    session = new Session(cartridge, { registry });
+    session.world.takeEvents(); // the ones from its creation: its meshes are created by walking the world
+    for (const e of session.world.entities.values()) createMesh(e);
+    savePrevious();
+    clock = new Clock();
   }
-  function reiniciar() {
-    iniciarPartida();
+  function restart() {
+    startSession();
   }
-  iniciarPartida();
-  // Desde ahora, cambiar algo de arranque (desde la consola) hace que el mundo vuelva a empezar.
-  registro.alCambiarArranque = reiniciar;
+  startSession();
+  // From now on, changing a startup value (from the console) makes the world start over.
+  registry.onStartupChange = restart;
 
-  function avanzar() {
-    guardarAnteriores();
-    partida.paso();
+  function advance() {
+    savePrevious();
+    session.step();
   }
 
   const qa = new THREE.Quaternion();
   const qb = new THREE.Quaternion();
-  let ultimo = performance.now();
-  let cuadros = 0;
-  let pedido = 0;
-  let cuadrosDesde = performance.now();
-  let cuadrosEnElSegundo = 0;
-  let porSegundo = 0;
+  let last = performance.now();
+  let frames = 0;
+  let request = 0;
+  let secondStart = performance.now();
+  let framesThisSecond = 0;
+  let perSecond = 0;
 
-  const cuadro = (ahora: number) => {
-    pedido = requestAnimationFrame(cuadro);
-    const dt = (ahora - ultimo) / 1000;
-    ultimo = ahora;
-    const pasos = pausa ? 0 : reloj.avanzar(dt * lento);
-    for (let i = 0; i < pasos; i++) avanzar();
-    const mundo = partida.mundo;
-    for (const ev of mundo.tomarEventos()) {
-      if (ev.tipo === 'entidadCreada') {
-        const e = mundo.entidades.get(ev.id);
-        if (e) crearMalla(e);
+  const frame = (now: number) => {
+    request = requestAnimationFrame(frame);
+    const dt = (now - last) / 1000;
+    last = now;
+    const steps = paused ? 0 : clock.advance(dt * timescale);
+    for (let i = 0; i < steps; i++) advance();
+    const world = session.world;
+    for (const ev of world.takeEvents()) {
+      if (ev.type === 'entityCreated') {
+        const e = world.entities.get(ev.id);
+        if (e) createMesh(e);
       }
-      if (ev.tipo === 'entidadQuitada') quitarMalla(ev.id);
+      if (ev.type === 'entityRemoved') removeMesh(ev.id);
     }
-    const alfa = pausa ? 1 : reloj.alfa;
-    for (const [id, malla] of mallas) {
-      const t = mundo.entidades.get(id)?.transformacion;
-      const antes = anteriores.get(id) ?? t;
-      if (!t || !antes) continue;
-      malla.position.set(...antes.posicion).lerp(new THREE.Vector3(...t.posicion), alfa);
-      malla.quaternion.slerpQuaternions(qa.set(...antes.rotacion), qb.set(...t.rotacion), alfa);
+    const alpha = paused ? 1 : clock.alpha;
+    for (const [id, mesh] of meshes) {
+      const t = world.entities.get(id)?.transform;
+      const before = previous.get(id) ?? t;
+      if (!t || !before) continue;
+      mesh.position.set(...before.position).lerp(new THREE.Vector3(...t.position), alpha);
+      mesh.quaternion.slerpQuaternions(qa.set(...before.rotation), qb.set(...t.rotation), alpha);
     }
     renderer.render(scene, camera);
-    cuadrosEnElSegundo++;
-    if (ahora - cuadrosDesde >= 1000) {
-      porSegundo = Math.round((cuadrosEnElSegundo * 1000) / (ahora - cuadrosDesde));
-      cuadrosEnElSegundo = 0;
-      cuadrosDesde = ahora;
+    framesThisSecond++;
+    if (now - secondStart >= 1000) {
+      perSecond = Math.round((framesThisSecond * 1000) / (now - secondStart));
+      framesThisSecond = 0;
+      secondStart = now;
     }
-    // Para las pruebas en el navegador (Playwright): cuántos cuadros se dibujaron y cuántas
-    // mallas hay de verdad en la escena (no en el registro: ahí no se veía el error de arriba).
-    if (++cuadros % 10 === 0) {
-      contenedor.dataset.cuadros = String(cuadros);
-      contenedor.dataset.mallas = String(scene.children.filter((o) => o instanceof THREE.Mesh).length);
-      contenedor.dataset.paso = String(mundo.tick);
-      if (!estadisticas.hidden)
-        estadisticas.textContent = [
-          `paso ${mundo.tick}${pausa ? ' (en pausa)' : ''}`,
-          `huella ${hex(huella(mundo))}`,
-          `${mundo.entidades.size} cosas · ${porSegundo} cuadros/s`,
-          lento !== 1 ? `vista ${lento}×` : '',
+    // For the browser tests (Playwright): how many frames were drawn and how many meshes are really
+    // in the scene (not in the map: the bug above did not show there).
+    if (++frames % 10 === 0) {
+      container.dataset.frames = String(frames);
+      container.dataset.meshes = String(scene.children.filter((x) => x instanceof THREE.Mesh).length);
+      container.dataset.step = String(world.tick);
+      if (!stats.hidden)
+        stats.textContent = [
+          `step ${world.tick}${paused ? ' (paused)' : ''}`,
+          `hash ${hex(stateHash(world))}`,
+          `${world.entities.size} entities · ${perSecond} fps`,
+          timescale !== 1 ? `timescale ${timescale}×` : '',
         ]
           .filter(Boolean)
           .join('\n');
     }
   };
-  pedido = requestAnimationFrame(cuadro);
+  request = requestAnimationFrame(frame);
 
   return {
-    registro,
-    get partida() {
-      return partida;
+    registry,
+    get session() {
+      return session;
     },
-    consola,
-    reiniciar,
-    detener() {
-      cancelAnimationFrame(pedido);
-      observador.disconnect();
-      consola?.detener();
+    console: gameConsole,
+    restart,
+    stop() {
+      cancelAnimationFrame(request);
+      observer.disconnect();
+      gameConsole?.stop();
       renderer.dispose();
       renderer.domElement.remove();
-      estadisticas.remove();
+      stats.remove();
     },
   };
 }

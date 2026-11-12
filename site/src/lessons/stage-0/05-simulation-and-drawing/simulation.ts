@@ -1,62 +1,62 @@
 /**
- * LA SIMULACIÓN: pelotas que rebotan en una caja. Solo DATOS y cuentas: no importa Three.js,
- * no sabe que existe una pantalla. Por eso puede correr sin dibujar (más rápido que el tiempo
- * real, para probar o para un servidor) y dar siempre lo mismo con la misma semilla.
+ * THE SIMULATION: balls that bounce in a box. Only DATA and arithmetic: it does not import
+ * Three.js, it does not know a screen exists. That is why it can run without drawing (faster than
+ * real time, for testing or for a server) and always give the same with the same seed.
  */
 
-export const PASO = 1 / 60; // segundos por paso: siempre el mismo
+export const STEP = 1 / 60; // seconds per step: always the same
 const G = 9.81;
-export const MEDIO_ANCHO = 3; // la caja va de −3 a 3 en X y en Z
+export const HALF_WIDTH = 3; // the box goes from −3 to 3 in X and in Z
 
-export interface Pelota {
-  posicion: [number, number, number];
-  velocidad: [number, number, number];
-  radio: number;
+export interface Ball {
+  position: [number, number, number];
+  velocity: [number, number, number];
+  radius: number;
 }
 
-export interface Mundo {
-  pelotas: Pelota[];
-  pasos: number;
+export interface World {
+  balls: Ball[];
+  steps: number;
 }
 
-export function crearMundo(semilla: number, cantidad: number): Mundo {
-  let estado = semilla >>> 0;
-  const azar = () => (estado = (Math.imul(estado, 1664525) + 1013904223) >>> 0) / 4294967296;
-  const pelotas: Pelota[] = [];
-  for (let i = 0; i < cantidad; i++) {
-    const radio = 0.12 + azar() * 0.2;
-    pelotas.push({
-      posicion: [(azar() - 0.5) * 4, 1 + azar() * 3, (azar() - 0.5) * 4],
-      velocidad: [(azar() - 0.5) * 6, 0, (azar() - 0.5) * 6],
-      radio,
+export function createWorld(seed: number, count: number): World {
+  let state = seed >>> 0;
+  const random = () => (state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 4294967296;
+  const balls: Ball[] = [];
+  for (let i = 0; i < count; i++) {
+    const radius = 0.12 + random() * 0.2;
+    balls.push({
+      position: [(random() - 0.5) * 4, 1 + random() * 3, (random() - 0.5) * 4],
+      velocity: [(random() - 0.5) * 6, 0, (random() - 0.5) * 6],
+      radius,
     });
   }
-  return { pelotas, pasos: 0 };
+  return { balls, steps: 0 };
 }
 
-/** Un paso: la gravedad, el movimiento y los rebotes (contra el piso y las paredes). */
-export function avanzar(mundo: Mundo) {
-  for (const p of mundo.pelotas) {
-    p.velocidad[1] -= G * PASO;
-    for (let eje = 0; eje < 3; eje++) p.posicion[eje]! += p.velocidad[eje]! * PASO;
-    if (p.posicion[1] < p.radio) {
-      p.posicion[1] = p.radio;
-      p.velocidad[1] = Math.abs(p.velocidad[1]) * 0.92; // pierde un poco en cada rebote
+/** One step: gravity, motion and the bounces (off the floor and the walls). */
+export function advance(world: World) {
+  for (const b of world.balls) {
+    b.velocity[1] -= G * STEP;
+    for (let axis = 0; axis < 3; axis++) b.position[axis]! += b.velocity[axis]! * STEP;
+    if (b.position[1] < b.radius) {
+      b.position[1] = b.radius;
+      b.velocity[1] = Math.abs(b.velocity[1]) * 0.92; // it loses a little on each bounce
     }
-    for (const eje of [0, 2]) {
-      const limite = MEDIO_ANCHO - p.radio;
-      if (Math.abs(p.posicion[eje]!) > limite) {
-        p.posicion[eje] = Math.sign(p.posicion[eje]!) * limite;
-        p.velocidad[eje] = -p.velocidad[eje]!;
+    for (const axis of [0, 2]) {
+      const limit = HALF_WIDTH - b.radius;
+      if (Math.abs(b.position[axis]!) > limit) {
+        b.position[axis] = Math.sign(b.position[axis]!) * limit;
+        b.velocity[axis] = -b.velocity[axis]!;
       }
     }
   }
-  mundo.pasos++;
+  world.steps++;
 }
 
-/** Un resumen del mundo (para comparar dos mundos sin mirar cada número). */
-export function resumen(mundo: Mundo): string {
-  let suma = 0;
-  for (const p of mundo.pelotas) suma += p.posicion[0] + 3 * p.posicion[1] + 7 * p.posicion[2];
-  return suma.toFixed(9);
+/** A summary of the world (to compare two worlds without looking at every number). */
+export function summary(world: World): string {
+  let sum = 0;
+  for (const b of world.balls) sum += b.position[0] + 3 * b.position[1] + 7 * b.position[2];
+  return sum.toFixed(9);
 }

@@ -1,50 +1,50 @@
-import type { Mundo } from './mundo';
+import type { World } from './world';
 
 const buffer = new DataView(new ArrayBuffer(8));
 
 /**
- * LA HUELLA de un mundo: un número de 32 bits que resume TODO su estado (el reloj, el azar y
- * cada número de cada entidad). Dos mundos con la misma huella están, casi seguro, en el mismo
- * estado; con huellas distintas, seguro que no.
+ * THE STATE HASH of a world: a 32-bit number that sums up ALL its state (the clock, the random
+ * generator and every number of every entity). Two worlds with the same hash are, almost surely,
+ * in the same state; with different hashes, surely not.
  *
- * Sirve para el determinismo: en vez de comparar miles de números a mano, se compara una
- * huella por paso, y si dos simulaciones se separan, se sabe EN QUÉ PASO (decisión 0000, de
- * la evaluación estratégica).
+ * It is for determinism: instead of comparing thousands of numbers by hand, one hash per step is
+ * compared, and if two simulations drift apart, we know AT WHICH STEP (decision 0000, from the
+ * strategic evaluation).
  *
- * Es FNV-1a sobre los BYTES de cada número (como `Float64`): así 0,1 + 0,2 y 0,3 dan huellas
- * distintas, como tiene que ser. Recorre las entidades en orden de id y sus componentes en un
- * orden fijo de claves.
+ * It is FNV-1a over the BYTES of every number (as `Float64`): so 0.1 + 0.2 and 0.3 give different
+ * hashes, as they must. It visits the entities in id order and their components in a fixed key
+ * order.
  */
-export function huella(mundo: Mundo): number {
+export function stateHash(world: World): number {
   let h = 0x811c9dc5;
   const byte = (b: number) => {
     h ^= b;
     h = Math.imul(h, 0x01000193) >>> 0;
   };
-  const numero = (n: number) => {
+  const number = (n: number) => {
     buffer.setFloat64(0, n);
     for (let i = 0; i < 8; i++) byte(buffer.getUint8(i));
   };
-  const texto = (t: string) => {
-    for (let i = 0; i < t.length; i++) numero(t.charCodeAt(i));
+  const text = (t: string) => {
+    for (let i = 0; i < t.length; i++) number(t.charCodeAt(i));
   };
-  const valor = (v: unknown): void => {
-    if (typeof v === 'number') numero(v);
-    else if (typeof v === 'string') texto(v);
+  const value = (v: unknown): void => {
+    if (typeof v === 'number') number(v);
+    else if (typeof v === 'string') text(v);
     else if (typeof v === 'boolean') byte(v ? 1 : 0);
     else if (Array.isArray(v)) {
-      numero(v.length);
-      for (const x of v) valor(x);
+      number(v.length);
+      for (const x of v) value(x);
     } else if (v && typeof v === 'object') {
-      for (const clave of Object.keys(v).sort()) {
-        texto(clave);
-        valor((v as Record<string, unknown>)[clave]);
+      for (const key of Object.keys(v).sort()) {
+        text(key);
+        value((v as Record<string, unknown>)[key]);
       }
     } else byte(0);
   };
-  numero(mundo.tick);
-  for (const n of mundo.azar.estado) numero(n);
-  const ids = [...mundo.entidades.keys()].sort((a, b) => a - b);
-  for (const id of ids) valor(mundo.entidades.get(id));
+  number(world.tick);
+  for (const n of world.random.state) number(n);
+  const ids = [...world.entities.keys()].sort((a, b) => a - b);
+  for (const id of ids) value(world.entities.get(id));
   return h >>> 0;
 }

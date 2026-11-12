@@ -1,22 +1,21 @@
-import { tituloDeReceta } from '@manifold/comandos';
+import { recipeTitle } from '@manifold/commands';
 
 /**
- * LAS SALAS GUARDADAS DEL DOJO (decisión 0010): recetas en texto plano, en `juegos/dojo/recetas/`.
- * Cada una tiene su propia dirección en el sitio (`…/jugar/dojo/lluvia/`), se carga desde la
- * consola (`cargar lluvia`) y las pruebas la corren sin pantalla. Agregar una sala es agregar un
- * archivo: nada más que mantener.
+ * THE DOJO'S SAVED ROOMS (decision 0010): plain-text recipes in `games/dojo/recipes/`. Each one has
+ * its own address on the site (`…/jugar/dojo/rain/`), is loaded from the console (`load rain`) and
+ * is run by the tests without a screen. Adding a room is adding a file: nothing else to maintain.
  */
-const archivos = import.meta.glob<string>('../recetas/*.txt', { query: '?raw', import: 'default', eager: true });
+const files = import.meta.glob<string>('../recipes/*.txt', { query: '?raw', import: 'default', eager: true });
 
-export interface RecetaGuardada {
-  /** Su primer comentario: "Lluvia de cubos". */
-  titulo: string;
-  texto: string;
+export interface Room {
+  /** Its title, the recipe's first comment (in English, like everything in the console). */
+  title: string;
+  text: string;
 }
 
-/** Por nombre (el del archivo, sin `.txt`). */
-export const RECETAS: Readonly<Record<string, RecetaGuardada>> = Object.fromEntries(
-  Object.entries(archivos)
-    .map(([ruta, texto]) => [ruta.replace(/^.*\/([^/]+)\.txt$/, '$1'), { titulo: tituloDeReceta(texto) ?? '', texto }] as const)
+/** By name (the file's, without `.txt`). */
+export const ROOMS: Readonly<Record<string, Room>> = Object.fromEntries(
+  Object.entries(files)
+    .map(([path, text]) => [path.replace(/^.*\/([^/]+)\.txt$/, '$1'), { title: recipeTitle(text) ?? '', text }] as const)
     .sort(([a], [b]) => a.localeCompare(b)),
 );

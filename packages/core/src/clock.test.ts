@@ -1,26 +1,26 @@
 import { expect, test } from 'vitest';
-import { PASO } from './mundo';
-import { Reloj } from './reloj';
+import { STEP } from './world';
+import { Clock } from './clock';
 
-test('a 60 cuadros por segundo, un paso por cuadro; a 30, dos; a 144, a veces ninguno', () => {
-  const contar = (fps: number, segundos: number) => {
-    const reloj = new Reloj();
-    let pasos = 0;
-    for (let i = 0; i < fps * segundos; i++) pasos += reloj.avanzar(1 / fps);
-    return pasos;
+test('at 60 frames per second, one step per frame; at 30, two; at 144, sometimes none', () => {
+  const count = (fps: number, seconds: number) => {
+    const clock = new Clock();
+    let steps = 0;
+    for (let i = 0; i < fps * seconds; i++) steps += clock.advance(1 / fps);
+    return steps;
   };
-  // En 10 segundos, siempre 600 pasos (±1 por lo que quedó en el acumulador).
-  for (const fps of [30, 60, 144, 75]) expect(Math.abs(contar(fps, 10) - 600)).toBeLessThanOrEqual(1);
+  // In 10 seconds, always 600 steps (±1 for what was left in the accumulator).
+  for (const fps of [30, 60, 144, 75]) expect(Math.abs(count(fps, 10) - 600)).toBeLessThanOrEqual(1);
 });
 
-test('alfa: cuánto del paso siguiente ya pasó (para dibujar a mitad de camino)', () => {
-  const reloj = new Reloj();
-  expect(reloj.avanzar(PASO * 2.25)).toBe(2);
-  expect(reloj.alfa).toBeCloseTo(0.25, 9);
+test('alpha: how much of the next step has passed (to draw halfway)', () => {
+  const clock = new Clock();
+  expect(clock.advance(STEP * 2.25)).toBe(2);
+  expect(clock.alpha).toBeCloseTo(0.25, 9);
 });
 
-test('una pausa larga no hace correr cientos de pasos de golpe', () => {
-  const reloj = new Reloj();
-  expect(reloj.avanzar(10)).toBe(5);
-  expect(reloj.alfa).toBe(0);
+test('a long pause does not run hundreds of steps at once', () => {
+  const clock = new Clock();
+  expect(clock.advance(10)).toBe(5);
+  expect(clock.alpha).toBe(0);
 });

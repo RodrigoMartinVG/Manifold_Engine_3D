@@ -1,31 +1,31 @@
 import * as THREE from 'three';
-import { MEDIO_ANCHO, type Mundo } from './simulacion';
+import { HALF_WIDTH, type World } from './simulation';
 
 /**
- * LA VISTA: dibuja lo que la simulación calculó. Lee el mundo y nunca lo cambia.
- * Si mañana cambiamos Three.js por otra cosa, la simulación no se entera.
+ * THE VIEW: it draws what the simulation computed. It reads the world and never changes it. If
+ * tomorrow we swap Three.js for something else, the simulation does not notice.
  */
-export function crearVista(escena: THREE.Scene, mundo: Mundo) {
-  const caja = new THREE.LineSegments(
+export function createView(scene: THREE.Scene, world: World) {
+  const box = new THREE.LineSegments(
     new THREE.EdgesGeometry(
-      new THREE.BoxGeometry(MEDIO_ANCHO * 2, 4, MEDIO_ANCHO * 2).translate(0, 2, 0),
+      new THREE.BoxGeometry(HALF_WIDTH * 2, 4, HALF_WIDTH * 2).translate(0, 2, 0),
     ),
     new THREE.LineBasicMaterial({ color: 0x3e4451 }),
   );
-  escena.add(caja);
-  const mallas = mundo.pelotas.map((p, i) => {
-    const malla = new THREE.Mesh(
-      new THREE.SphereGeometry(p.radio, 20, 14),
+  scene.add(box);
+  const meshes = world.balls.map((b, i) => {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(b.radius, 20, 14),
       new THREE.MeshStandardMaterial({
-        color: new THREE.Color().setHSL(i / mundo.pelotas.length, 0.6, 0.6),
+        color: new THREE.Color().setHSL(i / world.balls.length, 0.6, 0.6),
       }),
     );
-    escena.add(malla);
-    return malla;
+    scene.add(mesh);
+    return mesh;
   });
   return {
-    dibujar() {
-      mundo.pelotas.forEach((p, i) => mallas[i]!.position.set(...p.posicion));
+    draw() {
+      world.balls.forEach((b, i) => meshes[i]!.position.set(...b.position));
     },
   };
 }

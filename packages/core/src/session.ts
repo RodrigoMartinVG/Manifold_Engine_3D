@@ -1,81 +1,81 @@
-import { Registro } from '@manifold/comandos';
-import type { Cartucho } from './cartucho';
-import { Mundo } from './mundo';
+import { Registry } from '@manifold/commands';
+import type { Cartridge } from './cartridge';
+import { World } from './world';
 
-export interface OpcionesPartida {
+export interface SessionOptions {
   /**
-   * Las variables y los comandos (decisión 0010), con las recetas ya aplicadas. Si no se da, uno
-   * nuevo con lo que declaran el motor y el cartucho, todo en sus valores por defecto.
+   * The variables and commands (decision 0010), with the recipes already applied. If none is
+   * given, a new one with what the engine and the cartridge declare, all at their defaults.
    */
-  registro?: Registro<Mundo>;
-  /** Para las pruebas: la semilla, sin pasar por el registro. */
-  semilla?: number;
+  registry?: Registry<World>;
+  /** For tests: the seed, without going through the registry. */
+  seed?: number;
 }
 
-/** Un cambio del mundo que entró en la partida, y en qué paso: la base de una repetición. */
-export interface CambioDelMundo {
-  paso: number;
-  linea: string;
+/** A world change that entered the session, and at which step: the basis of a replay. */
+export interface WorldChange {
+  step: number;
+  line: string;
 }
 
-/** Un registro con lo que declaran el motor y el cartucho (sin la presentación ni la consola). */
-export function registroDe(cartucho: Cartucho): Registro<Mundo> {
-  const registro = new Registro<Mundo>();
-  declararNucleo(registro);
-  cartucho.alDeclarar?.(registro);
-  return registro;
+/** A registry with what the engine and the cartridge declare (without the presentation or the console). */
+export function registryFor(cartridge: Cartridge): Registry<World> {
+  const registry = new Registry<World>();
+  declareCore(registry);
+  cartridge.onDeclare?.(registry);
+  return registry;
 }
 
-/** Lo que declara el núcleo, para todos los juegos (cada juego decide si lo deja tocar). */
-export function declararNucleo(registro: Registro<Mundo>) {
-  registro.declararVariable({
-    nombre: 'semilla',
-    descripcion: { es: 'La semilla del azar del mundo: con la misma semilla, el mismo mundo.' },
-    alcance: 'arranque',
-    tipo: { tipo: 'entero', min: 0, max: 4294967295 },
-    porDefecto: 1,
+/** What the core declares, for every game (each game decides whether to let people touch it). */
+export function declareCore(registry: Registry<World>) {
+  registry.declareVariable({
+    name: 'seed',
+    description: "The seed of the world's randomness: the same seed, the same world.",
+    scope: 'startup',
+    type: { kind: 'integer', min: 0, max: 4294967295 },
+    default: 1,
   });
 }
 
 /**
- * UNA PARTIDA: un mundo y el cartucho que lo juega. Es lo único que llama al cartucho, en
- * momentos fijos: al empezar, y después de cada paso, con los eventos de ese paso. Corre sin
- * pantalla: la usan la presentación, las pruebas y (más adelante) el servidor.
+ * A SESSION: a world and the cartridge that plays it. It is the only thing that calls the
+ * cartridge, at fixed moments: at the start, and after every step, with that step's events. It runs
+ * without a screen: the presentation, the tests and (later) the server use it.
  *
- * También es el CANAL DE LOS CAMBIOS DEL MUNDO (decisión 0010): un cambio que llega de la
- * consola (o, más adelante, de la red) no toca el mundo enseguida. Se programa, y se aplica al
- * empezar el paso siguiente, siempre en el mismo orden, y queda en `historial` con su paso. Así
- * dos partidas que reciben los mismos cambios en los mismos pasos hacen exactamente lo mismo.
+ * It is also THE CHANNEL FOR WORLD CHANGES (decision 0010): a change coming from the console (or,
+ * later, the network) does not touch the world right away. It is scheduled, applied at the start of
+ * the next step, always in the same order, and kept in `history` with its step. So two sessions
+ * that receive the same changes at the same steps do exactly the same.
  */
-export class Partida {
-  readonly mundo: Mundo;
-  readonly registro: Registro<Mundo>;
-  /** Cada cambio del mundo que entró, con el paso en que se aplicó. */
-  readonly historial: CambioDelMundo[] = [];
-  private programados: { linea: string; aplicar: (mundo: Mundo) => void }[] = [];
+export class Session {
+  readonly world: World;
+  readonly registry: Registry<World>;
+  /** Every world change that entered, with the step at which it was applied. */
+  readonly history: WorldChange[] = [];
+  private scheduled: { line: string; apply: (world: World) => void }[] = [];
 
   constructor(
-    readonly cartucho: Cartucho,
-    o: OpcionesPartida = {},
+    readonly cartridge: Cartridge,
+    o: SessionOptions = {},
   ) {
-    this.registro = o.registro ?? registroDe(cartucho);
-    this.mundo = new Mundo({ semilla: o.semilla ?? Number(this.registro.valor('semilla')) });
-    cartucho.alIniciar(this.mundo, this.registro);
-    // Lo del mundo que ya venía cambiado (de una receta) es parte de cómo nace: paso 0.
-    this.registro.aplicarAlMundo(this.mundo);
-    // Desde ahora, los cambios del mundo pasan por aquí (si había otra partida con este registro, deja de recibirlos).
-    this.registro.programador = (linea, aplicar) => this.programados.push({ linea, aplicar });
+    this.registry = o.registry ?? registryFor(cartridge);
+    this.world = new World({ seed: o.seed ?? Number(this.registry.value('seed')) });
+    cartridge.onStart(this.world, this.registry);
+    // World values that already came changed (from a recipe) are part of how it is born: step 0.
+    this.registry.applyToWorld(this.world);
+    // From now on, world changes go through here (if another session had this registry, it stops getting them).
+    this.registry.scheduler = (line, apply) => this.scheduled.push({ line, apply });
   }
 
-  paso() {
-    const paso = this.mundo.tick + 1;
-    const programados = this.programados;
-    this.programados = [];
-    for (const p of programados) {
-      p.aplicar(this.mundo);
-      this.historial.push({ paso, linea: p.linea });
+  step() {
+    const step = this.world.tick + 1;
+    const scheduled = this.scheduled;
+    this.scheduled = [];
+    for (const s of scheduled) {
+      s.apply(this.world);
+      this.history.push({ step, line: s.line });
     }
-    this.mundo.paso();
-    this.cartucho.alAvanzar?.(this.mundo, this.mundo.eventosDelPaso);
+    this.world.step();
+    this.cartridge.onStep?.(this.world, this.world.stepEvents);
   }
 }

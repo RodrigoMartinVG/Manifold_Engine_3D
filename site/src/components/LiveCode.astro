@@ -1,57 +1,58 @@
 ---
 /**
- * <CodigoVivo leccion="etapa-0/01-primer-cubo" />: un ejemplo que se edita y se ejecuta en la
- * página (decisión 0007).
+ * <LiveCode lesson="stage-0/01-first-cube" />: an example that is edited and run in the page
+ * (decision 0007).
  *
- * Los archivos de la lección viven en `src/lecciones/<leccion>/` como archivos .ts DE VERDAD:
- * el compilador (`npm run check`) y el linter los revisan como al resto del código, y las
- * pruebas en el navegador los ejecutan. Aquí se leen como texto y se le pasan al editor.
- * `main.ts` es el que arranca, y va primero.
+ * A lesson's files live in `src/lessons/<lesson>/` as REAL .ts files: the compiler (`npm run check`)
+ * and the linter check them like the rest of the code, and the browser tests run them. Here they
+ * are read as text and handed to the editor. `main.ts` is the one that starts, and goes first.
+ *
+ * (The labels are the site's text, in Spanish.)
  */
 interface Props {
-  leccion: string;
-  /** Arrancar solo cuando aparece en pantalla (el primer ejemplo de cada lección). */
-  autoejecutar?: boolean;
+  lesson: string;
+  /** Start by itself when it shows up on screen (each lesson's first example). */
+  autorun?: boolean;
 }
 
-const { leccion, autoejecutar = false } = Astro.props;
-const todos = import.meta.glob<string>('../lecciones/**/*.ts', { query: '?raw', import: 'default', eager: true });
-const prefijo = `../lecciones/${leccion}/`;
-const archivos = Object.entries(todos)
-  .filter(([ruta]) => ruta.startsWith(prefijo))
-  .map(([ruta, codigo]) => ({ nombre: ruta.slice(prefijo.length), codigo }))
-  .sort((a, b) => (a.nombre === 'main.ts' ? -1 : b.nombre === 'main.ts' ? 1 : a.nombre.localeCompare(b.nombre)));
-if (!archivos.some((a) => a.nombre === 'main.ts')) {
-  throw new Error(`La lección "${leccion}" no tiene main.ts (en src/lecciones/${leccion}/)`);
+const { lesson, autorun = false } = Astro.props;
+const all = import.meta.glob<string>('../lessons/**/*.ts', { query: '?raw', import: 'default', eager: true });
+const prefix = `../lessons/${lesson}/`;
+const files = Object.entries(all)
+  .filter(([path]) => path.startsWith(prefix))
+  .map(([path, code]) => ({ name: path.slice(prefix.length), code }))
+  .sort((a, b) => (a.name === 'main.ts' ? -1 : b.name === 'main.ts' ? 1 : a.name.localeCompare(b.name)));
+if (!files.some((f) => f.name === 'main.ts')) {
+  throw new Error(`The lesson "${lesson}" has no main.ts (in src/lessons/${lesson}/)`);
 }
 ---
 
 <div
-  class="codigo-vivo not-content"
-  data-archivos={JSON.stringify(archivos)}
+  class="live-code not-content"
+  data-files={JSON.stringify(files)}
   data-base={import.meta.env.BASE_URL}
-  data-autoejecutar={autoejecutar ? '1' : undefined}
-  data-estado="detenido"
+  data-autorun={autorun ? '1' : undefined}
+  data-state="stopped"
 >
-  <!-- Primero lo que se ve (el lector lo encuentra sin bajar), después el código. -->
-  <div class="cv-resultado">
-    <button type="button" class="cv-portada">▶ Ejecutar</button>
+  <!-- First what is seen (the reader finds it without scrolling), then the code. -->
+  <div class="lc-result">
+    <button type="button" class="lc-cover">▶ Ejecutar</button>
   </div>
-  <div class="cv-consola" hidden></div>
-  <div class="cv-barra">
-    <div class="cv-pestanas" role="tablist" aria-label="Archivos de la lección"></div>
-    <div class="cv-acciones">
-      <button type="button" class="cv-ampliar" title="El código y lo que dibuja, en pantalla completa" aria-pressed="false">
-        <span aria-hidden="true">⛶</span><span class="cv-texto"> Pantalla completa</span>
+  <div class="lc-console" hidden></div>
+  <div class="lc-bar">
+    <div class="lc-tabs" role="tablist" aria-label="Archivos de la lección"></div>
+    <div class="lc-actions">
+      <button type="button" class="lc-expand" title="El código y lo que dibuja, en pantalla completa" aria-pressed="false">
+        <span aria-hidden="true">⛶</span><span class="lc-label"> Pantalla completa</span>
       </button>
-      <button type="button" class="cv-restaurar" title="Volver al código original">↺ Restaurar</button>
-      <button type="button" class="cv-ejecutar" title="Ejecutar (Ctrl o ⌘ + Enter)">▶ Ejecutar</button>
+      <button type="button" class="lc-reset" title="Volver al código original">↺ Restaurar</button>
+      <button type="button" class="lc-run" title="Ejecutar (Ctrl o ⌘ + Enter)">▶ Ejecutar</button>
     </div>
   </div>
-  <div class="cv-editor"></div>
-  <!-- Solo en pantalla completa: la línea entre el código y el resultado, que se puede arrastrar. -->
+  <div class="lc-editor"></div>
+  <!-- Side by side only: the line between the code and the result, which can be dragged. -->
   <div
-    class="cv-divisor"
+    class="lc-divider"
     role="separator"
     aria-orientation="vertical"
     aria-label="Ancho del código"
@@ -64,8 +65,8 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
 </div>
 
 <style is:global>
-  /* El marco: bronce con pátina (como las tarjetas). Adentro, siempre oscuro, también en el modo claro. */
-  .codigo-vivo {
+  /* The frame: bronze with patina (like the cards). Inside, always dark, also in light mode. */
+  .live-code {
     margin-block: 1.5rem;
     border: 2px solid transparent;
     border-radius: 0.6rem;
@@ -73,13 +74,13 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
     background:
       linear-gradient(#1a1714, #1a1714) padding-box,
       var(--mg-patina) border-box,
-      var(--mg-oxido) border-box,
-      var(--mg-bronce) border-box;
+      var(--mg-rust) border-box,
+      var(--mg-bronze) border-box;
     box-shadow:
       0 0 0 1px rgb(0 0 0 / 0.5),
-      var(--mg-sombra);
+      var(--mg-shadow);
   }
-  .codigo-vivo .cv-barra {
+  .live-code .lc-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -90,12 +91,12 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
     border-bottom: 1px solid #2c2620;
     flex-wrap: wrap;
   }
-  .codigo-vivo .cv-pestanas {
+  .live-code .lc-tabs {
     display: flex;
     gap: 0.25rem;
     flex-wrap: wrap;
   }
-  .codigo-vivo button {
+  .live-code button {
     font: 13px/1.2 var(--sl-font-system-mono, ui-monospace, monospace);
     color: #b8ab97;
     background: transparent;
@@ -104,65 +105,65 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
     padding: 0.3rem 0.6rem;
     cursor: pointer;
   }
-  .codigo-vivo button:hover {
+  .live-code button:hover {
     color: #f3e9d8;
   }
-  .codigo-vivo .cv-pestanas button[aria-selected='true'] {
+  .live-code .lc-tabs button[aria-selected='true'] {
     color: #f0d59a;
     border-color: rgb(201 144 80 / 0.45);
     background: #1a1714;
   }
-  .codigo-vivo .cv-acciones {
+  .live-code .lc-actions {
     display: flex;
     gap: 0.35rem;
   }
-  /* Ejecutar: una placa de metal viejo, como el botón principal del sitio. */
-  .codigo-vivo .cv-ejecutar,
-  .codigo-vivo .cv-ejecutar:hover {
+  /* Run: a plate of old metal, like the site's main button. */
+  .live-code .lc-run,
+  .live-code .lc-run:hover {
     color: #ead5b0;
-    background: var(--mg-metal-suave);
+    background: var(--mg-metal-soft);
     border-color: #24170a;
-    box-shadow: var(--mg-bisel);
+    box-shadow: var(--mg-bevel);
     text-shadow: 0 -1px 0 rgb(0 0 0 / 0.65);
     font-weight: 700;
   }
-  .codigo-vivo .cv-ejecutar:hover {
+  .live-code .lc-run:hover {
     filter: brightness(1.08);
   }
-  .codigo-vivo .cv-editor .cm-editor {
+  .live-code .lc-editor .cm-editor {
     max-height: 26rem;
     font-size: 13px;
   }
-  .codigo-vivo .cv-editor .cm-scroller {
+  .live-code .lc-editor .cm-scroller {
     overflow: auto;
   }
-  .codigo-vivo .cv-resultado {
+  .live-code .lc-result {
     position: relative;
     aspect-ratio: 16 / 9;
     background: radial-gradient(ellipse 70% 70% at 50% 55%, #1b1813, #15120f 60%, #0e0c0a);
   }
-  .codigo-vivo .cv-resultado iframe {
+  .live-code .lc-result iframe {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     border: 0;
   }
-  .codigo-vivo .cv-portada {
+  .live-code .lc-cover {
     position: absolute;
     inset: 0;
     width: 100%;
-    font: 600 1.15rem/1 var(--mg-letra-titulo, serif);
+    font: 600 1.15rem/1 var(--mg-font-title, serif);
     letter-spacing: 0.08em;
     color: #cfa66c;
   }
-  .codigo-vivo .cv-portada:hover {
+  .live-code .lc-cover:hover {
     color: #e2c08a;
   }
-  .codigo-vivo .cv-portada[hidden] {
+  .live-code .lc-cover[hidden] {
     display: none;
   }
-  .codigo-vivo .cv-consola {
+  .live-code .lc-console {
     max-height: 9rem;
     overflow: auto;
     padding: 0.4rem 0.75rem;
@@ -172,92 +173,92 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
     border-top: 1px solid #2c2620;
     white-space: pre-wrap;
   }
-  .codigo-vivo .cv-consola[hidden] {
+  .live-code .lc-console[hidden] {
     display: none;
   }
-  .codigo-vivo .cv-warn {
+  .live-code .lc-warn {
     color: #e5c07b;
   }
-  .codigo-vivo .cv-error {
+  .live-code .lc-error {
     color: #e88a7d;
   }
-  .codigo-vivo .cv-divisor {
+  .live-code .lc-divider {
     display: none;
   }
 
   /*
-   * A TODO EL ANCHO (src/codigo-vivo/ancho.ts). El ejemplo se sale de la columna del texto y
-   * ocupa el ancho del panel central: `--cv-ancho` es ese ancho y `--cv-correr`, cuánto correrse
-   * a la izquierda para empezar en su borde.
+   * THE WHOLE WIDTH (src/live-code/width.ts). The example breaks out of the text's column and takes
+   * the central panel's width: `--lc-width` is that width and `--lc-offset`, how far to move left to
+   * start at its edge.
    */
-  .codigo-vivo[data-ancho]:not([data-ampliado]) {
-    width: var(--cv-ancho);
+  .live-code[data-wide]:not([data-expanded]) {
+    width: var(--lc-width);
     max-width: none;
-    margin-inline-start: var(--cv-correr);
+    margin-inline-start: var(--lc-offset);
   }
 
   /*
-   * LADO A LADO: el código a la izquierda, lo que dibuja a la derecha, y la consola debajo. Lo usan
-   * la pantalla completa (data-ampliado) y el ejemplo en la página cuando hay ancho de sobra
-   * (data-lado-a-lado). Nada se mueve de lugar en la página (si el iframe cambiara de padre, se
-   * recargaría y el ejemplo empezaría de nuevo): solo cambia la disposición, con una grilla.
+   * SIDE BY SIDE: the code on the left, what it draws on the right, and the console below. Used by
+   * full screen (data-expanded) and by the example in the page when there is width to spare
+   * (data-side-by-side). Nothing moves in the page (if the iframe changed parent, it would reload
+   * and the example would start over): only the layout changes, with a grid.
    */
-  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) {
+  .live-code:is([data-expanded], [data-side-by-side]) {
     display: grid;
-    grid-template-columns: minmax(16rem, var(--cv-codigo, 42%)) 6px minmax(0, 1fr);
+    grid-template-columns: minmax(16rem, var(--lc-code, 42%)) 6px minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'barra divisor resultado'
-      'editor divisor resultado'
-      'editor divisor consola';
+      'bar divider result'
+      'editor divider result'
+      'editor divider console';
   }
-  .codigo-vivo[data-lado-a-lado]:not([data-ampliado]) {
+  .live-code[data-side-by-side]:not([data-expanded]) {
     height: clamp(28rem, 76vh, 46rem);
   }
-  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-barra {
-    grid-area: barra;
+  .live-code:is([data-expanded], [data-side-by-side]) .lc-bar {
+    grid-area: bar;
   }
-  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-editor {
+  .live-code:is([data-expanded], [data-side-by-side]) .lc-editor {
     grid-area: editor;
     min-height: 0;
   }
-  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-editor .cm-editor {
+  .live-code:is([data-expanded], [data-side-by-side]) .lc-editor .cm-editor {
     height: 100%;
     max-height: none;
   }
-  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-resultado {
-    grid-area: resultado;
+  .live-code:is([data-expanded], [data-side-by-side]) .lc-result {
+    grid-area: result;
     aspect-ratio: auto;
   }
-  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-consola {
-    grid-area: consola;
+  .live-code:is([data-expanded], [data-side-by-side]) .lc-console {
+    grid-area: console;
     max-height: 30vh;
   }
-  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-divisor {
-    grid-area: divisor;
+  .live-code:is([data-expanded], [data-side-by-side]) .lc-divider {
+    grid-area: divider;
     display: block;
     cursor: col-resize;
     touch-action: none;
-    background: var(--mg-bronce, #6d4f2e);
+    background: var(--mg-bronze, #6d4f2e);
     box-shadow:
       inset 1px 0 0 rgb(255 240 210 / 0.15),
       inset -1px 0 0 rgb(0 0 0 / 0.5);
   }
-  .codigo-vivo .cv-divisor:focus-visible {
+  .live-code .lc-divider:focus-visible {
     outline: 2px solid #93d9c9;
     outline-offset: -2px;
   }
-  /* Mientras se arrastra, el iframe no se queda con los movimientos del puntero. */
-  .codigo-vivo[data-arrastrando] iframe {
+  /* While dragging, the iframe does not keep the pointer's movements. */
+  .live-code[data-dragging] iframe {
     pointer-events: none;
   }
 
   /*
-   * PANTALLA COMPLETA: lo mismo, ocupando toda la pantalla. Sirve igual para la pantalla
-   * completa del navegador (data-ampliado="pantalla") y para cuando no la hay, como en el iPhone
-   * ("ventana"). En una pantalla angosta o vertical, uno arriba del otro.
+   * FULL SCREEN: the same, taking the whole screen. It works the same for the browser's full screen
+   * (data-expanded="screen") and for when there is none, like on the iPhone ("window"). On a narrow
+   * or vertical screen, one above the other.
    */
-  .codigo-vivo[data-ampliado] {
+  .live-code[data-expanded] {
     width: 100%;
     height: 100%;
     margin: 0;
@@ -265,40 +266,40 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
     border-radius: 0;
     background: #1a1714;
   }
-  .codigo-vivo[data-ampliado='ventana'] {
+  .live-code[data-expanded='window'] {
     position: fixed;
     inset: 0;
     z-index: 1000;
     height: 100dvh;
   }
-  :root.cv-con-ampliado {
-    overflow: hidden; /* la página de atrás no se desplaza */
+  :root.lc-has-expanded {
+    overflow: hidden; /* the page behind does not scroll */
   }
-  .codigo-vivo:fullscreen::backdrop {
+  .live-code:fullscreen::backdrop {
     background: #000;
   }
   @media (max-width: 50rem), (max-aspect-ratio: 1/1) {
-    .codigo-vivo[data-ampliado] {
+    .live-code[data-expanded] {
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
-      grid-template-areas: 'resultado' 'consola' 'barra' 'editor';
+      grid-template-areas: 'result' 'console' 'bar' 'editor';
     }
-    .codigo-vivo[data-ampliado] .cv-divisor {
+    .live-code[data-expanded] .lc-divider {
       display: none;
     }
   }
-  /* En una barra angosta, el botón queda solo con su símbolo. */
+  /* In a narrow bar, the button keeps only its symbol. */
   @media (max-width: 30rem) {
-    .codigo-vivo .cv-ampliar .cv-texto {
+    .live-code .lc-expand .lc-label {
       display: none;
     }
   }
 </style>
 
 <script>
-  import { ensancharEjemplos } from '../codigo-vivo/ancho';
-  import { montarCodigoVivo } from '../codigo-vivo/montar';
-  const ejemplos = [...document.querySelectorAll<HTMLElement>('.codigo-vivo')];
-  ejemplos.forEach(montarCodigoVivo);
-  ensancharEjemplos(ejemplos);
+  import { widenExamples } from '../live-code/width';
+  import { mountLiveCode } from '../live-code/mount';
+  const examples = [...document.querySelectorAll<HTMLElement>('.live-code')];
+  examples.forEach(mountLiveCode);
+  widenExamples(examples);
 </script>

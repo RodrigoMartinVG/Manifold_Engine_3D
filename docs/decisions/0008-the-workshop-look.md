@@ -1,36 +1,37 @@
-# 0008. La estética del sitio: el taller
+# 0008. The site's look: the workshop
 
-- **Estado:** aceptada
-- **Fecha:** 2026-11-11
+- **Status:** accepted
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-El sitio usaba el aspecto de fábrica de Starlight: correcto, pero igual al de miles de documentaciones. Manifold Gaming es otra cosa: un laboratorio donde la matemática (campos, cuaterniones, pasos de integración) es la materia prima. Se buscó una estética que junte lo sofisticado y técnico con lo arcano de la matemática: metal, instrumentos, construcciones con compás.
+The site used Starlight's default look: correct, but the same as thousands of documentation sites. Manifold Gaming is something else: a lab where mathematics (fields, quaternions, integration steps) is the raw material. We looked for a look that brings together the sophisticated and technical with the arcane side of mathematics: metal, instruments, compass constructions.
 
-Hay tres condiciones:
+There are three conditions:
 
-- **Que se lea bien.** El sitio es sobre todo un tutorial: el estilo no puede competir con el texto ni con el código.
-- **Que ande en una máquina modesta** (la de desarrollo tiene una gráfica integrada Iris Plus).
-- **Que sea original:** nada de imágenes, marcas ni recursos copiados.
+- **It must read well.** The site is above all a tutorial: the style cannot compete with the text or the code.
+- **It must run on a modest machine** (the development one has an integrated Iris Plus GPU).
+- **It must be original:** no images, brands or resources copied.
 
-## Decisión
+## Decision
 
-- **La paleta.** Bronce y cobre para marcos y títulos; pátina (el verde del cobre viejo) como acento de enlaces y botones secundarios; carbón cálido de fondo. El modo claro es pergamino con tinta sepia. Todo está en `sitio/src/estilos/taller.css`, que redefine los colores de Starlight y agrega los propios (con prefijo `--mg-`).
-- **La letra.** Cinzel (licencia OFL, servida desde el propio sitio con `@fontsource`, sin pedidos a terceros) solo para títulos. El texto sigue con la letra del sistema, que es la que mejor se lee en pantalla.
-- **Los dibujos se hacen con código.** `sitio/scripts/dibujar.mjs` genera los SVG con geometría exacta: el fondo, la marca (un engranaje con una lemniscata) y dos engranajes que engranan de verdad (mismo módulo; el CSS los gira con velocidades en razón inversa al número de dientes).
-- **El fondo dice cosas verdaderas.** Las construcciones (rectángulo áureo, astrolabio, una órbita con su foco, el triángulo del compás) y las fórmulas son las del proyecto: `g = −GM r̂ / r²`, el paso de Euler semi-implícito (con sus puntos por debajo de la parábola exacta: el error del paso), el cuaternión, el generador con semilla, la huella FNV-1a, la cinta de Möbius.
-- **El fondo es una máscara.** Una capa fija detrás de todo deja pasar un color solo donde hay trazo, así el mismo SVG sirve en los dos modos, y no se repinta al bajar. En el inicio se ve más; en las lecciones, apenas.
-- **El inicio tiene una vitrina 3D en vivo** en vez de una imagen: un pozo de potencial con tres cuerpos en órbita. Su física (`sitio/src/vitrina/orbitas.ts`) es la misma que se dibuja, y está probada: en diez minutos ningún cuerpo se escapa ni choca, y la energía no deriva (con Euler explícito, la prueba falla). Three.js se pide después de que la página se dibuja, con un `import()` dinámico. La vitrina se detiene cuando no se ve, y respeta "reducir movimiento".
-- **Lo que se usa para trabajar queda sobrio.** El editor y el resultado de los ejemplos siguen oscuros y limpios (One Dark con fondo cálido); el marco de bronce queda afuera.
+- **The palette.** Bronze and copper for frames and titles; patina (old copper's green) as the accent of links and secondary buttons; warm charcoal for the background. Light mode is parchment with sepia ink. It is all in `site/src/styles/workshop.css`, which redefines Starlight's colors and adds its own (with the `--mg-` prefix).
+- **The type.** Cinzel (OFL license, served from the site itself with `@fontsource`, with no third-party requests) only for titles. The text keeps the system font, which is the one that reads best on screen.
+- **The drawings are made with code.** `site/scripts/draw.mjs` generates the SVGs with exact geometry: the background, the logo (a gear with a lemniscate) and two gears that really mesh (same module; the CSS turns them at speeds in inverse ratio to their number of teeth).
+- **The background says true things.** The constructions (golden rectangle, astrolabe, an orbit with its focus, the compass triangle) and the formulas are the project's: `g = −GM r̂ / r²`, the semi-implicit Euler step (with its points below the exact parabola: the step's error), the quaternion, the seeded generator, the FNV-1a hash, the Möbius strip.
+- **The background is a mask.** A fixed layer behind everything lets a color through only where there is a stroke, so the same SVG works in both modes, and it is not repainted when scrolling. On the home page it shows more; in the lessons, barely.
+- **The home page has a live 3D showcase** instead of an image: a potential well with three bodies in orbit. Its physics (`site/src/showcase/orbits.ts`) is the same that is drawn, and it is tested: in ten minutes no body escapes or crashes, and the energy does not drift (with explicit Euler, the test fails). Three.js is fetched after the page is drawn, with a dynamic `import()`. The showcase stops when it is not seen, and respects "reduce motion".
+- **What is used for working stays sober.** The examples' editor and result stay dark and clean (One Dark with a warm background); the bronze frame stays outside.
+- **Later, matte and rusted** (stage 0c): the metal is old bronze, without shiny streaks, with two repeating textures made by the same script (rust with pitting, and patina crusts).
 
-## Consecuencias
+## Consequences
 
-- El sitio tiene una identidad propia, y los dibujos se pueden regenerar o cambiar con código (`npm run dibujar -w sitio`).
-- El inicio pesa más: Three.js (unos 130 KB comprimido) llega en un segundo pedido, después de que la página ya se ve. Es el mismo archivo que usa el Dojo, así que el navegador lo guarda una sola vez.
-- Cada versión nueva de Starlight puede cambiar nombres de clases. Si un estilo deja de aplicarse, el lugar donde mirar es `taller.css`, que nombra cada componente que toca.
+- The site has an identity of its own, and the drawings can be regenerated or changed with code (`npm run draw -w site`).
+- The home page weighs more: Three.js (about 130 KB compressed) arrives in a second request, after the page is already visible. It is the same file the Dojo uses, so the browser keeps it only once.
+- Every new Starlight version can change class names. If a style stops applying, the place to look is `workshop.css`, which names each component it touches.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-- **Una imagen de fondo pintada** (como el boceto que inspiró esto): pesa, el texto encima se lee peor, y sus letras y números serían decorado sin sentido.
-- **Marcos metálicos en todo:** cansa la vista y compite con el contenido; el metal quedó para lo que se señala (la marca, el título, las tarjetas, los botones principales, la vitrina y los marcos de los ejemplos).
-- **Una letra con serifa para todo el texto:** más "antigua", pero se lee peor en pantalla en párrafos largos.
+- **A painted background image** (like the sketch that inspired this): it weighs, the text on top reads worse, and its letters and numbers would be meaningless decoration.
+- **Metal frames everywhere:** it tires the eye and competes with the content; the metal was kept for what is pointed out (the logo, the title, the cards, the main buttons, the showcase and the examples' frames).
+- **A serif font for the whole text:** more "old", but it reads worse on screen in long paragraphs.

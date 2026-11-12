@@ -1,9 +1,9 @@
 {
-  "name": "@manifold/comun",
+  "name": "@manifold/common",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Lo que usan todos los paquetes: azar con semilla y matemática sobre datos planos. Sin pantalla, sin dependencias.",
+  "description": "What every package uses: seeded random numbers and math on plain data. No screen, no dependencies.",
   "exports": {
     ".": "./src/index.ts"
   },

@@ -1,34 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { ORBITAS_INICIALES, RADIO_CENTRO, RADIO_LAMINA, avanzar, crearOrbita, energia } from './orbitas';
+import { CENTER_RADIUS, INITIAL_ORBITS, SHEET_RADIUS, advance, createOrbit, energy } from './orbits';
 
-describe('las órbitas de la vitrina', () => {
-  // Diez minutos de vitrina abierta, a 60 pasos por segundo.
-  const PASOS = 10 * 60 * 60;
+describe("the showcase's orbits", () => {
+  // Ten minutes of showcase open, at 60 steps per second.
+  const STEPS = 10 * 60 * 60;
 
-  it.each(ORBITAS_INICIALES)('la de r = $r no se escapa de la lámina ni toca el centro', ({ r, factor, fase }) => {
-    const o = crearOrbita(r, factor, fase);
-    let cerca = Infinity;
-    let lejos = 0;
-    for (let i = 0; i < PASOS; i++) {
-      avanzar(o);
+  it.each(INITIAL_ORBITS)('the one at r = $r neither leaves the sheet nor touches the center', ({ r, factor, phase }) => {
+    const o = createOrbit(r, factor, phase);
+    let nearest = Infinity;
+    let farthest = 0;
+    for (let i = 0; i < STEPS; i++) {
+      advance(o);
       const d = Math.hypot(o.x, o.z);
-      cerca = Math.min(cerca, d);
-      lejos = Math.max(lejos, d);
+      nearest = Math.min(nearest, d);
+      farthest = Math.max(farthest, d);
     }
-    expect(cerca).toBeGreaterThan(RADIO_CENTRO + 0.15);
-    expect(lejos).toBeLessThan(RADIO_LAMINA);
+    expect(nearest).toBeGreaterThan(CENTER_RADIUS + 0.15);
+    expect(farthest).toBeLessThan(SHEET_RADIUS);
   });
 
-  it.each(ORBITAS_INICIALES)('la de r = $r conserva la energía (oscila, pero no se va)', ({ r, factor, fase }) => {
-    const o = crearOrbita(r, factor, fase);
-    const inicial = energia(o);
-    let peor = 0;
-    for (let i = 0; i < PASOS; i++) {
-      avanzar(o);
-      peor = Math.max(peor, Math.abs((energia(o) - inicial) / inicial));
+  it.each(INITIAL_ORBITS)('the one at r = $r keeps its energy (it wobbles, but does not drift)', ({ r, factor, phase }) => {
+    const o = createOrbit(r, factor, phase);
+    const initial = energy(o);
+    let worst = 0;
+    for (let i = 0; i < STEPS; i++) {
+      advance(o);
+      worst = Math.max(worst, Math.abs((energy(o) - initial) / initial));
     }
-    // Medido: 0,46 % la que más se acerca al centro (allí el paso es más grueso respecto de la
-    // curva). Con Euler explícito, en cambio, crece sin parar y las órbitas se abren.
-    expect(peor).toBeLessThan(0.01);
+    // Measured: 0.46 % for the one that comes closest to the center (there the step is coarser
+    // compared to the curve). With explicit Euler, instead, it grows without end and the orbits open.
+    expect(worst).toBeLessThan(0.01);
   });
 });

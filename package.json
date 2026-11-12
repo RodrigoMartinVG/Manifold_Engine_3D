@@ -2,28 +2,28 @@
   "name": "manifold-gaming",
   "private": true,
   "type": "module",
-  "description": "Un laboratorio de mundos físicos en 3D para la web: un motor propio, un Dojo para experimentar, juegos y un tutorial que crece con el motor.",
+  "description": "A lab of physical 3D worlds for the web: an engine of its own, a Dojo to experiment, games, and a tutorial that grows with the engine.",
   "engines": {
     "node": ">=26"
   },
   "workspaces": [
-    "paquetes/*",
-    "juegos/*",
-    "sitio"
+    "packages/*",
+    "games/*",
+    "site"
   ],
   "scripts": {
-    "dev": "npm run dev -w sitio",
-    "build": "npm run build -w sitio",
-    "vista-previa": "npm run preview -w sitio",
+    "dev": "npm run dev -w site",
+    "build": "npm run build -w site",
+    "preview": "npm run preview -w site",
     "check": "npm run check --workspaces --if-present",
     "lint": "eslint .",
-    "formato": "prettier --check .",
-    "formatear": "prettier --write .",
-    "pruebas": "vitest run",
-    "pruebas:mirar": "vitest",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "e2e": "playwright test",
-    "verificar": "npm run check && npm run lint && npm run formato && npm run pruebas",
-    "servir-sitio": "vite preview --outDir sitio/dist --base /Manifold_Gaming/ --port 4321 --strictPort"
+    "verify": "npm run check && npm run lint && npm run format:check && npm run test",
+    "serve:site": "vite preview --outDir site/dist --base /Manifold_Gaming/ --port 4321 --strictPort"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

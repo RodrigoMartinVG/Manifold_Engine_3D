@@ -1,27 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { recetaDelEnlace, recetaParaEnlace, tituloDeReceta } from './recetas';
+import { recipeFromLink, recipeTitle, recipeToLink } from './recipes';
 
-describe('las recetas en un enlace', () => {
-  it('se leen a mano: ";" entre líneas y "+" por los espacios; sin los comentarios', () => {
-    const receta = '# Mi sala\ndojo.cubos 20\n\n# Lo que se ve\nver.triangulos si\n';
-    expect(recetaParaEnlace(receta)).toBe('dojo.cubos+20;ver.triangulos+si');
+describe('recipes in a link', () => {
+  it('are readable by hand: ";" between lines and "+" for spaces; without the comments', () => {
+    const recipe = '# My room\ndojo.cubes 20\n\n# What is seen\nshow.wireframe on\n';
+    expect(recipeToLink(recipe)).toBe('dojo.cubes+20;show.wireframe+on');
   });
 
-  it('van y vuelven sin perder nada (un "+" de verdad, comillas, tildes)', () => {
-    const receta = 'dojo.nombre "uno + uno"\nayuda física';
-    const enlace = `#receta=${recetaParaEnlace(receta)}`;
-    expect(enlace).not.toMatch(/\s/);
-    expect(recetaDelEnlace(enlace)).toBe(receta);
+  it('go and come back without losing anything (a real "+", quotes, accents)', () => {
+    const recipe = 'dojo.name "one + one"\nhelp física';
+    const link = `#recipe=${recipeToLink(recipe)}`;
+    expect(link).not.toMatch(/\s/);
+    expect(recipeFromLink(link)).toBe(recipe);
   });
 
-  it('un fragmento que no es una receta da null; un escape roto no rompe nada', () => {
-    expect(recetaDelEnlace('#otra-cosa')).toBeNull();
-    expect(recetaDelEnlace('')).toBeNull();
-    expect(recetaDelEnlace('#receta=dojo.cubos+%E0;ver.ejes+si')).toBe('dojo.cubos %E0\nver.ejes si');
+  it('a fragment that is not a recipe gives null; a broken escape breaks nothing', () => {
+    expect(recipeFromLink('#something-else')).toBeNull();
+    expect(recipeFromLink('')).toBeNull();
+    expect(recipeFromLink('#recipe=dojo.cubes+%E0;show.axes+on')).toBe('dojo.cubes %E0\nshow.axes on');
   });
 
-  it('el título de una receta es su primer comentario', () => {
-    expect(tituloDeReceta('\n# Lluvia de cubos\ndojo.cubos 100')).toBe('Lluvia de cubos');
-    expect(tituloDeReceta('dojo.cubos 100')).toBeNull();
+  it("a recipe's title: its first comment, if it comes before the first command", () => {
+    expect(recipeTitle('\n# Cube rain\n# A comment.\ndojo.cubes 100')).toBe('Cube rain');
+    expect(recipeTitle('dojo.cubes 100\n# not a title, after a command')).toBeNull();
+    expect(recipeTitle('#\ndojo.cubes 100')).toBeNull();
   });
 });

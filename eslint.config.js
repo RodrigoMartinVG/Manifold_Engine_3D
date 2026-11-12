@@ -6,22 +6,23 @@ import globals from 'globals';
 import { defineConfig } from 'eslint/config';
 
 /**
- * El linter. Además de las reglas habituales, vigila LAS FRONTERAS entre capas (decisión 0003).
- * El compilador ya impide que el núcleo use `document` (no tiene la librería DOM); esto impide
- * que IMPORTE lo que no debe. Si alguien lo intenta, `npm run lint` falla con el porqué.
+ * The linter. Besides the usual rules, it guards THE BOUNDARIES between layers (decision 0003).
+ * The compiler already keeps the core from using `document` (it has no DOM library); this keeps
+ * it from IMPORTING what it must not. If someone tries, `npm run lint` fails and says why.
  */
-const juegos = {
-  group: ['@manifold/dojo', '@manifold/dojo/*', '**/juegos/**'],
-  message: 'El motor no conoce a los juegos: los recibe como cartuchos (decisión 0003).',
+const games = {
+  group: ['@manifold/dojo', '@manifold/dojo/*', '**/games/**'],
+  message: 'The engine does not know the games: it receives them as cartridges (decision 0003).',
 };
-const dibujo = {
+const drawing = {
   group: ['three', 'three/*'],
-  message: 'Esta capa no dibuja: Three.js es solo de la presentación (decisión 0003).',
+  message: 'This layer does not draw: Three.js belongs to the presentation only (decision 0003).',
 };
-const presentacion = {
-  group: ['@manifold/presentacion', '@manifold/presentacion/*'],
-  message: 'La simulación no conoce a la presentación (decisión 0003).',
+const presentation = {
+  group: ['@manifold/presentation', '@manifold/presentation/*'],
+  message: 'The simulation does not know the presentation (decision 0003).',
 };
+const headless = "A game's rules run without a screen (also on a server and in tests): decision 0003.";
 
 export default defineConfig(
   {
@@ -31,53 +32,53 @@ export default defineConfig(
       '**/.astro/**',
       'playwright-report/**',
       'test-results/**',
-      'sitio/public/vendor/**',
+      'site/public/vendor/**',
     ],
   },
   js.configs.recommended,
   tseslint.configs.recommended,
   prettier,
   { languageOptions: { globals: { ...globals.node } } },
-  // El sitio y sus lecciones corren en el navegador.
-  { files: ['sitio/src/**/*.ts'], languageOptions: { globals: { ...globals.browser } } },
+  // The site and its lessons run in the browser.
+  { files: ['site/src/**/*.ts'], languageOptions: { globals: { ...globals.browser } } },
   {
-    files: ['paquetes/comun/src/**'],
+    files: ['packages/common/src/**'],
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [dibujo, { group: ['@manifold/*'], message: 'comun no depende de ningún otro paquete.' }] },
+        { patterns: [drawing, { group: ['@manifold/*'], message: 'common depends on no other package.' }] },
       ],
     },
   },
   {
-    // Las variables, los comandos y las recetas (decisión 0010): sin pantalla y sin depender de nadie.
-    files: ['paquetes/comandos/src/**'],
+    // Variables, commands and recipes (decision 0010): no screen, and no dependencies.
+    files: ['packages/commands/src/**'],
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [dibujo, { group: ['@manifold/*'], message: 'comandos no depende de ningún otro paquete.' }] },
+        { patterns: [drawing, { group: ['@manifold/*'], message: 'commands depends on no other package.' }] },
       ],
     },
   },
   {
-    files: ['paquetes/nucleo/src/**'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [dibujo, presentacion, juegos] }] },
+    files: ['packages/core/src/**'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [drawing, presentation, games] }] },
   },
   {
-    files: ['paquetes/presentacion/src/**'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [juegos] }] },
+    files: ['packages/presentation/src/**'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [games] }] },
   },
   {
-    // Un juego usa el motor, nunca otro juego.
-    files: ['juegos/*/src/**'],
+    // A game uses the engine, never another game.
+    files: ['games/*/src/**'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: ['@manifold/*', '!@manifold/comun', '!@manifold/comandos', '!@manifold/nucleo', '!@manifold/presentacion'],
-              message: 'Un juego importa el motor, nunca otro juego (decisión 0003).',
+              group: ['@manifold/*', '!@manifold/common', '!@manifold/commands', '!@manifold/core', '!@manifold/presentation'],
+              message: 'A game imports the engine, never another game (decision 0003).',
             },
           ],
         },
@@ -85,21 +86,15 @@ export default defineConfig(
     },
   },
   {
-    // Las REGLAS de un juego (su cartucho) corren sin pantalla: también en el servidor y en las pruebas.
-    files: ['juegos/*/src/cartucho*.ts'],
+    // A game's RULES (its cartridge) run without a screen: also on a server and in tests.
+    files: ['games/*/src/cartridge*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
-            {
-              ...dibujo,
-              message: 'Las reglas de un juego corren sin pantalla (también en el servidor y en las pruebas): decisión 0003.',
-            },
-            {
-              ...presentacion,
-              message: 'Las reglas de un juego corren sin pantalla (también en el servidor y en las pruebas): decisión 0003.',
-            },
+            { ...drawing, message: headless },
+            { ...presentation, message: headless },
           ],
         },
       ],

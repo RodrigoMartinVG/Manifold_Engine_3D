@@ -6,7 +6,7 @@ sidebar:
   label: Empezar aquí
 ---
 
-import CodigoVivo from '../../../components/CodigoVivo.astro';
+import LiveCode from '../../../components/LiveCode.astro';
 
 Este tutorial enseña a hacer **mundos físicos en 3D que corren en el navegador, y juegos sobre ellos**. Primero, cosas que caen, giran y chocan, y que si se las vuelve a correr hacen exactamente lo mismo. Encima de eso, lo que hace a un juego: **personajes que se manejan** con el teclado, el mouse o un joystick, **bots** que patrullan, ven y persiguen, y **reglas**: objetivos, puntajes, ganar y perder.
 
@@ -15,7 +15,7 @@ Avanza a la par de [Manifold Gaming](../proyecto/), el motor que se construye en
 ## Para quién es
 
 - **Para quien sabe programar un poco**: variables, funciones, `if`, `for`, objetos. Los ejemplos están en TypeScript, que es JavaScript con tipos (más abajo se explica). Si nunca programaste en JavaScript, la [guía de JavaScript de MDN](https://developer.mozilla.org/es/docs/Web/JavaScript/Guide) es un buen lugar para empezar.
-- **No hace falta haber hecho nada gráfico.** Qué es la GPU, un cuadro, una malla o un radián se explica la primera vez que aparece. La [primera lección](etapa-0/00-del-3d-a-la-pantalla/) es justamente eso: cómo un mundo en 3D se convierte en los píxeles de tu pantalla.
+- **No hace falta haber hecho nada gráfico.** Qué es la GPU, un cuadro (_frame_), una malla (_mesh_) o un radián se explica la primera vez que aparece. La [primera lección](etapa-0/00-del-3d-a-la-pantalla/) es justamente eso: cómo un mundo en 3D se convierte en los píxeles de tu pantalla.
 - **Para empezar alcanza con la matemática del secundario:** coordenadas, algo de geometría y un poco de trigonometría. Lo que va más allá se explica en cada lección, a la profundidad que quieras: lo cuenta la sección siguiente.
 
 ## La matemática, a tu medida
@@ -64,6 +64,12 @@ El orden va de abajo hacia arriba: primero los cimientos (dibujar, el tiempo, el
 
 Para hacer el sitio se usan otras herramientas: Astro y Starlight para las páginas, CodeMirror para el editor y Vitest y Playwright para las pruebas. No hace falta conocerlas para seguir el tutorial. La [Bitácora](../bitacora/etapa-0b/) cuenta cómo se armó todo eso.
 
+## El código, en inglés
+
+El texto está en español, pero **el código está en inglés**: los nombres de las variables, de las funciones y de los archivos, los comentarios, los paneles de los ejemplos y lo que escriben en la consola. Así se trabaja en la industria del software. Las librerías, sus documentaciones y los mensajes de error están en inglés, y un código con nombres en dos idiomas se vuelve difícil de leer y de compartir. Lo mismo vale para el motor y para la consola del [Dojo](../jugar/).
+
+Para que no sea una barrera, **la primera vez que aparece un término va en español y, al lado, en inglés**: una malla (_mesh_), un cuadro (_frame_), una semilla (_seed_). Así, cuando leas el código o busques algo en la documentación de Three.js, ya conocés la palabra. El [glosario](glosario/) los junta todos, con la palabra que se usa en el código y en la consola.
+
 ## Cómo es una lección
 
 Todas tienen las mismas partes:
@@ -85,11 +91,11 @@ Todas tienen las mismas partes:
 - **⛶ Pantalla completa** pone el código y lo que dibuja lado a lado, ocupando toda la pantalla. En un celular quedan uno arriba del otro. La línea del medio se arrastra para darle más lugar a uno o al otro, y Esc vuelve a la página.
 - **Lo que cambiás no se guarda:** al recargar la página vuelve el código original.
 - **Cada ejemplo corre en un recuadro aislado:** no puede tocar el resto de la página ni nada tuyo.
-- **Es TypeScript de verdad:** el navegador ejecuta el mismo código que está en el [repositorio](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/main/sitio/src/lecciones), que el compilador revisa y que se prueba en cada cambio.
+- **Es TypeScript de verdad:** el navegador ejecuta el mismo código que está en el [repositorio](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/main/site/src/lessons), que el compilador revisa y que se prueba en cada cambio.
 
 Este es el programa más chico posible: escribe en la consola con `console.log`, y en el recuadro con `document.body`. Probá: cambiá el `1` por `10` y ejecutá.
 
-<CodigoVivo leccion="etapa-0/00-hola" />
+<LiveCode lesson="stage-0/00-hello" />
 
 ## Lo que este tutorial no es
 

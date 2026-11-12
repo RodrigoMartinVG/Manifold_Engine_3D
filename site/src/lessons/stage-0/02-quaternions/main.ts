@@ -1,60 +1,60 @@
 import * as THREE from 'three';
 import GUI from 'three/addons/libs/lil-gui.module.min.js';
-import { crearEscena } from './escena';
+import { createScene } from './scene';
 
-const { escena, camara, alCuadro } = crearEscena();
-camara.position.set(2.6, 2.4, 3.6); // más cerca que de costumbre: la nave es chica
-camara.lookAt(0, 1.2, 0);
+const { scene, camera, onFrame } = createScene();
+camera.position.set(2.6, 2.4, 3.6); // closer than usual: the ship is small
+camera.lookAt(0, 1.2, 0);
 
-// Una "nave": la punta dice hacia dónde mira, y la aleta roja, cuál es su "arriba".
+// A "ship": the nose says where it faces, and the red fin, which way is its "up".
 const material = (color: number) => new THREE.MeshStandardMaterial({ color });
-const nave = new THREE.Group();
-nave.add(
-  new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 1.6), material(0x4f86c6)), // cuerpo
+const ship = new THREE.Group();
+ship.add(
+  new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 1.6), material(0x4f86c6)), // body
   new THREE.Mesh(
     new THREE.ConeGeometry(0.3, 0.6, 16).rotateX(-Math.PI / 2).translate(0, 0, -1.1),
     material(0xe0a040),
-  ), // punta
-  new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.5).translate(0, 0.35, 0.5), material(0xe06c75)), // aleta
-  new THREE.Mesh(new THREE.BoxGeometry(2, 0.06, 0.5).translate(0, 0, 0.2), material(0x8aa0b8)), // alas
+  ), // nose
+  new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.5).translate(0, 0.35, 0.5), material(0xe06c75)), // fin
+  new THREE.Mesh(new THREE.BoxGeometry(2, 0.06, 0.5).translate(0, 0, 0.2), material(0x8aa0b8)), // wings
 );
-nave.position.y = 1.2;
-escena.add(nave);
+ship.position.y = 1.2;
+scene.add(ship);
 
 const rad = THREE.MathUtils.degToRad;
-const gui = new GUI({ title: 'Orientación' });
+const gui = new GUI({ title: 'Orientation' });
 
-// --- Con ÁNGULOS (Euler): tres giros, uno después del otro, alrededor de ejes fijos ---
-// Orden 'YXZ': primero guiñada (alrededor de Y), después cabeceo (X), después alabeo (Z).
-const angulos = { guinada: 0, cabeceo: 0, alabeo: 0 };
-const aplicarAngulos = () =>
-  nave.rotation.set(rad(angulos.cabeceo), rad(angulos.guinada), rad(angulos.alabeo), 'YXZ');
-const euler = gui.addFolder('Con ángulos (grados)');
-euler.add(angulos, 'guinada', -180, 180, 1).name('guiñada (Y)').onChange(aplicarAngulos);
-euler.add(angulos, 'cabeceo', -90, 90, 1).name('cabeceo (X)').onChange(aplicarAngulos);
-euler.add(angulos, 'alabeo', -180, 180, 1).name('alabeo (Z)').onChange(aplicarAngulos);
+// --- With ANGLES (Euler): three turns, one after the other, around fixed axes ---
+// Order 'YXZ': first yaw (around Y), then pitch (X), then roll (Z).
+const angles = { yaw: 0, pitch: 0, roll: 0 };
+const applyAngles = () =>
+  ship.rotation.set(rad(angles.pitch), rad(angles.yaw), rad(angles.roll), 'YXZ');
+const euler = gui.addFolder('With angles (degrees)');
+euler.add(angles, 'yaw', -180, 180, 1).name('yaw (Y)').onChange(applyAngles);
+euler.add(angles, 'pitch', -90, 90, 1).name('pitch (X)').onChange(applyAngles);
+euler.add(angles, 'roll', -180, 180, 1).name('roll (Z)').onChange(applyAngles);
 
-// --- Con un CUATERNIÓN: girar alrededor de los ejes PROPIOS de la nave, desde donde esté ---
-// Multiplicar por la derecha = girar en el marco de la nave (su "derecha", su "arriba").
-const girarPropio = (eje: THREE.Vector3) => () =>
-  nave.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(eje, rad(15)));
-const cuaternion = gui.addFolder('Con un cuaternión (15° cada vez)');
-cuaternion.add({ f: girarPropio(new THREE.Vector3(1, 0, 0)) }, 'f').name('cabecear (su X)');
-cuaternion.add({ f: girarPropio(new THREE.Vector3(0, 1, 0)) }, 'f').name('guiñar (su Y)');
-cuaternion.add({ f: girarPropio(new THREE.Vector3(0, 0, 1)) }, 'f').name('alabear (su Z)');
-cuaternion.add({ f: () => nave.quaternion.identity() }, 'f').name('volver al principio');
+// --- With a QUATERNION: turn around the ship's OWN axes, from wherever it is ---
+// Multiplying on the right = turning in the ship's frame (its "right", its "up").
+const turnOwn = (axis: THREE.Vector3) => () =>
+  ship.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(axis, rad(15)));
+const quaternion = gui.addFolder('With a quaternion (15° each time)');
+quaternion.add({ f: turnOwn(new THREE.Vector3(1, 0, 0)) }, 'f').name('pitch (its X)');
+quaternion.add({ f: turnOwn(new THREE.Vector3(0, 1, 0)) }, 'f').name('yaw (its Y)');
+quaternion.add({ f: turnOwn(new THREE.Vector3(0, 0, 1)) }, 'f').name('roll (its Z)');
+quaternion.add({ f: () => ship.quaternion.identity() }, 'f').name('back to the start');
 
-// Los cuatro números del cuaternión, en vivo (siempre suman 1 al cuadrado: es una rotación).
-const lectura = { x: 0, y: 0, z: 0, w: 1 };
-const numeros = gui.addFolder('El cuaternión (x, y, z, w)');
-for (const k of ['x', 'y', 'z', 'w'] as const) numeros.add(lectura, k).listen().disable();
+// The quaternion's four numbers, live (their squares always add up to 1: it is a rotation).
+const readout = { x: 0, y: 0, z: 0, w: 1 };
+const numbers = gui.addFolder('The quaternion (x, y, z, w)');
+for (const k of ['x', 'y', 'z', 'w'] as const) numbers.add(readout, k).listen().disable();
 
-alCuadro(() => {
-  const q = nave.quaternion;
-  lectura.x = +q.x.toFixed(3);
-  lectura.y = +q.y.toFixed(3);
-  lectura.z = +q.z.toFixed(3);
-  lectura.w = +q.w.toFixed(3);
+onFrame(() => {
+  const q = ship.quaternion;
+  readout.x = +q.x.toFixed(3);
+  readout.y = +q.y.toFixed(3);
+  readout.z = +q.z.toFixed(3);
+  readout.w = +q.w.toFixed(3);
 });
 
-// Probá: cabeceo en 90 y después mové la guiñada y el alabeo. ¿Hacen lo mismo?
+// Try: pitch at 90 and then move the yaw and the roll. Do they do the same?

@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // Sin "DOM": el registro y el intérprete corren igual en el navegador, en el servidor y en las pruebas.
+    // No "DOM": the registry and the interpreter run the same in the browser, on a server and in tests.
     "lib": ["ES2023"],
     "types": []
   },

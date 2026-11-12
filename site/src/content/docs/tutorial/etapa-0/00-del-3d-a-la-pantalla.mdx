@@ -5,41 +5,41 @@ sidebar:
   order: 0
 ---
 
-import CodigoVivo from '../../../../components/CodigoVivo.astro';
+import LiveCode from '../../../../components/LiveCode.astro';
 
 Antes de programar conviene saber qué pasa cuando una computadora "dibuja en 3D", porque todo lo demás se apoya en eso.
 
-La pantalla es plana: una grilla de puntitos de color, los **píxeles**. Una pantalla común tiene unos dos millones. Dibujar en 3D es decidir, muchas veces por segundo, de qué color va cada píxel para que parezca que detrás del vidrio hay un mundo con profundidad. Para eso hacen falta cuatro cosas: un lugar para cada objeto, una forma, un punto de vista y una luz.
+La pantalla es plana: una grilla de puntitos de color, los **píxeles** (_pixels_). Una pantalla común tiene unos dos millones. Dibujar en 3D es decidir, muchas veces por segundo, de qué color va cada píxel para que parezca que detrás del vidrio hay un mundo con profundidad. Para eso hacen falta cuatro cosas: un lugar para cada objeto, una forma, un punto de vista y una luz.
 
-El ejemplo de abajo tiene las cuatro. No hace falta entender todo su código todavía: la lección siguiente lo arma pieza por pieza. Por ahora, mirá y tocá.
+El ejemplo de abajo tiene las cuatro. No hace falta entender todo su código todavía: la lección siguiente lo arma pieza por pieza. Por ahora, mirá y tocá. (El código y el panel están en inglés, como en todo el tutorial: [aquí se explica por qué](../../#el-código-en-inglés).)
 
-<CodigoVivo leccion="etapa-0/00-del-3d-a-la-pantalla" autoejecutar />
+<LiveCode lesson="stage-0/00-from-3d-to-screen" autorun />
 
 **Qué probar:**
 
 - **Arrastrá sobre la escena** para girar a su alrededor (en un celular, con el dedo). La rueda del mouse, o pellizcar, acerca y aleja.
-- **Bajá el detalle de la esfera a 3, y después subilo a 64.** Mirá cuántos triángulos dice el panel.
-- **Apagá "ver los triángulos".**
-- **Llevá el campo de visión a 15° y después a 110°.**
-- **Bajá la fuerza del sol a 0.**
+- **Bajá el detalle de la esfera (_sphere detail_) a 3, y después subilo a 64.** Mirá cuántos triángulos (_triangles_) dice el panel.
+- **Apagá _show the triangles_** (ver los triángulos).
+- **Llevá el campo de visión (_field of view_) a 15° y después a 110°.**
+- **Bajá la fuerza del sol (_sun strength_) a 0.**
 
 ## 1. Un lugar para cada cosa: las coordenadas
 
-Cada punto del mundo se describe con **tres números**, sus **coordenadas** `(x, y, z)`: cuánto a la derecha, cuánto arriba y cuánto hacia vos, medidos desde un punto fijo, el **origen** `(0, 0, 0)`.
+Cada punto del mundo se describe con **tres números**, sus **coordenadas** (_coordinates_) `(x, y, z)`: cuánto a la derecha, cuánto arriba y cuánto hacia vos, medidos desde un punto fijo, el **origen** (_origin_) `(0, 0, 0)`.
 
-En el ejemplo, las tres flechas que salen del origen son los **ejes**: la roja es `x`, la verde es `y` (hacia arriba) y la azul es `z`. El piso tiene cuadrados de un metro. En este tutorial **una unidad es un metro**. No es obligatorio, pero a la física le conviene: la gravedad de la Tierra, por ejemplo, es 9,81 metros por segundo, cada segundo.
+En el ejemplo, las tres flechas que salen del origen son los **ejes** (_axes_): la roja es `x`, la verde es `y` (hacia arriba) y la azul es `z`. El piso tiene cuadrados de un metro. En este tutorial **una unidad es un metro**. No es obligatorio, pero a la física le conviene: la gravedad de la Tierra, por ejemplo, es 9,81 metros por segundo, cada segundo.
 
 La esfera está en `(0, 0.8, 0)`: en el centro, 80 centímetros arriba del piso. (En el código los decimales van con punto, como en inglés.)
 
 ## 2. Todo está hecho de triángulos
 
-La placa de video, o **GPU**, es un procesador hecho para hacer muchísimas cuentas iguales a la vez. Sabe dibujar muy rápido una sola cosa: **triángulos**. Por eso toda forma, por redonda que parezca, es una red de triángulos, que se llama **malla**. Las esquinas de los triángulos son los **vértices**.
+La placa de video (_graphics card_), o **GPU**, es un procesador hecho para hacer muchísimas cuentas iguales a la vez. Sabe dibujar muy rápido una sola cosa: **triángulos**. Por eso toda forma, por redonda que parezca, es una red de triángulos, que se llama **malla** (_mesh_). Las esquinas de los triángulos son los **vértices** (_vertices_).
 
 Con el detalle en 3, la "esfera" parece un trompo: tiene muy pocos triángulos. Con 64 parece redonda, pero tiene miles. Más triángulos se ven mejor y cuestan más, porque cada uno es trabajo para la GPU en cada cuadro. Elegir cuántos usar es una de las decisiones de siempre en 3D.
 
 ## 3. La cámara: del mundo a una foto
 
-Para saber qué píxel le toca a cada triángulo hace falta un punto de vista: la **cámara**. Como una de fotos, está en un lugar, mira hacia un lado y tiene un **campo de visión**: cuánto abarca, en grados. La cámara de este ejemplo tiene **perspectiva**, así que lo lejano se ve más chico, como en una foto.
+Para saber qué píxel le toca a cada triángulo hace falta un punto de vista: la **cámara** (_camera_). Como una de fotos, está en un lugar, mira hacia un lado y tiene un **campo de visión** (_field of view_): cuánto abarca, en grados. La cámara de este ejemplo tiene **perspectiva** (_perspective_), así que lo lejano se ve más chico, como en una foto.
 
 Con 15° funciona como un teleobjetivo: abarca poco, y lo que abarca se ve grande, como con un zoom. Con 110° es un gran angular: abarca mucho y los bordes se deforman. Nuestros ojos ven más o menos como una cámara de 50° a 60°.
 
@@ -51,7 +51,7 @@ Con el sol en 0 queda solo una luz tenue que llega de todos lados, y la forma ca
 
 ## 5. Una y otra vez: los cuadros
 
-Todo esto se repite **en cada cuadro** (en inglés, _frame_): la GPU borra la imagen, ubica los triángulos según la cámara, pinta los píxeles según la luz y muestra el resultado. Una pantalla común lo hace **60 veces por segundo** (60 Hz); algunas lo hacen 120 o 144 veces. El panel muestra cuántos cuadros por segundo logra tu computadora.
+Todo esto se repite **en cada cuadro** (en inglés, _frame_): la GPU borra la imagen, ubica los triángulos según la cámara, pinta los píxeles según la luz y muestra el resultado. Una pantalla común lo hace **60 veces por segundo** (60 Hz); algunas lo hacen 120 o 144 veces. El panel muestra cuántos cuadros por segundo (_frames per second_) logra tu computadora.
 
 Si algo cambia entre un cuadro y el siguiente, como la cámara cuando la arrastrás, se ve movimiento: es el mismo truco que el cine.
 
@@ -80,7 +80,7 @@ El campo de visión decide `d`. Si la ventana mide 2 de alto (de −1 a 1), ento
 
 Fijate que `d` multiplica a todos los puntos por igual: con la cámara quieta, cambiar el campo de visión agranda o achica la foto entera, como un zoom, pero no cambia cuánto más chico se ve lo lejano que lo cercano. Eso depende solo de las distancias (`y / z`). El "aplanado" de las fotos con teleobjetivo aparece porque, para encuadrar lo mismo con poco campo, hay que alejarse, y desde lejos las distancias de adelante y de atrás se parecen.
 
-Three.js hace esta cuenta con una **matriz de proyección**: `updateProjectionMatrix()` la recalcula cuando cambia el campo o la forma de la ventana.
+Three.js hace esta cuenta con una **matriz de proyección** (_projection matrix_): `updateProjectionMatrix()` la recalcula cuando cambia el campo o la forma de la ventana.
 
 </details>
 
@@ -93,7 +93,7 @@ Three.js hace esta cuenta con una **matriz de proyección**: `updateProjectionMa
 
 ## En Manifold
 
-El motor dibuja con estas mismas piezas de Three.js, pero en un paquete aparte, la **presentación**: [`paquetes/presentacion`](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/paso-00/paquetes/presentacion). Lo que dibuja no lo decide la presentación, sino la simulación. Esa separación es el tema de la [última lección de esta etapa](../05-simulacion-y-dibujo/).
+El motor dibuja con estas mismas piezas de Three.js, pero en un paquete aparte, la **presentación** (_presentation_): [`packages/presentation`](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/stage-00/packages/presentation). Lo que dibuja no lo decide la presentación, sino la simulación. Esa separación es el tema de la [última lección de esta etapa](../05-simulacion-y-dibujo/).
 
 ## Para saber más
 

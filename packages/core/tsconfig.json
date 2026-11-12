@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // Sin "DOM" y sin tipos de Node: la simulación no sabe en qué programa corre (decisión 0003).
+    // No "DOM" and no Node types: the simulation does not know which program it runs in (decision 0003).
     "lib": ["ES2023"],
     "types": []
   },

@@ -1,33 +1,33 @@
 import { transform } from 'sucrase';
 
 /**
- * De TypeScript a JavaScript, en el navegador (decisión 0007).
+ * From TypeScript to JavaScript, in the browser (decision 0007).
  *
- * El navegador no entiende TypeScript. Sucrase le SACA los tipos (no los revisa: eso lo hace el
- * compilador en el repositorio, y la integración continua) y deja todo lo demás en su lugar,
- * incluso los números de línea: un error en la línea 12 del navegador es la línea 12 del editor.
+ * The browser does not understand TypeScript. Sucrase REMOVES the types (it does not check them:
+ * the compiler does that in the repository, and continuous integration) and leaves everything else
+ * in place, even the line numbers: an error on line 12 in the browser is line 12 of the editor.
  */
 
-/** Cómo se llaman los archivos de una lección en el mapa de importaciones: `leccion/main`, `leccion/vista`... */
-export const PREFIJO = 'leccion/';
+/** How a lesson's files are named in the import map: `lesson/main`, `lesson/view`... */
+export const LESSON_PREFIX = 'lesson/';
 
-export function nombreDeModulo(archivo: string): string {
-  return PREFIJO + archivo.replace(/\.(ts|js)$/, '');
+export function moduleName(file: string): string {
+  return LESSON_PREFIX + file.replace(/\.(ts|js)$/, '');
 }
 
 /**
- * Las importaciones entre archivos de la lección (`./vista`, `./vista.ts`) pasan a llamarse
- * `leccion/vista`: en el iframe cada archivo es un módulo suelto (un `blob:`), y un `blob:` no
- * tiene carpeta contra la cual resolver `./`. Con un nombre fijo, el mapa de importaciones lo encuentra.
+ * Imports between a lesson's files (`./view`, `./view.ts`) are renamed `lesson/view`: in the
+ * iframe every file is a loose module (a `blob:`), and a `blob:` has no folder to resolve `./`
+ * against. With a fixed name, the import map finds it.
  */
-export function reescribirImportaciones(js: string): string {
+export function rewriteImports(js: string): string {
   return js.replace(
     /(\bfrom\s*|\bimport\s*\(?\s*)(['"])\.\/([\w\-/]+?)(?:\.ts|\.js)?\2/g,
-    (_, antes: string, comilla: string, nombre: string) => `${antes}${comilla}${PREFIJO}${nombre}${comilla}`,
+    (_, before: string, quote: string, name: string) => `${before}${quote}${LESSON_PREFIX}${name}${quote}`,
   );
 }
 
-export function transpilar(codigo: string): string {
-  const { code } = transform(codigo, { transforms: ['typescript'], disableESTransforms: true });
-  return reescribirImportaciones(code);
+export function transpile(code: string): string {
+  const { code: js } = transform(code, { transforms: ['typescript'], disableESTransforms: true });
+  return rewriteImports(js);
 }

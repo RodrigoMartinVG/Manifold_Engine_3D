@@ -1,9 +1,9 @@
-# En cámara lenta
-# El mundo avanza igual, de a pasos fijos: solo se muestra más despacio. Por eso ir más lento
-# es de la VISTA, y no cambia la huella (mirala en las estadísticas).
-semilla 5
-dojo.cubos 40
+# Slow motion
+# The world advances the same, by fixed steps: it is only shown slower. That is why the timescale
+# belongs to the VIEW, and does not change the hash (look at it in the stats).
+seed 5
+dojo.cubes 40
 
-# Lo que se ve
-vista.lento 0.2
-ver.estadisticas si
+# What is seen
+view.timescale 0.2
+show.stats on

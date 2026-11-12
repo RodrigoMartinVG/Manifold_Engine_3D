@@ -1,23 +1,23 @@
-# 0006. El nombre: Manifold Gaming
+# 0006. The name: Manifold Gaming
 
-- **Estado:** aceptada
-- **Fecha:** 2026-11-11
+- **Status:** accepted
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-El proyecto empezó como **Manifold_Engine_3D**. Pero "Manifold Engine" se puede confundir con un motor de física o de dibujo (justo lo que hacen Rapier y Three.js, sobre los que está construido) o con herramientas de diseño (CAD) que usan la misma palabra.
+The project started as **Manifold_Engine_3D**. But "Manifold Engine" can be confused with a physics or drawing engine (exactly what Rapier and Three.js do, which it is built on) or with design tools (CAD) that use the same word.
 
-## Decisión
+## Decision
 
-- El nombre es **Manifold Gaming**: _manifold_ por la matemática (una variedad: plana de cerca, curva o retorcida en grande, como la cinta de Möbius, que es lo que el motor trata como caso normal), y _Gaming_ porque es una plataforma para hacer y jugar juegos.
-- El repositorio es `RodrigoMartinVG/Manifold_Gaming` (GitHub redirige desde el nombre viejo) y el sitio, `https://rodrigomartinvg.github.io/Manifold_Gaming/`.
-- Los paquetes internos siguen con el prefijo corto `@manifold/` (`@manifold/nucleo`, `@manifold/dojo`...): no se publican, y es más cómodo de escribir.
+- The name is **Manifold Gaming**: _manifold_ for the mathematics (a manifold: flat up close, curved or twisted at large, like the Möbius strip, which is what the engine treats as the normal case), and _Gaming_ because it is a platform to make and play games.
+- The repository is `RodrigoMartinVG/Manifold_Gaming` (GitHub redirects from the old name) and the site, `https://rodrigomartinvg.github.io/Manifold_Gaming/`.
+- The internal packages keep the short prefix `@manifold/` (`@manifold/core`, `@manifold/dojo`...): they are not published, and it is easier to type.
 
-## Consecuencias
+## Consequences
 
-- Las direcciones del sitio cambian de `/Manifold_Engine_3D/` a `/Manifold_Gaming/`. Como el sitio se publicó hace minutos, no hay enlaces viejos que cuidar.
+- The site's addresses change from `/Manifold_Engine_3D/` to `/Manifold_Gaming/`. Since the site was published minutes ago, there are no old links to look after.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-- **Manifold Engine 3D:** lo que se quería evitar.
-- **Manifold Game Engine:** mejor, pero "engine" seguía invitando a la confusión con los motores de física o de dibujo.
+- **Manifold Engine 3D:** what we wanted to avoid.
+- **Manifold Game Engine:** better, but "engine" still invited confusion with physics or drawing engines.

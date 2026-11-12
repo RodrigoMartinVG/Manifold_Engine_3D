@@ -2,145 +2,150 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
-/** Junta los errores de la página (excepciones y `console.error`) para exigir que no haya. */
-function errores(page: Page) {
-  const lista: string[] = [];
-  page.on('pageerror', (e) => lista.push(`excepción: ${e.message}`));
+/** Collects the page's errors (exceptions and `console.error`) to demand there are none. */
+function errors(page: Page) {
+  const list: string[] = [];
+  page.on('pageerror', (e) => list.push(`exception: ${e.message}`));
   page.on('console', (m) => {
-    if (m.type() === 'error') lista.push(`consola: ${m.text()}`);
+    if (m.type() === 'error') list.push(`console: ${m.text()}`);
   });
-  return lista;
+  return list;
 }
 
-test('el inicio abre y lleva al Dojo, al tutorial y al proyecto', async ({ page }) => {
-  const lista = errores(page);
+// The site's texts are in Spanish (decision 0011): the links and headings are looked for in Spanish.
+test('the home page opens and leads to the Dojo, the tutorial and the project', async ({ page }) => {
+  const list = errors(page);
   await page.goto('./');
   await expect(page).toHaveTitle(/Manifold/);
   await expect(page.getByRole('link', { name: 'Entrar al Dojo' })).toBeVisible();
   await page.getByRole('link', { name: 'Leer el tutorial' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('El tutorial');
-  expect(lista).toEqual([]);
+  expect(list).toEqual([]);
 });
 
-test('la vitrina del inicio se enciende y su simulación avanza', async ({ page }) => {
-  const lista = errores(page);
+test("the home page's showcase lights up and its simulation advances", async ({ page }) => {
+  const list = errors(page);
   await page.goto('./');
-  // Three.js llega después de la página (import dinámico): la vitrina pasa de "cargando" a "lista".
-  // Con GPU tarda menos de 1 s; sin GPU (como en la integración continua) unos 3 s, y con otra
-  // prueba corriendo al lado, más de 15 s alguna vez. De ahí el margen.
-  await expect(page.locator('.vitrina')).toHaveAttribute('data-estado', 'lista', { timeout: 40_000 });
+  // Three.js arrives after the page (dynamic import): the showcase goes from "loading" to "ready".
+  // With a GPU it takes less than 1 s; without one (as in continuous integration) about 3 s, and
+  // with another test running alongside, more than 15 s once in a while. Hence the margin.
+  await expect(page.locator('.showcase')).toHaveAttribute('data-state', 'ready', { timeout: 40_000 });
   await expect
-    .poll(async () => Number(await page.locator('.vitrina-ventana').getAttribute('data-cuadros')), { timeout: 15_000 })
+    .poll(async () => Number(await page.locator('.showcase-window').getAttribute('data-frames')), { timeout: 15_000 })
     .toBeGreaterThanOrEqual(30);
-  // La placa muestra el paso de la simulación, y sigue subiendo.
-  const paso = async () => Number((await page.locator('.vitrina-paso b').textContent())?.replace(/\D/g, ''));
-  const antes = await paso();
-  await expect.poll(paso).toBeGreaterThan(antes);
-  expect(lista).toEqual([]);
+  // The plate shows the simulation's step, and it keeps going up.
+  const step = async () => Number((await page.locator('.showcase-step b').textContent())?.replace(/\D/g, ''));
+  const before = await step();
+  await expect.poll(step).toBeGreaterThan(before);
+  expect(list).toEqual([]);
 });
 
-for (const [direccion, cubos] of [
+for (const [address, cubes] of [
   ['jugar/dojo/', 1],
-  ['jugar/dojo/?cubos=20&semilla=3', 21],
+  ['jugar/dojo/#recipe=dojo.cubes+20;seed+3', 21],
 ] as const) {
-  test(`el Dojo dibuja sin errores, una malla por cubo (${direccion})`, async ({ page }) => {
-    const lista = errores(page);
-    await page.goto(direccion);
-    await expect(page.locator('#juego canvas')).toBeVisible();
-    // El cliente anota cuántos cuadros dibujó: que pasen al menos 30 (medio segundo).
+  test(`the Dojo draws without errors, one mesh per cube (${address})`, async ({ page }) => {
+    const list = errors(page);
+    await page.goto(address);
+    await expect(page.locator('#game canvas')).toBeVisible();
+    // The client writes down how many frames it drew: at least 30 must go by (half a second).
     await expect
-      .poll(async () => Number(await page.locator('#juego').getAttribute('data-cuadros')), { timeout: 15_000 })
+      .poll(async () => Number(await page.locator('#game').getAttribute('data-frames')), { timeout: 15_000 })
       .toBeGreaterThanOrEqual(30);
-    // Una malla por entidad, ni una más (en el paso 0, cada cubo se dibujaba dos veces).
-    expect(Number(await page.locator('#juego').getAttribute('data-mallas'))).toBe(cubos);
-    expect(lista).toEqual([]);
+    // One mesh per entity, not one more (in step 0, every cube was drawn twice).
+    expect(Number(await page.locator('#game').getAttribute('data-meshes'))).toBe(cubes);
+    expect(list).toEqual([]);
   });
 }
 
-// ---------------------------------------------------------------- la consola y las recetas (decisión 0010)
+// ---------------------------------------------------------------- the console and the recipes (decision 0010)
 
-const mallas = (page: Page) => page.locator('#juego').getAttribute('data-mallas').then(Number);
-const registroDeLaConsola = (page: Page) => page.locator('.mg-consola-registro');
+const meshes = (page: Page) => page.locator('#game').getAttribute('data-meshes').then(Number);
+const consoleLog = (page: Page) => page.locator('.mg-console-log');
 
-async function escribirEnLaConsola(page: Page, ...lineas: string[]) {
-  for (const linea of lineas) {
-    await page.locator('.mg-consola input').fill(linea);
-    await page.locator('.mg-consola input').press('Enter');
+async function typeInConsole(page: Page, ...lines: string[]) {
+  for (const line of lines) {
+    await page.locator('.mg-console input').fill(line);
+    await page.locator('.mg-console input').press('Enter');
   }
 }
 
-test('la consola del Dojo se abre con la tecla º y cambia el mundo', async ({ page }) => {
-  const lista = errores(page);
+test("the Dojo's console opens with the º key and changes the world", async ({ page }) => {
+  const list = errors(page);
   await page.goto('jugar/dojo/');
-  await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(1);
+  await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(1);
   await page.keyboard.press('Backquote');
-  await expect(page.locator('.mg-consola')).toHaveAttribute('data-abierta', 'si');
+  await expect(page.locator('.mg-console')).toHaveAttribute('data-open', 'true');
 
-  // De arranque: el mundo vuelve a empezar con 20 cubos más.
-  await escribirEnLaConsola(page, 'dojo.cubos 20');
-  await expect.poll(() => mallas(page)).toBe(21);
-  // Del mundo: un cubo nuevo, en el paso siguiente.
-  await escribirEnLaConsola(page, 'dojo.crear 0 2 0');
-  await expect.poll(() => mallas(page)).toBe(22);
-  // Un nombre mal escrito sugiere el parecido.
-  await escribirEnLaConsola(page, 'dojo.cubo 3');
-  await expect(registroDeLaConsola(page)).toContainText('¿Quisiste decir "dojo.cubos"?');
-  // Exportar arma el enlace con la receta de lo cambiado.
-  await escribirEnLaConsola(page, 'exportar');
-  await expect(registroDeLaConsola(page)).toContainText('/jugar/dojo/#receta=dojo.cubos+20');
-  // Esc cierra.
-  await page.locator('.mg-consola input').press('Escape');
-  await expect(page.locator('.mg-consola')).toHaveAttribute('data-abierta', 'no');
-  expect(lista).toEqual([]);
+  // Startup: the world starts over with 20 more cubes.
+  await typeInConsole(page, 'dojo.cubes 20');
+  await expect.poll(() => meshes(page)).toBe(21);
+  // World: a new cube, at the next step.
+  await typeInConsole(page, 'dojo.spawn 0 2 0');
+  await expect.poll(() => meshes(page)).toBe(22);
+  // A misspelled name suggests the similar one.
+  await typeInConsole(page, 'dojo.cube 3');
+  await expect(consoleLog(page)).toContainText('Did you mean "dojo.cubes"?');
+  // Export builds the link with the recipe of what changed.
+  await typeInConsole(page, 'export');
+  await expect(consoleLog(page)).toContainText('/jugar/dojo/#recipe=dojo.cubes+20');
+  // Esc closes.
+  await page.locator('.mg-console input').press('Escape');
+  await expect(page.locator('.mg-console')).toHaveAttribute('data-open', 'false');
+  expect(list).toEqual([]);
 });
 
-/** Las salas guardadas del Dojo, leídas de sus archivos: una sala nueva queda probada sola. */
-function salasDelDojo() {
-  const carpeta = path.join(process.cwd(), 'juegos/dojo/recetas');
-  return readdirSync(carpeta)
+/** The Dojo's saved rooms, read from their files: a new room gets tested by itself. */
+function dojoRooms() {
+  const folder = path.join(process.cwd(), 'games/dojo/recipes');
+  return readdirSync(folder)
     .filter((f) => f.endsWith('.txt'))
     .map((f) => {
-      const texto = readFileSync(path.join(carpeta, f), 'utf8');
+      const text = readFileSync(path.join(folder, f), 'utf8');
       return {
-        nombre: f.replace(/\.txt$/, ''),
-        titulo: texto.match(/^#\s*(.+)$/m)![1]!,
-        cubos: Number(texto.match(/^dojo\.cubos\s+(\d+)/m)?.[1] ?? 0),
+        name: f.replace(/\.txt$/, ''),
+        title: text.match(/^#\s*(.+)$/m)![1]!,
+        cubes: Number(text.match(/^dojo\.cubes\s+(\d+)/m)?.[1] ?? 0),
       };
     });
 }
 
-for (const sala of salasDelDojo()) {
-  test(`la sala guardada "${sala.nombre}" tiene su dirección y nace con su receta`, async ({ page }) => {
-    const lista = errores(page);
-    await page.goto(`jugar/dojo/${sala.nombre}/`);
-    await expect(page).toHaveTitle(new RegExp(sala.titulo));
-    await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(1 + sala.cubos);
-    expect(lista).toEqual([]);
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+for (const room of dojoRooms()) {
+  test(`the saved room "${room.name}" has its address and is born with its recipe`, async ({ page }) => {
+    const list = errors(page);
+    await page.goto(`jugar/dojo/${room.name}/`);
+    await expect(page).toHaveTitle(new RegExp(escapeRegExp(room.title)));
+    await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(1 + room.cubes);
+    expect(list).toEqual([]);
   });
 }
 
-test('un enlace con la receta adentro: aplica lo que entiende, avisa lo demás, y no toca las preferencias', async ({ page }) => {
-  const lista = errores(page);
-  await page.goto('jugar/dojo/#receta=dojo.cubos+5;inicio+guardar;inventado+3');
-  await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(6);
+test('a link with the recipe inside: it applies what it understands, reports the rest, and does not touch the preferences', async ({
+  page,
+}) => {
+  const list = errors(page);
+  await page.goto('jugar/dojo/#recipe=dojo.cubes+5;startup+save;made.up+3');
+  await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(6);
   await page.keyboard.press('Backquote');
-  await expect(registroDeLaConsola(page)).toContainText('la receta del enlace: 2 líneas no se entendieron');
-  await expect(registroDeLaConsola(page)).toContainText('"inicio" no se puede usar en una receta');
-  expect(await page.evaluate(() => localStorage.getItem('manifold.dojo.inicio'))).toBeNull();
-  expect(lista).toEqual([]);
+  await expect(consoleLog(page)).toContainText("the link's recipe: 2 lines were not understood");
+  await expect(consoleLog(page)).toContainText('"startup" cannot be used in a recipe');
+  expect(await page.evaluate(() => localStorage.getItem('manifold.dojo.startup'))).toBeNull();
+  expect(list).toEqual([]);
 });
 
-test('la receta de inicio y los atajos se guardan, y valen la próxima vez', async ({ page }) => {
+test('the startup recipe and the key bindings are saved, and hold the next time', async ({ page }) => {
   await page.goto('jugar/dojo/');
   await page.keyboard.press('Backquote');
-  await escribirEnLaConsola(page, 'dojo.cubos 4', 'inicio guardar', 'atajo t alternar ver.triangulos');
+  await typeInConsole(page, 'dojo.cubes 4', 'startup save', 'bind t toggle show.wireframe');
   await page.reload();
-  // Nace con la receta de inicio...
-  await expect.poll(() => mallas(page), { timeout: 15_000 }).toBe(5);
-  // ...y el atajo anda con la consola cerrada.
-  await page.locator('#juego canvas').click();
+  // It is born with the startup recipe...
+  await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(5);
+  // ...and the binding works with the console closed.
+  await page.locator('#game canvas').click();
   await page.keyboard.press('t');
   await page.keyboard.press('Backquote');
-  await expect(registroDeLaConsola(page)).toContainText('(atajo t)');
-  await expect(registroDeLaConsola(page)).toContainText('ver.triangulos = si');
+  await expect(consoleLog(page)).toContainText('(bind t)');
+  await expect(consoleLog(page)).toContainText('show.wireframe = on');
 });

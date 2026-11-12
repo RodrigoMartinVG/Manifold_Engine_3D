@@ -1,37 +1,37 @@
-import { PASO } from './mundo';
+import { STEP } from './world';
 
-/** Como mucho, cuántos pasos se dan en un cuadro (si la pestaña estuvo dormida, no se intenta alcanzar todo). */
-const MAXIMO_PASOS = 5;
+/** At most, how many steps are taken in one frame (if the tab was asleep, it does not try to catch up). */
+const MAX_STEPS = 5;
 
 /**
- * EL RELOJ DEL PASO FIJO. La pantalla dibuja cuando puede (60, 30 o 144 veces por segundo);
- * la simulación avanza siempre de a `PASO`. El reloj junta el tiempo real que pasó y dice
- * cuántos pasos enteros "se compraron"; lo que sobra queda para el cuadro siguiente.
+ * THE FIXED-STEP CLOCK. The screen draws when it can (60, 30 or 144 times per second); the
+ * simulation always advances by `STEP`. The clock gathers the real time that passed and says how
+ * many whole steps it "bought"; what is left over stays for the next frame.
  *
- * `alfa` (entre 0 y 1) es cuánto del paso siguiente ya transcurrió: la presentación lo usa
- * para dibujar las cosas a mitad de camino entre el paso anterior y el actual (interpolar),
- * y que se vean suaves aunque la pantalla vaya a otro ritmo.
+ * `alpha` (between 0 and 1) is how much of the next step has already passed: the presentation uses
+ * it to draw things halfway between the previous step and the current one (interpolation), so they
+ * look smooth even if the screen runs at another rate.
  */
-export class Reloj {
-  private acumulado = 0;
+export class Clock {
+  private accumulated = 0;
 
-  /** Suma `segundos` de tiempo real y devuelve cuántos pasos hay que dar ahora. */
-  avanzar(segundos: number): number {
-    this.acumulado += Math.max(0, segundos);
-    let pasos = Math.floor(this.acumulado / PASO + 1e-9);
-    if (pasos > MAXIMO_PASOS) {
-      // Una pausa larga (otra pestaña, el depurador): se descarta, en vez de correr cientos
-      // de pasos de golpe y trabar todo (la "espiral de la muerte").
-      pasos = MAXIMO_PASOS;
-      this.acumulado = 0;
-      return pasos;
+  /** Adds `seconds` of real time and returns how many steps to take now. */
+  advance(seconds: number): number {
+    this.accumulated += Math.max(0, seconds);
+    let steps = Math.floor(this.accumulated / STEP + 1e-9);
+    if (steps > MAX_STEPS) {
+      // A long pause (another tab, the debugger): it is dropped, instead of running hundreds of
+      // steps at once and freezing everything (the "spiral of death").
+      steps = MAX_STEPS;
+      this.accumulated = 0;
+      return steps;
     }
-    this.acumulado -= pasos * PASO;
-    if (this.acumulado < 0) this.acumulado = 0;
-    return pasos;
+    this.accumulated -= steps * STEP;
+    if (this.accumulated < 0) this.accumulated = 0;
+    return steps;
   }
 
-  get alfa(): number {
-    return Math.min(1, this.acumulado / PASO);
+  get alpha(): number {
+    return Math.min(1, this.accumulated / STEP);
   }
 }

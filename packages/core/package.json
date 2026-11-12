@@ -1,15 +1,15 @@
 {
-  "name": "@manifold/nucleo",
+  "name": "@manifold/core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "La simulación: el mundo, su paso fijo, sus entidades y sus eventos. Corre igual en el navegador, en el servidor y en las pruebas: sin pantalla.",
+  "description": "The simulation: the world, its fixed step, its entities and events. Runs the same in the browser, on a server and in tests: no screen.",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@manifold/comandos": "0.0.0",
-    "@manifold/comun": "0.0.0"
+    "@manifold/commands": "0.0.0",
+    "@manifold/common": "0.0.0"
   },
   "scripts": {
     "check": "tsc -p tsconfig.json"

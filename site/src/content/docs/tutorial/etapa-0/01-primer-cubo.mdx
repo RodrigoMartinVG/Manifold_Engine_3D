@@ -5,48 +5,48 @@ sidebar:
   order: 1
 ---
 
-import CodigoVivo from '../../../../components/CodigoVivo.astro';
+import LiveCode from '../../../../components/LiveCode.astro';
 
 La [lección anterior](../00-del-3d-a-la-pantalla/) mostró las ideas: coordenadas, triángulos, cámara, luz y cuadros. Esta arma un programa desde cero, pieza por pieza, con [Three.js](https://threejs.org).
 
 Es el esqueleto de **todo** programa con Three.js, y siempre tiene las mismas piezas:
 
-- un **renderer**, que dibuja en un rectángulo de la página usando la placa de video;
-- una **escena**, con lo que hay;
-- una **cámara**, desde donde se mira;
-- **luces**;
-- un **bucle**, que vuelve a dibujar en cada cuadro.
+- un **renderer** (el que dibuja: el nombre en inglés es el de siempre, también en español), que dibuja en un rectángulo de la página usando la placa de video;
+- una **escena** (_scene_), con lo que hay;
+- una **cámara** (_camera_), desde donde se mira;
+- **luces** (_lights_);
+- un **bucle** (_loop_), que vuelve a dibujar en cada cuadro (_frame_).
 
 Las lecciones siguientes, y el motor, repiten este esqueleto con variaciones.
 
-<CodigoVivo leccion="etapa-0/01-primer-cubo" autoejecutar />
+<LiveCode lesson="stage-0/01-first-cube" autorun />
 
 **Qué probar:**
 
 - Cambiá el color: `0xe0a040` es un color escrito en hexadecimal, como en CSS (`#e0a040`): rojo `e0`, verde `a0`, azul `40`. Probá `0x40a0e0`.
 - Cambiá `MeshStandardMaterial` por `MeshBasicMaterial` y ejecutá: el cubo se vuelve una mancha plana.
-- Comentá la línea `escena.add(sol)` (con `//` adelante): ¿qué caras se apagan?
-- Mové la cámara: `camara.position.set(0, 0, 4)` lo mira de frente.
+- Comentá la línea `scene.add(sun)` (con `//` adelante): ¿qué caras se apagan?
+- Mové la cámara: `camera.position.set(0, 0, 4)` lo mira de frente.
 
 ## El código, paso a paso
 
 Los comentarios del código están numerados. Esto es lo que hace cada parte:
 
 1. **El renderer.** Es el objeto que le habla a la placa de video. Crea un `<canvas>`, un rectángulo de la página donde se puede dibujar, y el código lo agrega al documento. `antialias` suaviza los bordes, que si no se ven dentados, como un serrucho. `setPixelRatio` decide con cuánta nitidez dibuja en pantallas de alta densidad (ver las sutilezas).
-2. **La escena.** Es un contenedor: lo que no está en la escena no se dibuja. Además es un **árbol**: un objeto puede tener hijos que se mueven con él, como las ruedas de un auto.
+2. **La escena.** Es un contenedor: lo que no está en la escena no se dibuja. Además es un **árbol** (_tree_): un objeto puede tener hijos (_children_) que se mueven con él, como las ruedas de un auto.
 3. **La cámara.** `PerspectiveCamera(60, 1, 0.1, 100)` crea una cámara con perspectiva y le da cuatro datos:
    - el campo de visión: 60°;
    - la proporción entre ancho y alto: aquí 1, pero se corrige al ajustar el tamaño (paso 6);
    - desde dónde dibuja: 0,1 metros;
    - hasta dónde dibuja: 100 metros.
      Lo que está más cerca o más lejos que esos límites no se dibuja. `position.set` la ubica en el espacio, y `lookAt` la hace mirar hacia un punto: aquí, el origen.
-4. **El cubo.** Una **geometría** (la forma: una caja de 1 × 1 × 1 metro, hecha de 12 triángulos) más un **material** (el color y cómo responde a la luz) forman una **malla** (`Mesh`). Para que se dibuje, se agrega a la escena.
+4. **El cubo.** Una **geometría** (_geometry_: la forma, aquí una caja de 1 × 1 × 1 metro, hecha de 12 triángulos) más un **material** (el color y cómo responde a la luz) forman una **malla** (_mesh_, en Three.js `Mesh`). Para que se dibuje, se agrega a la escena.
 5. **Las luces.** Hay dos:
-   - una **hemisférica**, que imita la luz que llega de todos lados: azulada desde el cielo, cálida desde el suelo;
-   - una **direccional**, que imita al sol: rayos paralelos que vienen de un lado.
+   - una **hemisférica** (_hemisphere light_), que imita la luz que llega de todos lados: azulada desde el cielo, cálida desde el suelo;
+   - una **direccional** (_directional light_), que imita al sol: rayos paralelos que vienen de un lado.
      Por la direccional, las tres caras visibles del cubo tienen tonos distintos.
-6. **El tamaño.** El canvas tiene que medir lo mismo que la ventana. Y la cámara tiene que saber la proporción entre su ancho y su alto, o todo se ve estirado. `addEventListener('resize', ajustar)` vuelve a hacerlo cada vez que la ventana cambia de tamaño.
-7. **El bucle.** `requestAnimationFrame(cuadro)` le pide al navegador que llame a la función `cuadro` justo antes del próximo dibujo de la pantalla. Como `cuadro` lo vuelve a pedir al terminar, se repite para siempre, una vez por cuadro. El navegador le pasa la hora (`ahora`, en milisegundos), y con eso se calcula `dt`, los segundos que pasaron desde el cuadro anterior. "dt" viene de _delta t_, la diferencia de tiempo.
+6. **El tamaño.** El canvas tiene que medir lo mismo que la ventana. Y la cámara tiene que saber la proporción entre su ancho y su alto, o todo se ve estirado. `addEventListener('resize', fit)` vuelve a hacerlo cada vez que la ventana cambia de tamaño (_fit_: ajustar).
+7. **El bucle.** `requestAnimationFrame(frame)` le pide al navegador que llame a la función `frame` justo antes del próximo dibujo de la pantalla. Como `frame` lo vuelve a pedir al terminar, se repite para siempre, una vez por cuadro. El navegador le pasa la hora (`now`, en milisegundos), y con eso se calcula `dt`, los segundos que pasaron desde el cuadro anterior. "dt" viene de _delta t_, la diferencia de tiempo.
 
 ## Lo importante
 
@@ -60,7 +60,7 @@ Los comentarios del código están numerados. Esto es lo que hace cada parte:
 <details>
 <summary>Por qué radianes, y no grados</summary>
 
-Un **radián** es el ángulo que abarca un arco tan largo como el radio. Como una circunferencia mide `2π · r`, en una vuelta entera entran 2π radianes.
+Un **radián** (_radian_) es el ángulo que abarca un arco tan largo como el radio. Como una circunferencia mide `2π · r`, en una vuelta entera entran 2π radianes.
 
 La ventaja es que, en radianes, el largo de un arco es simplemente **radio por ángulo**:
 
@@ -92,7 +92,7 @@ La suma de todos los `dt` es el tiempo total, así que el ángulo es `ω · tiem
 
 ## En Manifold
 
-La presentación del motor hace esto mismo, pero lo que dibuja no lo decide ella: lo lee de la simulación. Está en [`paquetes/presentacion/src/cliente.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/presentacion/src/cliente.ts), y el detalle está en la [bitácora de la etapa 0](../../../bitacora/etapa-0/).
+La presentación del motor hace esto mismo, pero lo que dibuja no lo decide ella: lo lee de la simulación. Está en [`packages/presentation/src/client.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-00/packages/presentation/src/client.ts), y el detalle está en la [bitácora de la etapa 0](../../../bitacora/etapa-0/).
 
 ## Para saber más
 

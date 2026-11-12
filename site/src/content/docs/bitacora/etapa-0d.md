@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-> Informe de la etapa 0d. El diseño completo, con sus alternativas, está en la [decisión 0010](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0010-la-consola-y-las-recetas.md).
+> Informe de la etapa 0d. El diseño completo, con sus alternativas, está en la [decisión 0010](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0010-the-console-and-recipes.md).
 
 ## Qué hicimos
 

@@ -1,17 +1,17 @@
 ---
 /**
- * UNA SALA GUARDADA DEL DOJO, con su propia dirección (decisión 0010): una página por cada
- * receta de `juegos/dojo/recetas/`. Es el mismo Dojo, que nace con esa receta. Agregar una sala
- * es agregar un archivo: la página sale sola.
+ * A SAVED ROOM OF THE DOJO, with its own address (decision 0010): one page for each recipe in
+ * `games/dojo/recipes/`. It is the same Dojo, born with that recipe. Adding a room is adding a
+ * file: the page comes by itself. Like the console, rooms are in English (decision 0011).
  */
-import { RECETAS } from '@manifold/dojo/recetas';
-import PaginaDojo from '../../../components/PaginaDojo.astro';
+import { ROOMS } from '@manifold/dojo/rooms';
+import DojoPage from '../../../components/DojoPage.astro';
 
 export function getStaticPaths() {
-  return Object.entries(RECETAS).map(([sala, receta]) => ({ params: { sala }, props: { titulo: receta.titulo } }));
+  return Object.entries(ROOMS).map(([room, { title }]) => ({ params: { room }, props: { title } }));
 }
-const { sala } = Astro.params;
-const { titulo } = Astro.props;
+const { room } = Astro.params;
+const { title } = Astro.props;
 ---
 
-<PaginaDojo sala={sala} titulo={titulo} />
+<DojoPage room={room} title={title} />

@@ -1,20 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-30 -30 60 60">
-<!-- Generado por sitio/scripts/dibujar.mjs: 12 dientes, módulo 4 (radio primitivo 24). -->
+<!-- Made by site/scripts/draw.mjs: 12 teeth, module 4 (pitch radius 24). -->
 <defs>
 <linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#8a6a42"/><stop offset="0.45" stop-color="#5a3f24"/><stop offset="0.7" stop-color="#3b2815"/><stop offset="1" stop-color="#6a4d2c"/>
 </linearGradient>
-<filter id="oxidado" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+<filter id="rusted" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
 <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="4" result="n1"/>
 <feColorMatrix in="n1" type="matrix" values="0 0 0 0 0.28 0 0 0 0 0.52 0 0 0 0 0.44 0 5.5 0 0 -3.1" result="p"/>
 <feComposite in="p" in2="SourceGraphic" operator="in" result="patina"/>
 <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="9" result="n2"/>
 <feColorMatrix in="n2" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.14 0 0 0 0 0.05 4 0 0 0 -2.2" result="o"/>
-<feComposite in="o" in2="SourceGraphic" operator="in" result="oxido"/>
-<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="oxido"/><feMergeNode in="patina"/></feMerge>
+<feComposite in="o" in2="SourceGraphic" operator="in" result="rust"/>
+<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="rust"/><feMergeNode in="patina"/></feMerge>
 </filter>
 </defs>
-<path fill="url(#b)" fill-rule="evenodd" stroke="#1f1408" stroke-width="0.8" filter="url(#oxidado)" d="M18.35 -4.92L18.81 -2.68L27.92 -2.05L27.92 2.05L18.81 2.68L18.35 4.92L17.63 7.09L25.21 12.19L23.16 15.74L14.95 11.72L13.44 13.44L11.72 14.95L15.74 23.16L12.19 25.21L7.09 17.63L4.92 18.35L2.68 18.81L2.05 27.92L-2.05 27.92L-2.68 18.81L-4.92 18.35L-7.09 17.63L-12.19 25.21L-15.74 23.16L-11.72 14.95L-13.44 13.44L-14.95 11.72L-23.16 15.74L-25.21 12.19L-17.63 7.09L-18.35 4.92L-18.81 2.68L-27.92 2.05L-27.92 -2.05L-18.81 -2.68L-18.35 -4.92L-17.63 -7.09L-25.21 -12.19L-23.16 -15.74L-14.95 -11.72L-13.44 -13.44L-11.72 -14.95L-15.74 -23.16L-12.19 -25.21L-7.09 -17.63L-4.92 -18.35L-2.68 -18.81L-2.05 -27.92L2.05 -27.92L2.68 -18.81L4.92 -18.35L7.09 -17.63L12.19 -25.21L15.74 -23.16L11.72 -14.95L13.44 -13.44L14.95 -11.72L23.16 -15.74L25.21 -12.19L17.63 -7.09ZM12.98 3.33A13.4 13.4 0 0 1 3.33 12.98L1.79 6.97A7.2 7.2 0 0 0 6.97 1.79ZM-3.33 12.98A13.4 13.4 0 0 1 -12.98 3.33L-6.97 1.79A7.2 7.2 0 0 0 -1.79 6.97ZM-12.98 -3.33A13.4 13.4 0 0 1 -3.33 -12.98L-1.79 -6.97A7.2 7.2 0 0 0 -6.97 -1.79ZM3.33 -12.98A13.4 13.4 0 0 1 12.98 -3.33L6.97 -1.79A7.2 7.2 0 0 0 1.79 -6.97ZM3.6 0A3.6 3.6 0 1 0 -3.6 0A3.6 3.6 0 1 0 3.6 0Z"/>
+<path fill="url(#b)" fill-rule="evenodd" stroke="#1f1408" stroke-width="0.8" filter="url(#rusted)" d="M18.35 -4.92L18.81 -2.68L27.92 -2.05L27.92 2.05L18.81 2.68L18.35 4.92L17.63 7.09L25.21 12.19L23.16 15.74L14.95 11.72L13.44 13.44L11.72 14.95L15.74 23.16L12.19 25.21L7.09 17.63L4.92 18.35L2.68 18.81L2.05 27.92L-2.05 27.92L-2.68 18.81L-4.92 18.35L-7.09 17.63L-12.19 25.21L-15.74 23.16L-11.72 14.95L-13.44 13.44L-14.95 11.72L-23.16 15.74L-25.21 12.19L-17.63 7.09L-18.35 4.92L-18.81 2.68L-27.92 2.05L-27.92 -2.05L-18.81 -2.68L-18.35 -4.92L-17.63 -7.09L-25.21 -12.19L-23.16 -15.74L-14.95 -11.72L-13.44 -13.44L-11.72 -14.95L-15.74 -23.16L-12.19 -25.21L-7.09 -17.63L-4.92 -18.35L-2.68 -18.81L-2.05 -27.92L2.05 -27.92L2.68 -18.81L4.92 -18.35L7.09 -17.63L12.19 -25.21L15.74 -23.16L11.72 -14.95L13.44 -13.44L14.95 -11.72L23.16 -15.74L25.21 -12.19L17.63 -7.09ZM12.98 3.33A13.4 13.4 0 0 1 3.33 12.98L1.79 6.97A7.2 7.2 0 0 0 6.97 1.79ZM-3.33 12.98A13.4 13.4 0 0 1 -12.98 3.33L-6.97 1.79A7.2 7.2 0 0 0 -1.79 6.97ZM-12.98 -3.33A13.4 13.4 0 0 1 -3.33 -12.98L-1.79 -6.97A7.2 7.2 0 0 0 -6.97 -1.79ZM3.33 -12.98A13.4 13.4 0 0 1 12.98 -3.33L6.97 -1.79A7.2 7.2 0 0 0 1.79 -6.97ZM3.6 0A3.6 3.6 0 1 0 -3.6 0A3.6 3.6 0 1 0 3.6 0Z"/>
 <circle r="13.4" fill="none" stroke="#a88a5c" stroke-opacity="0.25" stroke-width="0.6"/>
 <circle r="4.8" fill="none" stroke="#2a1909" stroke-opacity="0.6" stroke-width="0.8"/>
 </svg>

@@ -1,4 +1,4 @@
-# Dependabot propone (en un PR) actualizar las dependencias una vez por mes, agrupadas.
+# Dependabot proposes (in a PR) updating the dependencies once a month, grouped.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -6,15 +6,15 @@ updates:
     schedule:
       interval: monthly
     groups:
-      dependencias:
+      dependencies:
         patterns: ['*']
     ignore:
-      # Los tipos de Node describen las funciones de UNA versión de Node: su versión mayor tiene que
-      # ser la del Node que corre el proyecto (mise.toml y .nvmrc). Se sube a mano, junto con Node.
+      # Node's types describe the functions of ONE Node version: their major version has to be
+      # the one of the Node that runs the project (mise.toml and .nvmrc). Bumped by hand, with Node.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
-      # TypeScript está fijado en la 6 a propósito (decisión 0001): typescript-eslint y
-      # @astrojs/check todavía no soportan la 7. Se sube a mano, cuando la soporten.
+      # TypeScript is pinned to 6 on purpose (decision 0001): typescript-eslint and
+      # @astrojs/check do not support 7 yet. Bumped by hand, when they do.
       - dependency-name: 'typescript'
         update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions

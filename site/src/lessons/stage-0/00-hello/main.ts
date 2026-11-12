@@ -1,5 +1,5 @@
-// El código corre en un recuadro aparte (un iframe): puede escribir en la consola de abajo
-// y dibujar en el recuadro, pero no puede tocar el resto de la página.
-for (let i = 1; i <= 1; i++) console.log(`hola ${i}`);
+// The code runs in a separate box (an iframe): it can write to the console below and draw in the
+// box, but it cannot touch the rest of the page.
+for (let i = 1; i <= 1; i++) console.log(`hello ${i}`);
 
-document.body.innerHTML = '<p style="padding: 1rem">Esto lo escribió el código ✨</p>';
+document.body.innerHTML = '<p style="padding: 1rem">The code wrote this ✨</p>';

@@ -1,4 +1,4 @@
-# Dependencias y lo que se genera
+# Dependencies and generated files
 node_modules/
 dist/
 .astro/
@@ -7,15 +7,15 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 
-# Sistema y editores
+# System and editors
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
 .idea/
 
-# Configuración local de las herramientas de Claude
+# Local configuration of Claude's tools
 .claude/
 
-# Las librerías del tutorial (se arman al compilar: sitio/scripts/vendor.mjs)
-sitio/public/vendor/
-sitio/.vendor-entradas/
+# The tutorial's libraries (bundled at build time: site/scripts/vendor.mjs)
+site/public/vendor/
+site/.vendor-entries/

@@ -1,43 +1,36 @@
-import { recetaDelEnlace } from '@manifold/comandos';
-import { montar, type Montaje, type RecetaInicial } from '@manifold/presentacion';
-import { CartuchoDojo } from './cartucho';
-import { RECETAS } from './recetas';
+import { recipeFromLink } from '@manifold/commands';
+import { mount, type InitialRecipe, type Mount } from '@manifold/presentation';
+import { DojoCartridge } from './cartridge';
+import { ROOMS } from './rooms';
 
-export interface OpcionesDojo {
-  /** La sala guardada por la que se entró (`…/jugar/dojo/lluvia/`), si se entró por una. */
-  sala?: string;
-  /** La dirección base del sitio (`/Manifold_Gaming/`): para que la barra muestre la sala al cargarla. */
+export interface DojoOptions {
+  /** The saved room it was entered through (`…/jugar/dojo/rain/`), if any. */
+  room?: string;
+  /** The site's base address (`/Manifold_Gaming/`): so the address bar shows the room when it is loaded. */
   base?: string;
 }
 
 /**
- * Arranca el Dojo dentro de `contenedor` (las páginas `/jugar/dojo/` del sitio).
+ * Starts the Dojo inside `container` (the site's `/jugar/dojo/` pages).
  *
- * El JUEGO decide de dónde salen sus recetas (decisión 0010), en este orden (la última gana):
- *   1. la de inicio de cada persona (la pone la consola);
- *   2. la de la sala por la que se entró;
- *   3. la dirección vieja (`?cubos=20&semilla=3`), traducida, para no romper enlaces viejos;
- *   4. la del enlace (`#receta=…`), la que arma `exportar`.
- * El mundo nace una sola vez, ya configurado.
+ * The GAME decides where its recipes come from (decision 0010), in this order (the last one wins):
+ *   1. each person's startup recipe (the console provides it);
+ *   2. the room it was entered through;
+ *   3. the link's (`#recipe=…`), the one `export` builds.
+ * The world is born once, already configured.
  */
-export function arrancarDojo(contenedor: HTMLElement, o: OpcionesDojo = {}): Montaje {
-  const recetas: RecetaInicial[] = [];
-  const sala = o.sala ? RECETAS[o.sala] : undefined;
-  if (sala) recetas.push({ de: `la sala "${o.sala}"`, texto: sala.texto });
-  const vieja = new URLSearchParams(location.search);
-  const traducida = [
-    vieja.has('semilla') ? `semilla ${vieja.get('semilla')}` : '',
-    vieja.has('cubos') ? `dojo.cubos ${vieja.get('cubos')}` : '',
-  ].filter(Boolean);
-  if (traducida.length) recetas.push({ de: 'la dirección', texto: traducida.join('\n') });
-  const delEnlace = recetaDelEnlace(location.hash);
-  if (delEnlace) recetas.push({ de: 'la receta del enlace', texto: delEnlace });
+export function startDojo(container: HTMLElement, o: DojoOptions = {}): Mount {
+  const recipes: InitialRecipe[] = [];
+  const room = o.room ? ROOMS[o.room] : undefined;
+  if (room) recipes.push({ from: `the room "${o.room}"`, text: room.text });
+  const fromLink = recipeFromLink(location.hash);
+  if (fromLink) recipes.push({ from: "the link's recipe", text: fromLink });
 
   const base = o.base ?? '/';
-  return montar(CartuchoDojo, contenedor, {
-    recetas,
-    consola: { juego: 'dojo', salas: RECETAS, direccionDeSala: (nombre) => `${base}jugar/dojo/${nombre}/` },
+  return mount(DojoCartridge, container, {
+    recipes,
+    console: { game: 'dojo', rooms: ROOMS, roomUrl: (name) => `${base}jugar/dojo/${name}/` },
   });
 }
 
-export { CartuchoDojo, RECETAS };
+export { DojoCartridge, ROOMS };

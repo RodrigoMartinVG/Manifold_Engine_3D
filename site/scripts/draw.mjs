@@ -1,416 +1,411 @@
 /**
- * LOS DIBUJOS DEL SITIO, hechos con código: geometría exacta y reproducible, sin imágenes
- * copiadas de ningún lado. Escribe archivos SVG en `src/assets/dibujos/` (y el ícono de la
- * pestaña en `public/`). Se guardan en el repositorio; si cambias algo aquí, vuelve a correrlo:
+ * THE SITE'S DRAWINGS, made with code: exact, reproducible geometry, with no images copied from
+ * anywhere. It writes SVG files in `src/assets/drawings/` (and the tab icon in `public/`). They are
+ * kept in the repository; if you change something here, run it again:
  *
- *   npm run dibujar -w sitio
+ *   npm run draw -w site
  *
- * - fondo.svg: las construcciones del fondo (compás, espiral áurea, astrolabio, una órbita) y
- *   fórmulas VERDADERAS del proyecto. Se usa como máscara: su color lo pone el CSS, así sirve
- *   para el modo oscuro y para el claro.
- * - marca.svg y favicon.svg: un engranaje con una lemniscata (∞) adentro.
- * - engranaje-20.svg y engranaje-12.svg: dos engranajes que ENGRANAN de verdad (mismo módulo:
- *   el CSS los gira con velocidades en razón 12 : 20).
- * - oxido.svg y patina.svg: texturas que se repiten, para el metal viejo de marcos y botones.
+ * - background.svg: the background's constructions (compass, golden spiral, astrolabe, an orbit)
+ *   and TRUE formulas of the project. It is used as a mask: its color is set by the CSS, so it works
+ *   for dark mode and for light mode. (Its text is the site's, in Spanish: "1,618", "acumulador".)
+ * - logo.svg and favicon.svg: a gear with a lemniscate (∞) inside.
+ * - gear-20.svg and gear-12.svg: two gears that really MESH (same module: the CSS turns them with
+ *   speeds in a 12 : 20 ratio).
+ * - rust.svg and patina.svg: repeating textures, for the old metal of frames and buttons.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const raiz = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('..', import.meta.url));
 const f = (n) => +n.toFixed(2);
-const rad = (g) => (g * Math.PI) / 180;
-const punto = (cx, cy, r, grados) => [cx + r * Math.cos(rad(grados)), cy + r * Math.sin(rad(grados))];
+const rad = (degrees) => (degrees * Math.PI) / 180;
+const point = (cx, cy, r, degrees) => [cx + r * Math.cos(rad(degrees)), cy + r * Math.sin(rad(degrees))];
 
-// ---------------------------------------------------------------- primitivas
-const circulo = (cx, cy, r, extra = '') => `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}"${extra}/>`;
-const linea = (x1, y1, x2, y2, extra = '') => `<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}"${extra}/>`;
-const camino = (puntos, cerrar = false, extra = '') =>
-  `<path d="M${puntos.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}${cerrar ? 'Z' : ''}"${extra}/>`;
-/** Un arco de circunferencia, de `a0` a `a1` grados (en la pantalla, los ángulos crecen en sentido horario). */
-function arco(cx, cy, r, a0, a1, extra = '') {
-  const [x0, y0] = punto(cx, cy, r, a0);
-  const [x1, y1] = punto(cx, cy, r, a1);
-  const grande = Math.abs(a1 - a0) > 180 ? 1 : 0;
-  const sentido = a1 > a0 ? 1 : 0;
-  return `<path d="M${f(x0)} ${f(y0)}A${f(r)} ${f(r)} 0 ${grande} ${sentido} ${f(x1)} ${f(y1)}"${extra}/>`;
+// ---------------------------------------------------------------- primitives
+const circle = (cx, cy, r, extra = '') => `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}"${extra}/>`;
+const line = (x1, y1, x2, y2, extra = '') => `<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}"${extra}/>`;
+const path = (points, close = false, extra = '') =>
+  `<path d="M${points.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}${close ? 'Z' : ''}"${extra}/>`;
+/** A circular arc, from `a0` to `a1` degrees (on screen, angles grow clockwise). */
+function arc(cx, cy, r, a0, a1, extra = '') {
+  const [x0, y0] = point(cx, cy, r, a0);
+  const [x1, y1] = point(cx, cy, r, a1);
+  const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+  const sweep = a1 > a0 ? 1 : 0;
+  return `<path d="M${f(x0)} ${f(y0)}A${f(r)} ${f(r)} 0 ${large} ${sweep} ${f(x1)} ${f(y1)}"${extra}/>`;
 }
-const texto = (x, y, t, { tam = 19, rot = 0, ancla = 'start', opacidad = 1 } = {}) =>
-  `<text x="${f(x)}" y="${f(y)}" font-size="${tam}"${ancla !== 'start' ? ` text-anchor="${ancla}"` : ''}${
+const text = (x, y, t, { size = 19, rot = 0, anchor = 'start', opacity = 1 } = {}) =>
+  `<text x="${f(x)}" y="${f(y)}" font-size="${size}"${anchor !== 'start' ? ` text-anchor="${anchor}"` : ''}${
     rot ? ` transform="rotate(${rot} ${f(x)} ${f(y)})"` : ''
-  }${opacidad !== 1 ? ` fill-opacity="${opacidad}"` : ''}>${t}</text>`;
-/** Una flecha: el segmento y una punta en el extremo. */
-function flecha(x1, y1, x2, y2, extra = '') {
+  }${opacity !== 1 ? ` fill-opacity="${opacity}"` : ''}>${t}</text>`;
+/** An arrow: the segment and a head at the end. */
+function arrow(x1, y1, x2, y2, extra = '') {
   const a = Math.atan2(y2 - y1, x2 - x1);
   const p = (d) => [x2 - 11 * Math.cos(a + d), y2 - 11 * Math.sin(a + d)];
-  return linea(x1, y1, x2, y2, extra) + camino([p(0.4), [x2, y2], p(-0.4)], false, extra);
+  return line(x1, y1, x2, y2, extra) + path([p(0.4), [x2, y2], p(-0.4)], false, extra);
 }
-/** Una cruz con un círculo: la marca de un punto de construcción. */
-const marca = (x, y) => circulo(x, y, 5) + linea(x - 9, y, x + 9, y) + linea(x, y - 9, x, y + 9);
+/** A cross with a circle: the mark of a construction point. */
+const mark = (x, y) => circle(x, y, 5) + line(x - 9, y, x + 9, y) + line(x, y - 9, x, y + 9);
 
 /**
- * Un engranaje de `dientes` dientes y módulo `m`: su radio primitivo es m·dientes/2 (dos
- * engranajes del mismo módulo engranan si sus centros están a la suma de esos radios). Cada
- * diente es un trapecio: sube `m` sobre el radio primitivo y baja 1,25·m por debajo. El primer
- * diente apunta hacia +x.
+ * A gear of `teeth` teeth and module `m`: its pitch radius is m·teeth/2 (two gears of the same
+ * module mesh if their centers are the sum of those radii apart). Each tooth is a trapezoid: it
+ * rises `m` above the pitch radius and drops 1.25·m below it. The first tooth points toward +x.
  */
-function contornoDeEngranaje(dientes, m, cx = 0, cy = 0) {
-  const primitivo = (m * dientes) / 2;
-  const exterior = primitivo + m;
-  const pie = primitivo - 1.25 * m;
-  const paso = 360 / dientes;
-  const puntos = [];
-  for (let i = 0; i < dientes; i++) {
-    const c = i * paso;
-    puntos.push(
-      punto(cx, cy, pie, c - paso * 0.5),
-      punto(cx, cy, pie, c - paso * 0.27),
-      punto(cx, cy, exterior, c - paso * 0.14),
-      punto(cx, cy, exterior, c + paso * 0.14),
-      punto(cx, cy, pie, c + paso * 0.27),
+function gearOutline(teeth, m, cx = 0, cy = 0) {
+  const pitch = (m * teeth) / 2;
+  const outer = pitch + m;
+  const root = pitch - 1.25 * m;
+  const step = 360 / teeth;
+  const points = [];
+  for (let i = 0; i < teeth; i++) {
+    const c = i * step;
+    points.push(
+      point(cx, cy, root, c - step * 0.5),
+      point(cx, cy, root, c - step * 0.27),
+      point(cx, cy, outer, c - step * 0.14),
+      point(cx, cy, outer, c + step * 0.14),
+      point(cx, cy, root, c + step * 0.27),
     );
   }
-  return { d: `M${puntos.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`, primitivo, exterior, pie };
+  return { d: `M${points.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`, pitch, outer, root };
 }
 
-/** Un círculo como subcamino (para recortar agujeros con fill-rule="evenodd"). */
-const circuloComoCamino = (cx, cy, r) =>
+/** A circle as a subpath (to cut holes with fill-rule="evenodd"). */
+const circleAsPath = (cx, cy, r) =>
   `M${f(cx + r)} ${f(cy)}A${f(r)} ${f(r)} 0 1 0 ${f(cx - r)} ${f(cy)}A${f(r)} ${f(r)} 0 1 0 ${f(cx + r)} ${f(cy)}Z`;
 
-// ---------------------------------------------------------------- el fondo
-function fondo() {
-  const trazos = []; // líneas finas
-  const tenues = []; // líneas de construcción, más suaves
-  const letras = []; // las fórmulas
+// ---------------------------------------------------------------- the background
+function background() {
+  const strokes = []; // thin lines
+  const faint = []; // construction lines, softer
+  const letters = []; // the formulas
 
-  // --- A. El rectángulo áureo y su espiral (arriba a la izquierda) -------------------------
-  // Cuadrados de Fibonacci (13, 8, 5, 3, 2, 1, 1) adentro de un rectángulo de 21 × 13: cada
-  // corte deja un rectángulo semejante, y un cuarto de circunferencia por cuadrado forma la espiral.
+  // --- A. The golden rectangle and its spiral (top left) -----------------------------------
+  // Fibonacci squares (13, 8, 5, 3, 2, 1, 1) inside a 21 × 13 rectangle: each cut leaves a similar
+  // rectangle, and a quarter circle per square makes the spiral.
   {
     const u = 17;
     let [x, y, w, h] = [70, 70, 21 * u, 13 * u];
-    tenues.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`);
-    // El polo de la espiral está donde se cruzan la diagonal del rectángulo y la del primer resto.
-    tenues.push(linea(x, y + h, x + w, y, ' stroke-dasharray="6 7"'));
-    tenues.push(linea(x + h, y, x + w, y + h, ' stroke-dasharray="6 7"'));
-    const espiral = [];
+    faint.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`);
+    // The spiral's pole is where the rectangle's diagonal and the first remainder's cross.
+    faint.push(line(x, y + h, x + w, y, ' stroke-dasharray="6 7"'));
+    faint.push(line(x + h, y, x + w, y + h, ' stroke-dasharray="6 7"'));
+    const spiral = [];
     for (let i = 0, d = 0; i < 7; i++, d = (d + 1) % 4) {
       const s = d % 2 === 0 ? h : w;
       const [qx, qy] = d === 0 ? [x, y] : d === 1 ? [x, y] : d === 2 ? [x + w - s, y] : [x, y + h - s];
-      tenues.push(`<rect x="${f(qx)}" y="${f(qy)}" width="${f(s)}" height="${f(s)}"/>`);
-      if (s >= 3 * u) letras.push(texto(qx + s / 2, qy + s / 2 + 6, String(s / u), { tam: 15, ancla: 'middle', opacidad: 0.7 }));
+      faint.push(`<rect x="${f(qx)}" y="${f(qy)}" width="${f(s)}" height="${f(s)}"/>`);
+      if (s >= 3 * u) letters.push(text(qx + s / 2, qy + s / 2 + 6, String(s / u), { size: 15, anchor: 'middle', opacity: 0.7 }));
       const [cx, cy, a0] =
         d === 0 ? [x + s, y + s, 180] : d === 1 ? [x, y + s, 270] : d === 2 ? [x + w - s, y, 0] : [x + s, y + h - s, 90];
-      espiral.push(arco(cx, cy, s, a0, a0 + 90));
+      spiral.push(arc(cx, cy, s, a0, a0 + 90));
       if (d === 0) [x, w] = [x + s, w - s];
       else if (d === 1) [y, h] = [y + s, h - s];
       else if (d === 2) w -= s;
       else h -= s;
     }
-    trazos.push(`<g stroke-width="1.6">${espiral.join('')}</g>`);
-    letras.push(texto(70, 70 + 13 * u + 38, 'φ = (1 + √5) / 2 ≈ 1,618', { tam: 21 }));
-    letras.push(texto(70 + 21 * u, 70 + 13 * u + 38, '21 : 13', { tam: 16, ancla: 'end', opacidad: 0.7 }));
+    strokes.push(`<g stroke-width="1.6">${spiral.join('')}</g>`);
+    letters.push(text(70, 70 + 13 * u + 38, 'φ = (1 + √5) / 2 ≈ 1,618', { size: 21 }));
+    letters.push(text(70 + 21 * u, 70 + 13 * u + 38, '21 : 13', { size: 16, anchor: 'end', opacity: 0.7 }));
   }
 
-  // --- B. Un astrolabio (arriba a la derecha) ----------------------------------------------
+  // --- B. An astrolabe (top right) ----------------------------------------------------------
   {
     const [cx, cy, R] = [1360, 250, 190];
-    trazos.push(circulo(cx, cy, R), circulo(cx, cy, R - 12), circulo(cx, cy, 150), circulo(cx, cy, 14));
+    strokes.push(circle(cx, cy, R), circle(cx, cy, R - 12), circle(cx, cy, 150), circle(cx, cy, 14));
     for (let g = 0; g < 360; g += 5) {
-      const largo = g % 30 === 0 ? 22 : g % 10 === 0 ? 10 : 6;
-      const [x1, y1] = punto(cx, cy, R - 12, g);
-      const [x2, y2] = punto(cx, cy, R - 12 + largo * (g % 30 === 0 ? 1.55 : 1), g);
-      (g % 30 === 0 ? trazos : tenues).push(linea(x1, y1, x2, y2));
+      const length = g % 30 === 0 ? 22 : g % 10 === 0 ? 10 : 6;
+      const [x1, y1] = point(cx, cy, R - 12, g);
+      const [x2, y2] = point(cx, cy, R - 12 + length * (g % 30 === 0 ? 1.55 : 1), g);
+      (g % 30 === 0 ? strokes : faint).push(line(x1, y1, x2, y2));
       if (g % 30 === 0) {
-        const [tx, ty] = punto(cx, cy, R + 24, g);
-        letras.push(texto(tx, ty + 6, String((g + 90) % 360), { tam: 14, ancla: 'middle', opacidad: 0.75 }));
+        const [tx, ty] = point(cx, cy, R + 24, g);
+        letters.push(text(tx, ty + 6, String((g + 90) % 360), { size: 14, anchor: 'middle', opacity: 0.75 }));
       }
     }
-    // Los almucantarates: círculos excéntricos que se achican hacia el cénit.
-    for (let k = 1; k <= 5; k++) tenues.push(circulo(cx, cy - 13 * k, 150 - 24 * k));
-    tenues.push(circulo(cx, cy + 38, 112, ' stroke-dasharray="3 6"')); // la eclíptica, corrida del centro
-    tenues.push(linea(cx - R, cy, cx + R, cy), linea(cx, cy - R, cx, cy + R));
-    // La alidada (la regla que gira) y el ángulo que marca.
-    const [ax, ay] = punto(cx, cy, R + 8, -35);
-    const [bx, by] = punto(cx, cy, R + 8, 145);
-    trazos.push(linea(bx, by, ax, ay, ' stroke-width="2"'));
-    trazos.push(arco(cx, cy, 58, -35, 0));
-    letras.push(texto(cx + 66, cy - 14, 'θ', { tam: 20 }));
+    // The almucantars: eccentric circles that shrink toward the zenith.
+    for (let k = 1; k <= 5; k++) faint.push(circle(cx, cy - 13 * k, 150 - 24 * k));
+    faint.push(circle(cx, cy + 38, 112, ' stroke-dasharray="3 6"')); // the ecliptic, off center
+    faint.push(line(cx - R, cy, cx + R, cy), line(cx, cy - R, cx, cy + R));
+    // The alidade (the rule that turns) and the angle it marks.
+    const [ax, ay] = point(cx, cy, R + 8, -35);
+    const [bx, by] = point(cx, cy, R + 8, 145);
+    strokes.push(line(bx, by, ax, ay, ' stroke-width="2"'));
+    strokes.push(arc(cx, cy, 58, -35, 0));
+    letters.push(text(cx + 66, cy - 14, 'θ', { size: 20 }));
   }
 
-  // --- C. Una órbita: elipse con el cuerpo central en un foco (arriba al centro) -----------
+  // --- C. An orbit: an ellipse with the central body at a focus (top center) ---------------
   {
-    const [cx, cy, a, b, giro] = [790, 215, 230, 118, -10];
+    const [cx, cy, a, b, turn] = [790, 215, 230, 118, -10];
     const c = Math.sqrt(a * a - b * b);
-    const elipse = [];
+    const ellipse = [];
     for (let i = 0; i <= 120; i++) {
       const t = (i / 120) * 2 * Math.PI;
-      elipse.push([a * Math.cos(t), b * Math.sin(t)]);
+      ellipse.push([a * Math.cos(t), b * Math.sin(t)]);
     }
-    const girar = ([x, y]) => [
-      cx + x * Math.cos(rad(giro)) - y * Math.sin(rad(giro)),
-      cy + x * Math.sin(rad(giro)) + y * Math.cos(rad(giro)),
+    const rotate = ([x, y]) => [
+      cx + x * Math.cos(rad(turn)) - y * Math.sin(rad(turn)),
+      cy + x * Math.sin(rad(turn)) + y * Math.cos(rad(turn)),
     ];
-    trazos.push(camino(elipse.map(girar), true));
-    tenues.push(camino([girar([-a - 30, 0]), girar([a + 30, 0])], false, ' stroke-dasharray="6 7"'));
-    const [fx, fy] = girar([c, 0]);
-    const [gx, gy] = girar([-c, 0]);
-    trazos.push(circulo(fx, fy, 9), circulo(fx, fy, 3));
-    tenues.push(circulo(gx, gy, 3));
+    strokes.push(path(ellipse.map(rotate), true));
+    faint.push(path([rotate([-a - 30, 0]), rotate([a + 30, 0])], false, ' stroke-dasharray="6 7"'));
+    const [fx, fy] = rotate([c, 0]);
+    const [gx, gy] = rotate([-c, 0]);
+    strokes.push(circle(fx, fy, 9), circle(fx, fy, 3));
+    faint.push(circle(gx, gy, 3));
     const t = rad(118);
-    const [px, py] = girar([a * Math.cos(t), b * Math.sin(t)]);
-    trazos.push(circulo(px, py, 5));
-    tenues.push(linea(fx, fy, px, py, ' stroke-dasharray="4 5"'));
-    trazos.push(flecha(px, py, px + (fx - px) * 0.3, py + (fy - py) * 0.3, ' stroke-width="1.6"'));
-    letras.push(texto((fx + px) / 2 + 6, (fy + py) / 2 - 12, 'r', { tam: 20 }));
-    letras.push(texto(fx + 14, fy + 30, 'M', { tam: 17, opacidad: 0.8 }));
-    letras.push(texto(cx - 40, cy + b + 62, 'g = −GM r̂ / r²', { tam: 22 }));
-    letras.push(texto(cx + 210, cy + b + 30, 'Φ = −GM / r', { tam: 18, opacidad: 0.8 }));
+    const [px, py] = rotate([a * Math.cos(t), b * Math.sin(t)]);
+    strokes.push(circle(px, py, 5));
+    faint.push(line(fx, fy, px, py, ' stroke-dasharray="4 5"'));
+    strokes.push(arrow(px, py, px + (fx - px) * 0.3, py + (fy - py) * 0.3, ' stroke-width="1.6"'));
+    letters.push(text((fx + px) / 2 + 6, (fy + py) / 2 - 12, 'r', { size: 20 }));
+    letters.push(text(fx + 14, fy + 30, 'M', { size: 17, opacity: 0.8 }));
+    letters.push(text(cx - 40, cy + b + 62, 'g = −GM r̂ / r²', { size: 22 }));
+    letters.push(text(cx + 210, cy + b + 30, 'Φ = −GM / r', { size: 18, opacity: 0.8 }));
   }
 
-  // --- D. Un tiro con paso fijo (abajo a la izquierda) --------------------------------------
-  // La parábola exacta, punteada, y los puntos que da Euler semi-implícito con Δt fijo: quedan un
-  // poco por debajo. Esa distancia es el error del paso.
+  // --- D. A throw with a fixed step (bottom left) --------------------------------------------
+  // The exact parabola, dotted, and the points semi-implicit Euler gives with a fixed Δt: they end
+  // up a little below. That distance is the step's error.
   {
     const [x0, y0, vx, vy0, g, dt] = [90, 905, 433, 1000, 1667, 0.1];
-    const exacta = [];
+    const exact = [];
     for (let i = 0; i <= 60; i++) {
       const t = (i / 60) * 1.2;
-      exacta.push([x0 + vx * t, y0 - (vy0 * t - (g * t * t) / 2)]);
+      exact.push([x0 + vx * t, y0 - (vy0 * t - (g * t * t) / 2)]);
     }
-    tenues.push(camino(exacta, false, ' stroke-dasharray="5 6"'));
-    tenues.push(linea(x0 - 20, y0, x0 + 560, y0));
-    const puntos = [[x0, y0]];
+    faint.push(path(exact, false, ' stroke-dasharray="5 6"'));
+    faint.push(line(x0 - 20, y0, x0 + 560, y0));
+    const points = [[x0, y0]];
     for (let y = 0, v = vy0, x = x0; ;) {
       v -= g * dt;
       y += v * dt;
       x += vx * dt;
       if (y < 0) break;
-      puntos.push([x, y0 - y]);
+      points.push([x, y0 - y]);
     }
-    trazos.push(camino(puntos, false, ' stroke-width="1.2"'));
-    for (const [x, y] of puntos) {
-      trazos.push(circulo(x, y, 4));
-      tenues.push(linea(x, y + 6, x, y0, ' stroke-dasharray="2 5"'), linea(x, y0, x, y0 + 8));
+    strokes.push(path(points, false, ' stroke-width="1.2"'));
+    for (const [x, y] of points) {
+      strokes.push(circle(x, y, 4));
+      faint.push(line(x, y + 6, x, y0, ' stroke-dasharray="2 5"'), line(x, y0, x, y0 + 8));
     }
-    const [p1, p2] = [puntos[1], puntos[2]];
-    tenues.push(
-      linea(p1[0], y0 + 22, p2[0], y0 + 22),
-      linea(p1[0], y0 + 16, p1[0], y0 + 28),
-      linea(p2[0], y0 + 16, p2[0], y0 + 28),
-    );
-    letras.push(texto((p1[0] + p2[0]) / 2, y0 + 50, 'Δt', { tam: 18, ancla: 'middle' }));
-    trazos.push(flecha(puntos[0][0], puntos[0][1], puntos[0][0] + 40, puntos[0][1] - 92, ' stroke-width="1.6"'));
-    letras.push(texto(puntos[0][0] + 20, puntos[0][1] - 104, 'v₀', { tam: 19 }));
-    letras.push(texto(392, 610, 'vₙ₊₁ = vₙ + g Δt', { tam: 20 }));
-    letras.push(texto(392, 642, 'xₙ₊₁ = xₙ + vₙ₊₁ Δt', { tam: 20 }));
+    const [p1, p2] = [points[1], points[2]];
+    faint.push(line(p1[0], y0 + 22, p2[0], y0 + 22), line(p1[0], y0 + 16, p1[0], y0 + 28), line(p2[0], y0 + 16, p2[0], y0 + 28));
+    letters.push(text((p1[0] + p2[0]) / 2, y0 + 50, 'Δt', { size: 18, anchor: 'middle' }));
+    strokes.push(arrow(points[0][0], points[0][1], points[0][0] + 40, points[0][1] - 92, ' stroke-width="1.6"'));
+    letters.push(text(points[0][0] + 20, points[0][1] - 104, 'v₀', { size: 19 }));
+    letters.push(text(392, 610, 'vₙ₊₁ = vₙ + g Δt', { size: 20 }));
+    letters.push(text(392, 642, 'xₙ₊₁ = xₙ + vₙ₊₁ Δt', { size: 20 }));
   }
 
-  // --- E. El compás: dos circunferencias iguales y el triángulo equilátero (abajo al centro) -
+  // --- E. The compass: two equal circles and the equilateral triangle (bottom center) -------
   {
     const [ax, bx, cy, r] = [720, 880, 800, 160];
-    const alto = Math.sqrt(r * r - ((bx - ax) / 2) ** 2);
+    const tall = Math.sqrt(r * r - ((bx - ax) / 2) ** 2);
     const m = (ax + bx) / 2;
-    tenues.push(circulo(ax, cy, r), circulo(bx, cy, r));
-    trazos.push(
-      camino(
+    faint.push(circle(ax, cy, r), circle(bx, cy, r));
+    strokes.push(
+      path(
         [
           [ax, cy],
           [bx, cy],
-          [m, cy - alto],
+          [m, cy - tall],
         ],
         true,
       ),
     );
-    tenues.push(linea(m, cy - alto - 70, m, cy + alto + 40, ' stroke-dasharray="6 7"'));
-    trazos.push(marca(m, cy - alto), marca(m, cy + alto), circulo(ax, cy, 3), circulo(bx, cy, 3));
-    // Las marcas cortas del compás, donde se buscó el cruce.
-    trazos.push(arco(ax, cy, r, -72, -48, ' stroke-width="1.6"'), arco(bx, cy, r, 228, 252, ' stroke-width="1.6"'));
-    letras.push(texto(m, cy + alto + 74, '(u, v) ∼ (u + 2π, −v)', { tam: 19, ancla: 'middle' }));
+    faint.push(line(m, cy - tall - 70, m, cy + tall + 40, ' stroke-dasharray="6 7"'));
+    strokes.push(mark(m, cy - tall), mark(m, cy + tall), circle(ax, cy, 3), circle(bx, cy, 3));
+    // The compass's short marks, where the crossing was looked for.
+    strokes.push(arc(ax, cy, r, -72, -48, ' stroke-width="1.6"'), arc(bx, cy, r, 228, 252, ' stroke-width="1.6"'));
+    letters.push(text(m, cy + tall + 74, '(u, v) ∼ (u + 2π, −v)', { size: 19, anchor: 'middle' }));
   }
 
-  // --- F. Un giro en el espacio: la esfera, un eje y el ángulo (abajo a la derecha) ---------
+  // --- F. A turn in space: the sphere, an axis and the angle (bottom right) -----------------
   {
     const [cx, cy, r] = [1300, 760, 118];
-    trazos.push(circulo(cx, cy, r));
-    tenues.push(`<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="32"/>`);
-    tenues.push(`<ellipse cx="${cx}" cy="${cy}" rx="44" ry="${r}" transform="rotate(22 ${cx} ${cy})"/>`);
+    strokes.push(circle(cx, cy, r));
+    faint.push(`<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="32"/>`);
+    faint.push(`<ellipse cx="${cx}" cy="${cy}" rx="44" ry="${r}" transform="rotate(22 ${cx} ${cy})"/>`);
     const [ex, ey] = [Math.sin(rad(22)), -Math.cos(rad(22))];
-    trazos.push(flecha(cx - ex * 150, cy - ey * 150, cx + ex * 175, cy + ey * 175, ' stroke-width="1.6"'));
-    // El ángulo θ alrededor del eje: un arco chico cerca de la punta.
+    strokes.push(arrow(cx - ex * 150, cy - ey * 150, cx + ex * 175, cy + ey * 175, ' stroke-width="1.6"'));
+    // The angle θ around the axis: a small arc near the tip.
     const [tx, ty] = [cx + ex * 128, cy + ey * 128];
-    trazos.push(
+    strokes.push(
       `<ellipse cx="${f(tx)}" cy="${f(ty)}" rx="30" ry="9" transform="rotate(22 ${f(tx)} ${f(ty)})" stroke-dasharray="40 14"/>`,
     );
-    letras.push(texto(tx + 36, ty + 4, 'θ', { tam: 20 }));
-    letras.push(texto(cx - 240, cy + r + 62, 'q = cos θ⁄2 + sin θ⁄2 (x i + y j + z k)', { tam: 20 }));
-    letras.push(texto(cx - 240, cy + r + 92, 'v′ = q v q*     i² = j² = k² = ijk = −1', { tam: 18, opacidad: 0.85 }));
+    letters.push(text(tx + 36, ty + 4, 'θ', { size: 20 }));
+    letters.push(text(cx - 240, cy + r + 62, 'q = cos θ⁄2 + sin θ⁄2 (x i + y j + z k)', { size: 20 }));
+    letters.push(text(cx - 240, cy + r + 92, 'v′ = q v q*     i² = j² = k² = ijk = −1', { size: 18, opacity: 0.85 }));
   }
 
-  // --- G. Más fórmulas del motor, sueltas ----------------------------------------------------
-  letras.push(texto(80, 470, 'α = acumulador / Δt', { tam: 19 }));
-  letras.push(texto(80, 500, 'x = x₀ + (x₁ − x₀) · α', { tam: 19, opacidad: 0.85 }));
-  letras.push(texto(80, 530, 'Δt = 1/60 s', { tam: 17, opacidad: 0.7 }));
-  letras.push(texto(1085, 520, 'h ← (h ⊕ b) · 16777619', { tam: 19 }));
-  letras.push(texto(1085, 550, 'sₙ₊₁ = (1664525 sₙ + 1013904223) mod 2³²', { tam: 16, opacidad: 0.8 }));
-  letras.push(texto(1085, 580, '‖q‖ = 1', { tam: 17, opacidad: 0.7 }));
+  // --- G. More of the engine's formulas, loose -------------------------------------------------
+  letters.push(text(80, 470, 'α = acumulador / Δt', { size: 19 }));
+  letters.push(text(80, 500, 'x = x₀ + (x₁ − x₀) · α', { size: 19, opacity: 0.85 }));
+  letters.push(text(80, 530, 'Δt = 1/60 s', { size: 17, opacity: 0.7 }));
+  letters.push(text(1085, 520, 'h ← (h ⊕ b) · 16777619', { size: 19 }));
+  letters.push(text(1085, 550, 'sₙ₊₁ = (1664525 sₙ + 1013904223) mod 2³²', { size: 16, opacity: 0.8 }));
+  letters.push(text(1085, 580, '‖q‖ = 1', { size: 17, opacity: 0.7 }));
 
-  // --- H. Líneas de construcción largas, y una regla abajo -----------------------------------
-  tenues.push(linea(0, 655, 1600, 405, ' stroke-dasharray="2 9"'));
-  tenues.push(linea(560, 0, 1040, 1000, ' stroke-dasharray="2 9"'));
-  trazos.push(marca(1153, 475), marca(272, 610));
+  // --- H. Long construction lines, and a ruler at the bottom -----------------------------------
+  faint.push(line(0, 655, 1600, 405, ' stroke-dasharray="2 9"'));
+  faint.push(line(560, 0, 1040, 1000, ' stroke-dasharray="2 9"'));
+  strokes.push(mark(1153, 475), mark(272, 610));
   for (let x = 60; x <= 1540; x += 10) {
-    const largo = x % 100 === 60 ? 14 : x % 50 === 10 ? 9 : 5;
-    tenues.push(linea(x, 992, x, 992 - largo));
+    const length = x % 100 === 60 ? 14 : x % 50 === 10 ? 9 : 5;
+    faint.push(line(x, 992, x, 992 - length));
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
-<!-- Generado por sitio/scripts/dibujar.mjs: se usa como máscara (su color lo pone el CSS). -->
+<!-- Made by site/scripts/draw.mjs: used as a mask (its color is set by the CSS). -->
 <g fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
-<g stroke-width="1.1" stroke-opacity="0.85">${trazos.join('')}</g>
-<g stroke-width="0.9" stroke-opacity="0.5">${tenues.join('')}</g>
+<g stroke-width="1.1" stroke-opacity="0.85">${strokes.join('')}</g>
+<g stroke-width="0.9" stroke-opacity="0.5">${faint.join('')}</g>
 </g>
-<g fill="#000" font-family="'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif" font-style="italic">${letras.join('')}</g>
+<g fill="#000" font-family="'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif" font-style="italic">${letters.join('')}</g>
 </svg>
 `;
 }
 
-// ---------------------------------------------------------------- el metal oxidado
+// ---------------------------------------------------------------- the rusted metal
 /*
- * El metal del sitio es bronce VIEJO: mate, con costras de pátina verde y manchas de óxido. El
- * ruido sale de `feTurbulence` (ruido de Perlin, calculado por el navegador al dibujar el SVG) y
- * `feColorMatrix` lo convierte en manchas: un canal del ruido se vuelve transparencia, con un
- * umbral (solo donde el ruido supera cierto valor hay mancha). `stitchTiles` hace que la textura
- * empalme con sí misma, para repetirla como un azulejo.
+ * The site's metal is OLD bronze: matte, with crusts of green patina and rust stains. The noise
+ * comes from `feTurbulence` (Perlin noise, computed by the browser when drawing the SVG) and
+ * `feColorMatrix` turns it into stains: one of the noise's channels becomes transparency, with a
+ * threshold (there is a stain only where the noise goes over some value). `stitchTiles` makes the
+ * texture join with itself, to repeat it like a tile.
  */
 
-/** Manchas de óxido rojizo y un picado oscuro y fino: va encima del degradado de bronce. */
-function texturaOxido() {
-  const lado = 220;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${lado}" height="${lado}" viewBox="0 0 ${lado} ${lado}">
-<!-- Generado por sitio/scripts/dibujar.mjs: óxido y picado, para repetir como textura. -->
+/** Reddish rust stains and a fine, dark pitting: it goes on top of the bronze gradient. */
+function rustTexture() {
+  const side = 220;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${side}" height="${side}" viewBox="0 0 ${side} ${side}">
+<!-- Made by site/scripts/draw.mjs: rust and pitting, to repeat as a texture. -->
 <filter id="f" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-<feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="3" seed="7" stitchTiles="stitch" result="manchas"/>
-<feColorMatrix in="manchas" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.17 0 0 0 0 0.08 3.2 0 0 0 -1.95" result="oxido"/>
-<feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="3" stitchTiles="stitch" result="grano"/>
-<feColorMatrix in="grano" type="matrix" values="0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0 0.02 0 2.4 0 0 -1.2" result="picado"/>
-<feMerge><feMergeNode in="oxido"/><feMergeNode in="picado"/></feMerge>
+<feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="3" seed="7" stitchTiles="stitch" result="stains"/>
+<feColorMatrix in="stains" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.17 0 0 0 0 0.08 3.2 0 0 0 -1.95" result="rust"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="3" stitchTiles="stitch" result="grain"/>
+<feColorMatrix in="grain" type="matrix" values="0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0 0.02 0 2.4 0 0 -1.2" result="pits"/>
+<feMerge><feMergeNode in="rust"/><feMergeNode in="pits"/></feMerge>
 </filter>
-<rect width="${lado}" height="${lado}" filter="url(#f)"/>
+<rect width="${side}" height="${side}" filter="url(#f)"/>
 </svg>
 `;
 }
 
-/** Costras de pátina (el verde del cobre viejo), en manchas grandes y algunas chicas. */
-function texturaPatina() {
-  const lado = 360;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${lado}" height="${lado}" viewBox="0 0 ${lado} ${lado}">
-<!-- Generado por sitio/scripts/dibujar.mjs: pátina, para repetir como textura. -->
+/** Crusts of patina (old copper's green), in big stains and some small ones. */
+function patinaTexture() {
+  const side = 360;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${side}" height="${side}" viewBox="0 0 ${side} ${side}">
+<!-- Made by site/scripts/draw.mjs: patina, to repeat as a texture. -->
 <filter id="f" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-<feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="5" seed="11" stitchTiles="stitch" result="costras"/>
-<feColorMatrix in="costras" type="matrix" values="0 0 0 0 0.27 0 0 0 0 0.5 0 0 0 0 0.43 0 5 0 0 -3.05" result="patina"/>
-<feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="2" seed="5" stitchTiles="stitch" result="motas"/>
-<feColorMatrix in="motas" type="matrix" values="0 0 0 0 0.42 0 0 0 0 0.62 0 0 0 0 0.54 0 0 7 0 -5.1" result="claras"/>
-<feMerge><feMergeNode in="patina"/><feMergeNode in="claras"/></feMerge>
+<feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="5" seed="11" stitchTiles="stitch" result="crusts"/>
+<feColorMatrix in="crusts" type="matrix" values="0 0 0 0 0.27 0 0 0 0 0.5 0 0 0 0 0.43 0 5 0 0 -3.05" result="patina"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="2" seed="5" stitchTiles="stitch" result="specks"/>
+<feColorMatrix in="specks" type="matrix" values="0 0 0 0 0.42 0 0 0 0 0.62 0 0 0 0 0.54 0 0 7 0 -5.1" result="light"/>
+<feMerge><feMergeNode in="patina"/><feMergeNode in="light"/></feMerge>
 </filter>
-<rect width="${lado}" height="${lado}" filter="url(#f)"/>
+<rect width="${side}" height="${side}" filter="url(#f)"/>
 </svg>
 `;
 }
 
 /**
- * El mismo óxido y la misma pátina, como filtro dentro de una figura (la marca, los engranajes):
- * las manchas se recortan con la forma (`operator="in"`) y se apoyan encima.
+ * The same rust and the same patina, as a filter inside a shape (the logo, the gears): the stains
+ * are cut with the shape (`operator="in"`) and laid on top.
  */
-const filtroOxidado = (
-  escala,
-) => `<filter id="oxidado" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-<feTurbulence type="fractalNoise" baseFrequency="${f(0.09 * escala)}" numOctaves="3" seed="4" result="n1"/>
+const rustedFilter = (
+  scale,
+) => `<filter id="rusted" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+<feTurbulence type="fractalNoise" baseFrequency="${f(0.09 * scale)}" numOctaves="3" seed="4" result="n1"/>
 <feColorMatrix in="n1" type="matrix" values="0 0 0 0 0.28 0 0 0 0 0.52 0 0 0 0 0.44 0 5.5 0 0 -3.1" result="p"/>
 <feComposite in="p" in2="SourceGraphic" operator="in" result="patina"/>
-<feTurbulence type="fractalNoise" baseFrequency="${f(0.5 * escala)}" numOctaves="2" seed="9" result="n2"/>
+<feTurbulence type="fractalNoise" baseFrequency="${f(0.5 * scale)}" numOctaves="2" seed="9" result="n2"/>
 <feColorMatrix in="n2" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.14 0 0 0 0 0.05 4 0 0 0 -2.2" result="o"/>
-<feComposite in="o" in2="SourceGraphic" operator="in" result="oxido"/>
-<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="oxido"/><feMergeNode in="patina"/></feMerge>
+<feComposite in="o" in2="SourceGraphic" operator="in" result="rust"/>
+<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="rust"/><feMergeNode in="patina"/></feMerge>
 </filter>`;
 
-// ---------------------------------------------------------------- la marca
-/** Un engranaje de bronce con una lemniscata de Bernoulli (∞) adentro, sobre un disco de pátina. */
-function marcaDelSitio() {
-  const engranaje = contornoDeEngranaje(16, 5.2, 0, 0);
-  const lemniscata = [];
+// ---------------------------------------------------------------- the logo
+/** A bronze gear with a Bernoulli lemniscate (∞) inside, on a patina disc. */
+function siteLogo() {
+  const gear = gearOutline(16, 5.2, 0, 0);
+  const lemniscate = [];
   for (let i = 0; i <= 160; i++) {
     const t = (i / 160) * 2 * Math.PI;
     const s = 1 + Math.sin(t) ** 2;
-    lemniscata.push([(26 * Math.cos(t)) / s, (26 * Math.sin(t) * Math.cos(t)) / s]);
+    lemniscate.push([(26 * Math.cos(t)) / s, (26 * Math.sin(t) * Math.cos(t)) / s]);
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
-<!-- Generado por sitio/scripts/dibujar.mjs -->
+<!-- Made by site/scripts/draw.mjs -->
 <defs>
-<linearGradient id="bronce" x1="0" y1="0" x2="1" y2="1">
+<linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#a07a4c"/><stop offset="0.4" stop-color="#6e4f2e"/><stop offset="0.7" stop-color="#4a331d"/><stop offset="1" stop-color="#7a5a36"/>
 </linearGradient>
 <radialGradient id="patina" cx="0.4" cy="0.35" r="0.75">
 <stop offset="0" stop-color="#2c6658"/><stop offset="1" stop-color="#0d2420"/>
 </radialGradient>
-${filtroOxidado(1)}
+${rustedFilter(1)}
 </defs>
-<path fill="url(#bronce)" fill-rule="evenodd" stroke="#24170a" stroke-width="1.2" filter="url(#oxidado)" d="${engranaje.d}${circuloComoCamino(0, 0, 34)}"/>
+<path fill="url(#bronze)" fill-rule="evenodd" stroke="#24170a" stroke-width="1.2" filter="url(#rusted)" d="${gear.d}${circleAsPath(0, 0, 34)}"/>
 <circle r="34" fill="url(#patina)" stroke="#24170a" stroke-width="1.2"/>
 <circle r="29.5" fill="none" stroke="#a88a5c" stroke-opacity="0.4" stroke-width="0.8"/>
-${camino(lemniscata, true, ' fill="none" stroke="#c9a46a" stroke-width="5" stroke-linejoin="round"')}
+${path(lemniscate, true, ' fill="none" stroke="#c9a46a" stroke-width="5" stroke-linejoin="round"')}
 </svg>
 `;
 }
 
-// ---------------------------------------------------------------- los engranajes del inicio
-function engranajeConRayos(dientes, m, rayos) {
-  const e = contornoDeEngranaje(dientes, m);
-  const borde = e.exterior + 2;
-  const aro = e.pie - m * 1.4; // el borde interno del aro
-  const cubo = Math.max(m * 1.2, aro * 0.3); // el cubo del eje
-  const interior = cubo + m * 0.6; // donde empiezan los huecos
-  // Los huecos entre rayos: sectores de corona, recortados del disco.
-  const huecos = [];
-  const ancho = 360 / rayos;
-  for (let i = 0; i < rayos; i++) {
-    const a0 = i * ancho + ancho * 0.16;
-    const a1 = (i + 1) * ancho - ancho * 0.16;
-    const [x0, y0] = punto(0, 0, aro, a0);
-    const [x1, y1] = punto(0, 0, aro, a1);
-    const [x2, y2] = punto(0, 0, interior, a1);
-    const [x3, y3] = punto(0, 0, interior, a0);
-    huecos.push(
-      `M${f(x0)} ${f(y0)}A${f(aro)} ${f(aro)} 0 0 1 ${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}A${f(interior)} ${f(interior)} 0 0 0 ${f(x3)} ${f(y3)}Z`,
+// ---------------------------------------------------------------- the home page's gears
+function gearWithSpokes(teeth, m, spokes) {
+  const g = gearOutline(teeth, m);
+  const edge = g.outer + 2;
+  const rim = g.root - m * 1.4; // the rim's inner edge
+  const hub = Math.max(m * 1.2, rim * 0.3); // the axle's hub
+  const inner = hub + m * 0.6; // where the holes begin
+  // The holes between spokes: ring sectors, cut out of the disc.
+  const holes = [];
+  const width = 360 / spokes;
+  for (let i = 0; i < spokes; i++) {
+    const a0 = i * width + width * 0.16;
+    const a1 = (i + 1) * width - width * 0.16;
+    const [x0, y0] = point(0, 0, rim, a0);
+    const [x1, y1] = point(0, 0, rim, a1);
+    const [x2, y2] = point(0, 0, inner, a1);
+    const [x3, y3] = point(0, 0, inner, a0);
+    holes.push(
+      `M${f(x0)} ${f(y0)}A${f(rim)} ${f(rim)} 0 0 1 ${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}A${f(inner)} ${f(inner)} 0 0 0 ${f(x3)} ${f(y3)}Z`,
     );
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-borde} ${-borde} ${2 * borde} ${2 * borde}">
-<!-- Generado por sitio/scripts/dibujar.mjs: ${dientes} dientes, módulo ${m} (radio primitivo ${e.primitivo}). -->
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-edge} ${-edge} ${2 * edge} ${2 * edge}">
+<!-- Made by site/scripts/draw.mjs: ${teeth} teeth, module ${m} (pitch radius ${g.pitch}). -->
 <defs>
 <linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#8a6a42"/><stop offset="0.45" stop-color="#5a3f24"/><stop offset="0.7" stop-color="#3b2815"/><stop offset="1" stop-color="#6a4d2c"/>
 </linearGradient>
-${filtroOxidado(1)}
+${rustedFilter(1)}
 </defs>
-<path fill="url(#b)" fill-rule="evenodd" stroke="#1f1408" stroke-width="0.8" filter="url(#oxidado)" d="${e.d}${huecos.join('')}${circuloComoCamino(0, 0, m * 0.9)}"/>
-<circle r="${f(aro)}" fill="none" stroke="#a88a5c" stroke-opacity="0.25" stroke-width="0.6"/>
-<circle r="${f(cubo)}" fill="none" stroke="#2a1909" stroke-opacity="0.6" stroke-width="0.8"/>
+<path fill="url(#b)" fill-rule="evenodd" stroke="#1f1408" stroke-width="0.8" filter="url(#rusted)" d="${g.d}${holes.join('')}${circleAsPath(0, 0, m * 0.9)}"/>
+<circle r="${f(rim)}" fill="none" stroke="#a88a5c" stroke-opacity="0.25" stroke-width="0.6"/>
+<circle r="${f(hub)}" fill="none" stroke="#2a1909" stroke-opacity="0.6" stroke-width="0.8"/>
 </svg>
 `;
 }
 
-// ---------------------------------------------------------------- escribir
-const dibujos = `${raiz}src/assets/dibujos/`;
-mkdirSync(dibujos, { recursive: true });
-const escribir = (ruta, contenido) => {
-  writeFileSync(ruta, contenido);
-  console.log(`  ${ruta.slice(raiz.length)} (${(contenido.length / 1024).toFixed(1)} KB)`);
+// ---------------------------------------------------------------- writing
+const drawings = `${root}src/assets/drawings/`;
+mkdirSync(drawings, { recursive: true });
+const write = (file, content) => {
+  writeFileSync(file, content);
+  console.log(`  ${file.slice(root.length)} (${(content.length / 1024).toFixed(1)} KB)`);
 };
-console.log('Dibujos:');
-escribir(`${dibujos}fondo.svg`, fondo());
-escribir(`${dibujos}marca.svg`, marcaDelSitio());
-escribir(`${raiz}public/favicon.svg`, marcaDelSitio());
-// Mismo módulo (4): radios primitivos 40 y 24, así que engranan con los centros a 64 unidades.
-escribir(`${dibujos}engranaje-20.svg`, engranajeConRayos(20, 4, 5));
-escribir(`${dibujos}oxido.svg`, texturaOxido());
-escribir(`${dibujos}patina.svg`, texturaPatina());
-escribir(`${dibujos}engranaje-12.svg`, engranajeConRayos(12, 4, 4));
+console.log('Drawings:');
+write(`${drawings}background.svg`, background());
+write(`${drawings}logo.svg`, siteLogo());
+write(`${root}public/favicon.svg`, siteLogo());
+// Same module (4): pitch radii 40 and 24, so they mesh with their centers 64 units apart.
+write(`${drawings}gear-20.svg`, gearWithSpokes(20, 4, 5));
+write(`${drawings}rust.svg`, rustTexture());
+write(`${drawings}patina.svg`, patinaTexture());
+write(`${drawings}gear-12.svg`, gearWithSpokes(12, 4, 4));

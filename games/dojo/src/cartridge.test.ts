@@ -1,96 +1,97 @@
 import { expect, test } from 'vitest';
-import { quat } from '@manifold/comun';
-import { huella, Partida, PASO, registroDe } from '@manifold/nucleo';
-import { CartuchoDojo } from './cartucho';
-import { RECETAS } from './recetas';
+import { quat } from '@manifold/common';
+import { registryFor, Session, stateHash, STEP } from '@manifold/core';
+import { DojoCartridge } from './cartridge';
+import { ROOMS } from './rooms';
 
-/** Un registro del Dojo con una receta aplicada (como la de un enlace o una sala). */
-function registroCon(receta = '') {
-  const registro = registroDe(CartuchoDojo);
-  const errores = registro.ejecutar(receta, 'receta').filter((m) => m.nivel === 'error');
-  expect(errores).toEqual([]);
-  return registro;
+/** A Dojo registry with a recipe applied (like a link's or a room's). */
+function registryWith(recipe = '') {
+  const registry = registryFor(DojoCartridge);
+  const errors = registry.run(recipe, 'recipe').filter((m) => m.level === 'error');
+  expect(errors).toEqual([]);
+  return registry;
 }
 
-test('el Dojo pone un cubo que gira a |ω| rad/s, igual en dos partidas con la misma semilla', () => {
-  const a = new Partida(CartuchoDojo);
-  const b = new Partida(CartuchoDojo);
-  expect(a.mundo.entidades.size).toBe(1);
+test('the Dojo puts a cube that spins at |ω| rad/s, the same in two sessions with the same seed', () => {
+  const a = new Session(DojoCartridge);
+  const b = new Session(DojoCartridge);
+  expect(a.world.entities.size).toBe(1);
   for (let i = 0; i < 300; i++) {
-    a.paso();
-    b.paso();
+    a.step();
+    b.step();
   }
-  expect(huella(b.mundo)).toBe(huella(a.mundo));
-  const cubo = [...a.mundo.entidades.values()][0]!;
-  // Girado: |ω|·t (5 s a 0,99 rad/s = 4,95 rad). `anguloEntre` da el camino más corto (de 0 a π).
-  const girado = (Math.hypot(0.35, 0.9, 0.15) * 300 * PASO) % (2 * Math.PI);
-  const masCorto = Math.min(girado, 2 * Math.PI - girado);
-  expect(quat.anguloEntre(quat.identidad(), cubo.transformacion!.rotacion)).toBeCloseTo(masCorto, 9);
+  expect(stateHash(b.world)).toBe(stateHash(a.world));
+  const cube = [...a.world.entities.values()][0]!;
+  // Turned: |ω|·t (5 s at 0.99 rad/s = 4.95 rad). `angleBetween` gives the shortest way (0 to π).
+  const turned = (Math.hypot(0.35, 0.9, 0.15) * 300 * STEP) % (2 * Math.PI);
+  const shortest = Math.min(turned, 2 * Math.PI - turned);
+  expect(quat.angleBetween(quat.identity(), cube.transform!.rotation)).toBeCloseTo(shortest, 9);
 });
 
-test('dojo.cubos (de arranque) agrega cubos del azar del mundo; misma semilla, mismos cubos', () => {
-  const a = new Partida(CartuchoDojo, { registro: registroCon('semilla 7; dojo.cubos 10') });
-  const b = new Partida(CartuchoDojo, { registro: registroCon('semilla 7; dojo.cubos 10') });
-  const c = new Partida(CartuchoDojo, { registro: registroCon('semilla 8; dojo.cubos 10') });
-  expect(a.mundo.entidades.size).toBe(11);
-  expect(huella(b.mundo)).toBe(huella(a.mundo));
-  expect(huella(c.mundo)).not.toBe(huella(a.mundo));
-  // Un valor que no sirve no cambia nada (y avisa): solo el cubo de siempre.
-  const registro = registroDe(CartuchoDojo);
-  expect(registro.ejecutar('dojo.cubos muchos', 'receta')[0]?.nivel).toBe('error');
-  expect(new Partida(CartuchoDojo, { registro }).mundo.entidades.size).toBe(1);
+test("dojo.cubes (startup) adds cubes from the world's randomness; same seed, same cubes", () => {
+  const a = new Session(DojoCartridge, { registry: registryWith('seed 7; dojo.cubes 10') });
+  const b = new Session(DojoCartridge, { registry: registryWith('seed 7; dojo.cubes 10') });
+  const c = new Session(DojoCartridge, { registry: registryWith('seed 8; dojo.cubes 10') });
+  expect(a.world.entities.size).toBe(11);
+  expect(stateHash(b.world)).toBe(stateHash(a.world));
+  expect(stateHash(c.world)).not.toBe(stateHash(a.world));
+  // A value that does not fit changes nothing (and says so): only the usual cube.
+  const registry = registryFor(DojoCartridge);
+  expect(registry.run('dojo.cubes many', 'recipe')[0]?.level).toBe('error');
+  expect(new Session(DojoCartridge, { registry }).world.entities.size).toBe(1);
 });
 
-test('un cambio del MUNDO entra en el paso siguiente, queda en la historia, y es determinista', () => {
-  const jugar = () => {
-    const partida = new Partida(CartuchoDojo, { registro: registroCon('dojo.cubos 3') });
-    const huellas: number[] = [];
+test('a WORLD change enters at the next step, stays in the history, and is deterministic', () => {
+  const play = () => {
+    const session = new Session(DojoCartridge, { registry: registryWith('dojo.cubes 3') });
+    const hashes: number[] = [];
     for (let i = 1; i <= 120; i++) {
-      if (i === 30) partida.registro.ejecutar('dojo.giro 0 3 0');
-      if (i === 60) partida.registro.ejecutar('dojo.crear 0 2 0');
-      partida.paso();
-      huellas.push(huella(partida.mundo));
+      if (i === 30) session.registry.run('dojo.spin 0 3 0');
+      if (i === 60) session.registry.run('dojo.spawn 0 2 0');
+      session.step();
+      hashes.push(stateHash(session.world));
     }
-    return { partida, huellas };
+    return { session, hashes };
   };
-  const a = jugar();
-  const b = jugar();
-  // Lo escrito antes del paso 30 entra AL EMPEZAR el paso 30 (no "a mitad" de otro).
-  expect(a.partida.historial).toEqual([
-    { paso: 30, linea: 'dojo.giro 0 3 0' },
-    { paso: 60, linea: 'dojo.crear 0 2 0' },
+  const a = play();
+  const b = play();
+  // What was typed before step 30 enters AT THE START of step 30 (not "halfway" through another).
+  expect(a.session.history).toEqual([
+    { step: 30, line: 'dojo.spin 0 3 0' },
+    { step: 60, line: 'dojo.spawn 0 2 0' },
   ]);
-  expect(a.partida.mundo.entidades.get(1)!.giro!.velocidadAngular).toEqual([0, 3, 0]);
-  expect(a.partida.mundo.entidades.size).toBe(5);
-  // Los mismos cambios en los mismos pasos: la misma huella, paso por paso.
-  expect(b.huellas).toEqual(a.huellas);
-  // Y el cambio sí cambia el mundo: sin él, otra huella desde el paso 30.
-  const sinCambios = new Partida(CartuchoDojo, { registro: registroCon('dojo.cubos 3') });
-  for (let i = 1; i <= 30; i++) sinCambios.paso();
-  expect(huella(sinCambios.mundo)).not.toBe(a.huellas[29]);
+  expect(a.session.world.entities.get(1)!.spin!.angularVelocity).toEqual([0, 3, 0]);
+  expect(a.session.world.entities.size).toBe(5);
+  // The same changes at the same steps: the same hash, step by step.
+  expect(b.hashes).toEqual(a.hashes);
+  // And the change does change the world: without it, another hash from step 30.
+  const unchanged = new Session(DojoCartridge, { registry: registryWith('dojo.cubes 3') });
+  for (let i = 1; i <= 30; i++) unchanged.step();
+  expect(stateHash(unchanged.world)).not.toBe(a.hashes[29]);
 });
 
-test('lo del mundo que viene en una receta es parte de cómo nace el mundo (paso 0)', () => {
-  const partida = new Partida(CartuchoDojo, { registro: registroCon('dojo.giro 1 0 0') });
-  expect(partida.mundo.entidades.get(1)!.giro!.velocidadAngular).toEqual([1, 0, 0]);
-  expect(partida.historial).toEqual([]); // no es un cambio: así nació
+test('world values that come in a recipe are part of how the world is born (step 0)', () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.spin 1 0 0') });
+  expect(session.world.entities.get(1)!.spin!.angularVelocity).toEqual([1, 0, 0]);
+  expect(session.history).toEqual([]); // it is not a change: it was born like that
 });
 
-test('una receta no puede crear cubos (dojo.crear es una acción, no un ajuste)', () => {
-  const registro = registroDe(CartuchoDojo);
-  const mensajes = registro.ejecutar('dojo.crear 0 2 0', 'receta');
-  expect(mensajes[0]?.texto).toContain('no se puede usar en una receta');
+test('a recipe cannot spawn cubes (dojo.spawn is an action, not a setting)', () => {
+  const registry = registryFor(DojoCartridge);
+  const messages = registry.run('dojo.spawn 0 2 0', 'recipe');
+  expect(messages[0]?.text).toContain('cannot be used in a recipe');
 });
 
-test('cada sala guardada del Dojo se carga sin errores, y tiene título', () => {
-  expect(Object.keys(RECETAS).length).toBeGreaterThan(0);
-  for (const [nombre, receta] of Object.entries(RECETAS)) {
-    expect(receta.titulo, nombre).toBeTruthy();
-    const registro = registroDe(CartuchoDojo);
-    // Lo de la vista lo declara la presentación: aquí solo importa lo del juego y el motor.
-    const errores = registro
-      .ejecutar(receta.texto, 'receta')
-      .filter((m) => m.nivel === 'error' && !/no existe "(ver|vista)\./.test(m.texto));
-    expect(errores, nombre).toEqual([]);
+test('every saved room of the Dojo loads without errors, and has a title', () => {
+  expect(Object.keys(ROOMS).length).toBeGreaterThan(0);
+  for (const [name, room] of Object.entries(ROOMS)) {
+    expect(name).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/); // its address: lowercase English words and dashes
+    expect(room.title, name).toBeTruthy();
+    const registry = registryFor(DojoCartridge);
+    // View values are declared by the presentation: here only the game's and the engine's matter.
+    const errors = registry
+      .run(room.text, 'recipe')
+      .filter((m) => m.level === 'error' && !/no such name "(show|view)\./.test(m.text));
+    expect(errors, name).toEqual([]);
   }
 });

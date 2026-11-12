@@ -1,28 +1,28 @@
-# 0005. Cómo se trabaja: ramas, PR, commits, etiquetas, idioma
+# 0005. How we work: branches, PRs, commits, tags, language
 
-- **Estado:** aceptada; lo de ramas y PR, reemplazado por la [0009](0009-directo-en-main.md) (se trabaja directo en `main`)
-- **Fecha:** 2026-11-11
+- **Status:** accepted; branches and PRs, replaced by [0009](0009-straight-to-main.md) (we work straight on `main`); the language (and with it, the commit messages and the tag names), replaced by [0011](0011-languages.md)
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-Un proyecto profesional, aunque lo haga una sola persona (con ayuda), y con un tutorial que tiene que poder mostrar el código **tal como estaba** en cada paso.
+A professional project, even if a single person makes it (with help), and with a tutorial that has to be able to show the code **as it was** at each step.
 
-## Decisión
+## Decision
 
-- **`main` siempre anda.** Se protege en GitHub: solo entra por _pull request_ (PR) con la integración continua en verde.
-- **Un paso, una rama y un PR.** Las ramas se llaman `paso/NN-tema` (por ejemplo, `paso/01-mundo-y-fisica`). El PR de un paso trae **el código, sus pruebas, su informe en la bitácora y, si trae ideas nuevas, sus lecciones del tutorial** (modificado por la [0007](0007-tutorial-ejecutable.md)); si falta uno, el paso no terminó.
-- **Commits convencionales, en español:** `tipo(ámbito): qué cambió`. Tipos: `feat` (algo nuevo), `fix` (un arreglo), `docs`, `test`, `refactor`, `build` (herramientas, dependencias), `ci`, `chore`. Ejemplo: `feat(nucleo): gravedad como campo radial`.
-- **Una etiqueta por paso** (`paso-00`, `paso-01`...) al fusionar su PR: el informe y las lecciones enlazan al código de su etiqueta.
-- **Integración continua** (GitHub Actions) en cada PR y en `main`: tipos, linter, formato, pruebas sin pantalla, compilación del sitio y pruebas en el navegador. Si `main` pasa, se publica el sitio.
-- **Romper a propósito** cada prueba nueva una vez, para ver que falla cuando tiene que fallar. En la V1 hubo pruebas que pasaban sin probar nada.
-- **Idioma: español**, en el código (nombres de variables, funciones y archivos), en los comentarios, en los commits y en el tutorial. Es coherente con el tutorial y con la forma de aprender del autor. El precio: llega a menos gente en GitHub.
+- **`main` always works.** It is protected on GitHub: it only takes changes through a _pull request_ (PR) with continuous integration green.
+- **One step, one branch and one PR.** Branches are called `paso/NN-tema` (for example, `paso/01-mundo-y-fisica`). A step's PR brings **the code, its tests, its report in the Bitácora and, if it brings new ideas, its tutorial lessons** (modified by [0007](0007-executable-tutorial.md)); if one is missing, the step is not done.
+- **Conventional commits, in Spanish:** `type(scope): what changed`. Types: `feat` (something new), `fix` (a fix), `docs`, `test`, `refactor`, `build` (tools, dependencies), `ci`, `chore`. Example: `feat(nucleo): gravedad como campo radial`.
+- **One tag per step** (`paso-00`, `paso-01`...) when its PR is merged: the report and the lessons link to the code of their tag.
+- **Continuous integration** (GitHub Actions) on every PR and on `main`: types, linter, formatting, headless tests, the site's build and the browser tests. If `main` passes, the site is published.
+- **Break on purpose** every new test once, to see that it fails when it has to fail. In V1 there were tests that passed without testing anything.
+- **Language: Spanish**, in the code (variable, function and file names), in the comments, in the commits and in the tutorial. It is consistent with the tutorial and with the author's way of learning. The price: it reaches fewer people on GitHub.
 
-## Consecuencias
+## Consequences
 
-- Cada paso deja un rastro claro: rama, PR con su discusión, etiqueta, informe y lecciones.
-- Trabajar solo con PR parece burocracia; a cambio, la integración continua revisa todo antes de que entre a `main`, y el historial explica cada cambio.
+- Every step leaves a clear trail: branch, PR with its discussion, tag, report and lessons.
+- Working only with PRs looks like bureaucracy; in exchange, continuous integration checks everything before it goes into `main`, and the history explains every change.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-- **Commits directos a `main`:** más rápido, pero nada impide romperlo.
-- **Código en inglés:** más alcance; se eligió la coherencia con el tutorial.
+- **Direct commits to `main`:** faster, but nothing stops it from breaking. (Taken up again, with local checks, by 0009.)
+- **Code in English:** more reach; consistency with the tutorial was chosen. (Taken up again by 0011: the mixed naming turned out to be the bigger cost.)

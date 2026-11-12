@@ -1,46 +1,45 @@
 /**
- * LOS EJEMPLOS USAN TODO EL ANCHO. El texto de una lección va en una columna angosta (se lee
- * mejor), pero un ejemplo necesita lugar: el código y lo que dibuja. Así que cada ejemplo se sale
- * de la columna y ocupa el ancho del panel central; y si ese ancho alcanza, pone el código y el
- * resultado lado a lado, como en la pantalla completa.
+ * THE EXAMPLES USE THE WHOLE WIDTH. A lesson's text goes in a narrow column (it reads better), but
+ * an example needs room: the code and what it draws. So every example breaks out of the column and
+ * takes the central panel's width; and if that width is enough, it puts the code and the result
+ * side by side, like in full screen.
  *
- * El ancho del panel cambia con la ventana y con los paneles de los costados (que se pueden
- * ocultar), así que se mide con un ResizeObserver. El CSS (CodigoVivo.astro) usa lo medido:
- * `--cv-ancho` y `--cv-correr` (cuánto correrse a la izquierda), más `data-ancho` y
- * `data-lado-a-lado`.
+ * The panel's width changes with the window and with the side panels (which can be hidden), so it
+ * is measured with a ResizeObserver. The CSS (LiveCode.astro) uses what is measured: `--lc-width`
+ * and `--lc-offset` (how far to move left), plus `data-wide` and `data-side-by-side`.
  *
- * (Por qué no con "container queries" de CSS: el panel tendría que ser un contenedor, y eso lo
- * convierte en la referencia de lo que tiene `position: fixed` adentro. El ejemplo "ampliado" sin
- * pantalla completa, el del iPhone, dejaría de cubrir la ventana.)
+ * (Why not with CSS "container queries": the panel would have to be a container, and that makes it
+ * the reference for whatever has `position: fixed` inside. The example "expanded" without full
+ * screen, the iPhone one, would stop covering the window.)
  */
 
-/** Más ancho que esto no sirve: en un monitor enorme, el ejemplo queda centrado. */
-const ANCHO_MAXIMO = 1800;
-/** Desde este ancho, el código y el resultado van lado a lado. */
-export const LADO_A_LADO = 960;
+/** Wider than this is no use: on a huge monitor, the example is centered. */
+const MAX_WIDTH = 1800;
+/** From this width on, the code and the result go side by side. */
+export const SIDE_BY_SIDE = 960;
 
-export function ensancharEjemplos(ejemplos: HTMLElement[]) {
-  const panel = ejemplos[0]?.closest<HTMLElement>('.content-panel');
+export function widenExamples(examples: HTMLElement[]) {
+  const panel = examples[0]?.closest<HTMLElement>('.content-panel');
   if (!panel) return;
 
-  const medir = () => {
-    const estilo = getComputedStyle(panel);
-    const caja = panel.getBoundingClientRect();
-    const izquierda = parseFloat(estilo.paddingLeft);
-    const libre = caja.width - izquierda - parseFloat(estilo.paddingRight);
-    const ancho = Math.min(libre, ANCHO_MAXIMO);
-    const inicio = caja.left + izquierda + (libre - ancho) / 2;
-    for (const ejemplo of ejemplos) {
-      const columna = ejemplo.parentElement!.getBoundingClientRect();
-      const ensanchar = ancho > columna.width + 1;
-      ejemplo.toggleAttribute('data-ancho', ensanchar);
-      ejemplo.toggleAttribute('data-lado-a-lado', ancho >= LADO_A_LADO);
-      if (ensanchar) {
-        ejemplo.style.setProperty('--cv-ancho', `${ancho}px`);
-        ejemplo.style.setProperty('--cv-correr', `${inicio - columna.left}px`);
+  const measure = () => {
+    const style = getComputedStyle(panel);
+    const box = panel.getBoundingClientRect();
+    const left = parseFloat(style.paddingLeft);
+    const free = box.width - left - parseFloat(style.paddingRight);
+    const width = Math.min(free, MAX_WIDTH);
+    const start = box.left + left + (free - width) / 2;
+    for (const example of examples) {
+      const column = example.parentElement!.getBoundingClientRect();
+      const widen = width > column.width + 1;
+      example.toggleAttribute('data-wide', widen);
+      example.toggleAttribute('data-side-by-side', width >= SIDE_BY_SIDE);
+      if (widen) {
+        example.style.setProperty('--lc-width', `${width}px`);
+        example.style.setProperty('--lc-offset', `${start - column.left}px`);
       }
     }
   };
-  new ResizeObserver(medir).observe(panel);
-  medir();
+  new ResizeObserver(measure).observe(panel);
+  measure();
 }

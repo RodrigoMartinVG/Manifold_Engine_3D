@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-> Informe de la etapa 0b. La decisión completa, con sus alternativas, está en la [decisión 0007](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0007-tutorial-ejecutable.md).
+> Informe de la etapa 0b. La decisión completa, con sus alternativas, está en la [decisión 0007](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0007-executable-tutorial.md).
 
 ## Qué hicimos
 

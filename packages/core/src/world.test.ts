@@ -1,72 +1,72 @@
 import { describe, expect, test } from 'vitest';
-import { quat } from '@manifold/comun';
-import { Mundo, PASO } from './mundo';
-import { huella } from './huella';
+import { quat } from '@manifold/common';
+import { World, STEP } from './world';
+import { stateHash } from './hash';
 
-/** Un mundo con unas cajas que giran, en lugares y velocidades sacados de su azar. */
-function mundoDePrueba(semilla: number) {
-  const m = new Mundo({ semilla });
+/** A world with some spinning boxes, at places and speeds taken from its randomness. */
+function testWorld(seed: number) {
+  const w = new World({ seed });
   for (let i = 0; i < 5; i++) {
-    m.crearEntidad({
-      transformacion: { posicion: [m.azar.entre(-5, 5), 1, m.azar.entre(-5, 5)], rotacion: quat.identidad() },
-      giro: { velocidadAngular: [m.azar.entre(-2, 2), m.azar.entre(-2, 2), m.azar.entre(-2, 2)] },
+    w.createEntity({
+      transform: { position: [w.random.between(-5, 5), 1, w.random.between(-5, 5)], rotation: quat.identity() },
+      spin: { angularVelocity: [w.random.between(-2, 2), w.random.between(-2, 2), w.random.between(-2, 2)] },
     });
   }
-  return m;
+  return w;
 }
 
-describe('Mundo', () => {
-  test('cada mundo tiene sus ids: dos mundos creados uno después del otro empiezan igual', () => {
-    const a = new Mundo({ semilla: 1 });
-    const b = new Mundo({ semilla: 1 });
-    expect(a.crearEntidad({}).id).toBe(1);
-    expect(b.crearEntidad({}).id).toBe(1);
-    expect(a.crearEntidad({}).id).toBe(2);
+describe('World', () => {
+  test('every world has its own ids: two worlds created one after the other start the same', () => {
+    const a = new World({ seed: 1 });
+    const b = new World({ seed: 1 });
+    expect(a.createEntity({}).id).toBe(1);
+    expect(b.createEntity({}).id).toBe(1);
+    expect(a.createEntity({}).id).toBe(2);
   });
 
-  test('determinismo: misma semilla, misma huella en CADA paso; otra semilla, otra huella', () => {
-    const a = mundoDePrueba(5);
-    const b = mundoDePrueba(5);
-    const c = mundoDePrueba(6);
+  test('determinism: same seed, same hash at EVERY step; another seed, another hash', () => {
+    const a = testWorld(5);
+    const b = testWorld(5);
+    const c = testWorld(6);
     for (let i = 0; i < 600; i++) {
-      a.paso();
-      b.paso();
-      c.paso();
-      expect(huella(b)).toBe(huella(a));
+      a.step();
+      b.step();
+      c.step();
+      expect(stateHash(b)).toBe(stateHash(a));
     }
-    expect(huella(c)).not.toBe(huella(a));
+    expect(stateHash(c)).not.toBe(stateHash(a));
   });
 
-  test('la huella cambia si cambia cualquier número (también por un redondeo)', () => {
-    const a = mundoDePrueba(5);
-    const antes = huella(a);
-    const e = a.entidades.get(3)!;
-    e.transformacion!.posicion[1] += 1e-15;
-    expect(huella(a)).not.toBe(antes);
+  test('the hash changes if any number changes (even by a rounding)', () => {
+    const a = testWorld(5);
+    const before = stateHash(a);
+    const e = a.entities.get(3)!;
+    e.transform!.position[1] += 1e-15;
+    expect(stateHash(a)).not.toBe(before);
   });
 
-  test('girar: después de t segundos, el ángulo girado es |ω|·t (y la rotación sigue unitaria)', () => {
-    const m = new Mundo({ semilla: 1 });
-    const e = m.crearEntidad({
-      transformacion: { posicion: [0, 0, 0], rotacion: quat.identidad() },
-      giro: { velocidadAngular: [0, 0.9, 0] },
+  test('spin: after t seconds, the angle turned is |ω|·t (and the rotation stays unit)', () => {
+    const w = new World({ seed: 1 });
+    const e = w.createEntity({
+      transform: { position: [0, 0, 0], rotation: quat.identity() },
+      spin: { angularVelocity: [0, 0.9, 0] },
     });
-    for (let i = 0; i < 120; i++) m.paso(); // 2 s
-    const q = e.transformacion!.rotacion;
-    expect(quat.anguloEntre(quat.identidad(), q)).toBeCloseTo(0.9 * 120 * PASO, 9);
+    for (let i = 0; i < 120; i++) w.step(); // 2 s
+    const q = e.transform!.rotation;
+    expect(quat.angleBetween(quat.identity(), q)).toBeCloseTo(0.9 * 120 * STEP, 9);
     expect(Math.hypot(...q)).toBeCloseTo(1, 14);
   });
 
-  test('eventos: el juego ve los de cada paso; la presentación, todos los que no leyó', () => {
-    const m = new Mundo({ semilla: 1 });
-    m.paso();
-    m.crearEntidad({});
-    expect(m.eventosDelPaso).toHaveLength(1);
-    m.paso(); // un paso nuevo: la lista del juego empieza vacía...
-    expect(m.eventosDelPaso).toHaveLength(0);
-    m.crearEntidad({});
-    // ...pero la presentación, que no leyó en el medio, ve los dos.
-    expect(m.tomarEventos().map((e) => e.tipo)).toEqual(['entidadCreada', 'entidadCreada']);
-    expect(m.tomarEventos()).toHaveLength(0);
+  test("events: the game sees each step's; the presentation, all the ones it has not read", () => {
+    const w = new World({ seed: 1 });
+    w.step();
+    w.createEntity({});
+    expect(w.stepEvents).toHaveLength(1);
+    w.step(); // a new step: the game's list starts empty...
+    expect(w.stepEvents).toHaveLength(0);
+    w.createEntity({});
+    // ...but the presentation, which did not read in between, sees both.
+    expect(w.takeEvents().map((e) => e.type)).toEqual(['entityCreated', 'entityCreated']);
+    expect(w.takeEvents()).toHaveLength(0);
   });
 });

@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config';
 
-/** Las pruebas sin pantalla: archivos `*.prueba.ts` junto al código que prueban (decisión 0001). */
+/** The headless tests: `*.test.ts` files next to the code they test (decision 0001). */
 export default defineConfig({
   test: {
-    include: ['paquetes/*/src/**/*.prueba.ts', 'juegos/*/src/**/*.prueba.ts', 'sitio/src/**/*.prueba.ts'],
+    include: ['packages/*/src/**/*.test.ts', 'games/*/src/**/*.test.ts', 'site/src/**/*.test.ts'],
     environment: 'node',
   },
 });

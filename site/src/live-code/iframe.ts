@@ -1,23 +1,25 @@
 /**
- * EL DOCUMENTO DEL IFRAME donde corre el código de una lección (decisión 0007).
+ * THE IFRAME'S DOCUMENT, where a lesson's code runs (decision 0007).
  *
- * El iframe es `sandbox="allow-scripts"`, SIN `allow-same-origin`: su origen es otro (uno
- * "opaco"), así que el código que edita el lector no puede leer nada del sitio (su
- * almacenamiento, sus cookies) ni tocar la página. Solo se comunican por mensajes
- * (`postMessage`), en los dos sentidos:
+ * The iframe is `sandbox="allow-scripts"`, WITHOUT `allow-same-origin`: its origin is a different
+ * one (an "opaque" one), so the code the reader edits cannot read anything of the site (its
+ * storage, its cookies) nor touch the page. They only talk through messages (`postMessage`), both
+ * ways:
  *
- *   página ──► iframe   { tipo: 'ejecutar', modulos }    las librerías y los archivos, ya en JavaScript
- *   iframe ──► página   { tipo: 'listo' }                 listo para recibirlos
- *                       { tipo: 'consola', nivel, texto } lo que la lección escribe con console.log
- *                       { tipo: 'error', texto }          un error (con su archivo y línea)
- *                       { tipo: 'cuadros', n }            cuántos cuadros dibujó (para las pruebas)
+ *   page ──► iframe   { type: 'run', modules }            the libraries and the files, already in JavaScript
+ *   iframe ──► page   { type: 'ready' }                    ready to receive them
+ *                     { type: 'console', level, text }     what the lesson writes with console.log
+ *                     { type: 'error', text }              an error (with its file and line)
+ *                     { type: 'frames', n }                how many frames it drew (for the tests)
  *
- * Cada módulo se vuelve un `blob:` (un archivo que existe solo en la memoria del iframe), y un
- * MAPA DE IMPORTACIONES (`<script type="importmap">`) le dice al navegador qué `blob:` es
- * `three` y cuál es `leccion/main`. Es lo mismo que hace un empaquetador como Vite, pero al revés:
- * en vez de juntar los módulos en un archivo, le explica al navegador dónde está cada uno.
+ * Each module becomes a `blob:` (a file that exists only in the iframe's memory), and an IMPORT MAP
+ * (`<script type="importmap">`) tells the browser which `blob:` is `three` and which one is
+ * `lesson/main`. It is what a bundler like Vite does, but backwards: instead of joining the modules
+ * into one file, it tells the browser where each one is.
+ *
+ * (What the reader sees, like "(main.ts, línea 12)", is the site's text, in Spanish.)
  */
-export function documentoDelIframe(): string {
+export function iframeDocument(): string {
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -25,23 +27,23 @@ export function documentoDelIframe(): string {
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #15120f; color: #e6dccb; font: 13px/1.4 system-ui, sans-serif; }
   canvas { display: block; }
-  /* Los paneles de lil-gui, con los colores del sitio (sus variables CSS; "html" le gana a las suyas). */
+  /* The lil-gui panels, in the site's colors (its CSS variables; "html" beats its own). */
   html .lil-gui {
     --background-color: #1b1814; --widget-color: #2f2922; --hover-color: #3b332a; --focus-color: #473d31;
     --text-color: #dcd2c3; --title-background-color: #2a221a; --title-text-color: #f0d59a;
     --number-color: #93d9c9; --string-color: #e9c48c;
   }
-  /* En un lugar angosto (un celular), el panel más chico, para que no tape la escena. */
+  /* In a narrow place (a phone), a smaller panel, so it does not cover the scene. */
   @media (max-width: 520px) {
     html .lil-gui { --width: 180px; --font-size: 10px; --input-font-size: 10px; --widget-height: 16px; --padding: 3px; --spacing: 3px; }
     html .lil-gui.root { opacity: 0.9; }
   }
 </style>
 <script>
-  const padre = window.parent;
-  const enviar = (m) => padre.postMessage({ deCodigoVivo: true, ...m }, '*');
-  const nombres = {};
-  const texto = (v) => {
+  const parent = window.parent;
+  const send = (m) => parent.postMessage({ fromLiveCode: true, ...m }, '*');
+  const names = {};
+  const asText = (v) => {
     if (typeof v === 'string') return v;
     if (v instanceof Error) return v.message;
     try {
@@ -50,46 +52,46 @@ export function documentoDelIframe(): string {
       return String(v);
     }
   };
-  for (const nivel of ['log', 'info', 'warn', 'error']) {
-    const original = console[nivel].bind(console);
-    console[nivel] = (...args) => {
-      enviar({ tipo: 'consola', nivel, texto: args.map(texto).join(' ') });
+  for (const level of ['log', 'info', 'warn', 'error']) {
+    const original = console[level].bind(console);
+    console[level] = (...args) => {
+      send({ type: 'console', level, text: args.map(asText).join(' ') });
       original(...args);
     };
   }
-  // El archivo y la línea de un error: el navegador dice "blob:...", y aquí se traduce al nombre del archivo.
-  const donde = (archivo, linea) => {
-    const nombre = nombres[archivo];
-    return nombre ? ' (' + nombre + ', línea ' + linea + ')' : '';
+  // An error's file and line: the browser says "blob:...", and here it becomes the file's name.
+  const where = (file, line) => {
+    const name = names[file];
+    return name ? ' (' + name + ', línea ' + line + ')' : '';
   };
-  addEventListener('error', (e) => enviar({ tipo: 'error', texto: e.message + donde(e.filename, e.lineno) }));
-  addEventListener('unhandledrejection', (e) => enviar({ tipo: 'error', texto: texto(e.reason) }));
-  // Contar los cuadros sin que la lección lo sepa: se envuelve requestAnimationFrame.
-  let cuadros = 0;
-  const pedirCuadro = window.requestAnimationFrame.bind(window);
+  addEventListener('error', (e) => send({ type: 'error', text: e.message + where(e.filename, e.lineno) }));
+  addEventListener('unhandledrejection', (e) => send({ type: 'error', text: asText(e.reason) }));
+  // Count the frames without the lesson knowing: requestAnimationFrame is wrapped.
+  let frames = 0;
+  const requestFrame = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = (f) =>
-    pedirCuadro((t) => {
-      if (++cuadros % 10 === 0) enviar({ tipo: 'cuadros', n: cuadros });
+    requestFrame((t) => {
+      if (++frames % 10 === 0) send({ type: 'frames', n: frames });
       f(t);
     });
   addEventListener('message', (e) => {
-    if (e.source !== padre || !e.data || e.data.tipo !== 'ejecutar') return;
+    if (e.source !== parent || !e.data || e.data.type !== 'run') return;
     const imports = {};
-    for (const [especificador, codigo] of Object.entries(e.data.modulos)) {
-      const url = URL.createObjectURL(new Blob([codigo], { type: 'text/javascript' }));
-      imports[especificador] = url;
-      nombres[url] = especificador.startsWith('leccion/') ? especificador.slice(8) + '.ts' : especificador;
+    for (const [specifier, code] of Object.entries(e.data.modules)) {
+      const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+      imports[specifier] = url;
+      names[url] = specifier.startsWith('lesson/') ? specifier.slice(7) + '.ts' : specifier;
     }
-    const mapa = document.createElement('script');
-    mapa.type = 'importmap';
-    mapa.textContent = JSON.stringify({ imports });
-    document.head.append(mapa);
-    const inicio = document.createElement('script');
-    inicio.type = 'module';
-    inicio.textContent = "import 'leccion/main';";
-    document.head.append(inicio);
+    const map = document.createElement('script');
+    map.type = 'importmap';
+    map.textContent = JSON.stringify({ imports });
+    document.head.append(map);
+    const start = document.createElement('script');
+    start.type = 'module';
+    start.textContent = "import 'lesson/main';";
+    document.head.append(start);
   });
-  enviar({ tipo: 'listo' });
+  send({ type: 'ready' });
 </script>
 </head>
 <body></body>

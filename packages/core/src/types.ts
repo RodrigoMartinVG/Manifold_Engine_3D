@@ -1,43 +1,43 @@
-import type { Quat, Vec3 } from '@manifold/comun';
+import type { Quat, Vec3 } from '@manifold/common';
 
-/** El número que nombra a una entidad. Único dentro de SU mundo (no en todo el programa). */
-export type IdEntidad = number;
+/** The number that names an entity. Unique within ITS world (not in the whole program). */
+export type EntityId = number;
 
 /**
- * Una ENTIDAD es un id y sus COMPONENTES: datos planos, sin métodos. Una entidad con
- * `transformacion` está en algún lugar; con `giro`, además gira; con `apariencia`, la
- * presentación sabe cómo dibujarla. Ningún componente tiene objetos de Three.js ni de Rapier:
- * por eso un mundo se puede copiar, comparar y fotografiar (decisión 0004).
+ * An ENTITY is an id and its COMPONENTS: plain data, no methods. An entity with `transform` is
+ * somewhere; with `spin`, it also spins; with `appearance`, the presentation knows how to draw it.
+ * No component holds Three.js or Rapier objects: that is why a world can be copied, compared and
+ * snapshotted (decision 0004).
  *
- * (Fase 0: los primeros tres. Cada paso del motor agrega los suyos.)
+ * (Stage 0: the first three. Every engine stage adds its own.)
  */
-export interface Entidad {
-  readonly id: IdEntidad;
-  transformacion?: Transformacion;
-  giro?: Giro;
-  apariencia?: Apariencia;
+export interface Entity {
+  readonly id: EntityId;
+  transform?: Transform;
+  spin?: Spin;
+  appearance?: Appearance;
 }
 
-export interface Transformacion {
-  posicion: Vec3;
-  rotacion: Quat;
+export interface Transform {
+  position: Vec3;
+  rotation: Quat;
 }
 
-/** Gira a velocidad constante: `velocidadAngular` es el eje por la rapidez (rad/s). */
-export interface Giro {
-  velocidadAngular: Vec3;
+/** Spins at a constant rate: `angularVelocity` is the axis times the speed (rad/s). */
+export interface Spin {
+  angularVelocity: Vec3;
 }
 
-/** Cómo se ve, como DATOS (la presentación decide con qué material, según la calidad). */
-export interface Apariencia {
-  forma: 'caja';
-  tamano: Vec3;
+/** How it looks, as DATA (the presentation decides which material, depending on quality). */
+export interface Appearance {
+  shape: 'box';
+  size: Vec3;
   /** 0xRRGGBB */
   color: number;
 }
 
-/** Los componentes con que se crea una entidad (todo menos el id, que lo da el mundo). */
-export type Componentes = Omit<Entidad, 'id'>;
+/** The components an entity is created with (everything but the id, which the world gives). */
+export type Components = Omit<Entity, 'id'>;
 
-/** Lo que PASÓ en un paso, como datos (para la presentación, el juego, la red). */
-export type Evento = { tipo: 'entidadCreada'; id: IdEntidad } | { tipo: 'entidadQuitada'; id: IdEntidad };
+/** What HAPPENED in a step, as data (for the presentation, the game, the network). */
+export type Event = { type: 'entityCreated'; id: EntityId } | { type: 'entityRemoved'; id: EntityId };

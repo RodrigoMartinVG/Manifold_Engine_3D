@@ -1,147 +1,149 @@
-import type { Tipo, Valor, Vec3 } from './tipos';
+import type { Type, Value, Vec3 } from './types';
 
 /**
- * LEER Y ESCRIBIR VALORES. Una línea se parte en "palabras" (con comillas para los textos con
- * espacios), y cada argumento toma las que necesita: un número, una; un vector, tres.
+ * READING AND WRITING VALUES. A line is split into "words" (with quotes for texts with spaces),
+ * and every argument takes the ones it needs: a number, one; a vector, three.
  */
 
-/** Una palabra de la línea, y dónde empieza (para el tipo `resto`, que toma lo que queda tal cual). */
-export interface Palabra {
-  texto: string;
-  inicio: number;
+/** A word of the line, and where it starts (for the `rest` type, which takes what is left as is). */
+export interface Word {
+  text: string;
+  start: number;
 }
 
-/** Parte una línea en palabras. Las comillas juntan un texto con espacios: `"hola mundo"`. */
-export function partir(linea: string): Palabra[] {
-  const palabras: Palabra[] = [];
+/** Splits a line into words. Quotes keep a text with spaces together: `"hello world"`. */
+export function tokenize(line: string): Word[] {
+  const words: Word[] = [];
   let i = 0;
-  while (i < linea.length) {
-    while (i < linea.length && /\s/.test(linea[i]!)) i++;
-    if (i >= linea.length) break;
-    const inicio = i;
-    if (linea[i] === '"') {
-      const cierre = linea.indexOf('"', i + 1);
-      const fin = cierre === -1 ? linea.length : cierre;
-      palabras.push({ texto: linea.slice(i + 1, fin), inicio });
-      i = fin + 1;
+  while (i < line.length) {
+    while (i < line.length && /\s/.test(line[i]!)) i++;
+    if (i >= line.length) break;
+    const start = i;
+    if (line[i] === '"') {
+      const close = line.indexOf('"', i + 1);
+      const end = close === -1 ? line.length : close;
+      words.push({ text: line.slice(i + 1, end), start });
+      i = end + 1;
     } else {
-      while (i < linea.length && !/\s/.test(linea[i]!)) i++;
-      palabras.push({ texto: linea.slice(inicio, i), inicio });
+      while (i < line.length && !/\s/.test(line[i]!)) i++;
+      words.push({ text: line.slice(start, i), start });
     }
   }
-  return palabras;
+  return words;
 }
 
 /**
- * Separa un texto en líneas de comando: por renglón y por `;`, sin los comentarios (`#` hasta el
- * final del renglón). Lo que está entre comillas no se corta.
+ * Splits a text into command lines: by line break and by `;`, without the comments (`#` to the
+ * end of the line). What is inside quotes is not cut.
  */
-export function separarLineas(texto: string): string[] {
-  const lineas: string[] = [];
-  for (const renglon of texto.split(/\r?\n/)) {
-    let actual = '';
-    let entreComillas = false;
-    for (const c of renglon) {
-      if (c === '"') entreComillas = !entreComillas;
-      if (!entreComillas && c === '#') break;
-      if (!entreComillas && c === ';') {
-        lineas.push(actual);
-        actual = '';
-      } else actual += c;
+export function splitLines(text: string): string[] {
+  const lines: string[] = [];
+  for (const row of text.split(/\r?\n/)) {
+    let current = '';
+    let inQuotes = false;
+    for (const c of row) {
+      if (c === '"') inQuotes = !inQuotes;
+      if (!inQuotes && c === '#') break;
+      if (!inQuotes && c === ';') {
+        lines.push(current);
+        current = '';
+      } else current += c;
     }
-    lineas.push(actual);
+    lines.push(current);
   }
-  return lineas.map((l) => l.trim()).filter((l) => l !== '');
+  return lines.map((l) => l.trim()).filter((l) => l !== '');
 }
 
-const NUMERO = /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i;
-const CON_COMA = /^[-+]?\d+,\d+$/;
+const NUMBER = /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i;
+const WITH_COMMA = /^[-+]?\d+,\d+$/;
+const ON = ['on', '1', 'true', 'yes'];
+const OFF = ['off', '0', 'false', 'no'];
 
-/** Cuántas palabras usa un tipo (el resto, todas las que queden). */
-export const palabrasQueUsa = (t: Tipo) => (t.tipo === 'vector' ? 3 : 1);
+/** How many words a type uses (`rest`, all that are left). */
+export const wordsUsed = (t: Type) => (t.kind === 'vector' ? 3 : 1);
 
-export type Leido = { ok: true; valor: Valor } | { ok: false; error: string };
+export type Parsed = { ok: true; value: Value } | { ok: false; error: string };
 
-/** Lee un valor de su tipo a partir de sus palabras. El error explica qué se esperaba. */
-export function leerValor(t: Tipo, palabras: readonly string[]): Leido {
-  const numero = (texto: string, entero: boolean): number | string => {
-    if (CON_COMA.test(texto)) return `los decimales van con punto (${texto.replace(',', '.')}), no con coma`;
-    if (!NUMERO.test(texto) || (entero && !/^[-+]?\d+$/.test(texto))) return `esperaba ${describirTipo(t)}, y llegó "${texto}"`;
-    return Number(texto);
+/** Reads a value of its type from its words. The error says what was expected. */
+export function parseValue(t: Type, words: readonly string[]): Parsed {
+  const number = (text: string, integer: boolean): number | string => {
+    if (WITH_COMMA.test(text)) return `decimals use a point (${text.replace(',', '.')}), not a comma`;
+    if (!NUMBER.test(text) || (integer && !/^[-+]?\d+$/.test(text))) return `expected ${describeType(t)}, got "${text}"`;
+    return Number(text);
   };
-  switch (t.tipo) {
-    case 'numero':
-    case 'entero': {
-      const n = numero(palabras[0] ?? '', t.tipo === 'entero');
+  switch (t.kind) {
+    case 'number':
+    case 'integer': {
+      const n = number(words[0] ?? '', t.kind === 'integer');
       if (typeof n === 'string') return { ok: false, error: n };
       if ((t.min !== undefined && n < t.min) || (t.max !== undefined && n > t.max))
-        return { ok: false, error: `esperaba ${describirTipo(t)}, y llegó ${n}` };
-      return { ok: true, valor: n };
+        return { ok: false, error: `expected ${describeType(t)}, got ${n}` };
+      return { ok: true, value: n };
     }
-    case 'booleano': {
-      const p = (palabras[0] ?? '').toLowerCase();
-      if (['si', 'sí', 'yes', '1'].includes(p)) return { ok: true, valor: true };
-      if (['no', '0'].includes(p)) return { ok: true, valor: false };
-      return { ok: false, error: `esperaba si o no, y llegó "${palabras[0] ?? ''}"` };
+    case 'boolean': {
+      const w = (words[0] ?? '').toLowerCase();
+      if (ON.includes(w)) return { ok: true, value: true };
+      if (OFF.includes(w)) return { ok: true, value: false };
+      return { ok: false, error: `expected on or off, got "${words[0] ?? ''}"` };
     }
     case 'vector': {
-      if (palabras.length < 3) return { ok: false, error: 'esperaba un vector: tres números (x y z)' };
+      if (words.length < 3) return { ok: false, error: 'expected a vector: three numbers (x y z)' };
       const v: number[] = [];
-      for (const p of palabras.slice(0, 3)) {
-        const n = numero(p, false);
+      for (const w of words.slice(0, 3)) {
+        const n = number(w, false);
         if (typeof n === 'string') return { ok: false, error: n };
         v.push(n);
       }
-      return { ok: true, valor: v as Vec3 };
+      return { ok: true, value: v as Vec3 };
     }
-    case 'opcion': {
-      const p = (palabras[0] ?? '').toLowerCase();
-      if (t.opciones.includes(p)) return { ok: true, valor: p };
-      return { ok: false, error: `esperaba una de estas: ${t.opciones.join(', ')}; y llegó "${palabras[0] ?? ''}"` };
+    case 'option': {
+      const w = (words[0] ?? '').toLowerCase();
+      if (t.options.includes(w)) return { ok: true, value: w };
+      return { ok: false, error: `expected one of: ${t.options.join(', ')}; got "${words[0] ?? ''}"` };
     }
-    case 'texto':
-    case 'resto':
-      return { ok: true, valor: palabras.join(' ') };
+    case 'text':
+    case 'rest':
+      return { ok: true, value: words.join(' ') };
   }
 }
 
-/** Escribe un valor como se tipea en la consola (y como queda en una receta). */
-export function escribirValor(v: Valor): string {
-  if (typeof v === 'boolean') return v ? 'si' : 'no';
+/** Writes a value the way it is typed in the console (and kept in a recipe). */
+export function formatValue(v: Value): string {
+  if (typeof v === 'boolean') return v ? 'on' : 'off';
   if (Array.isArray(v)) return v.join(' ');
   if (typeof v === 'string') return /\s/.test(v) || v === '' ? `"${v}"` : v;
   return String(v);
 }
 
-export function mismoValor(a: Valor, b: Valor): boolean {
+export function sameValue(a: Value, b: Value): boolean {
   if (Array.isArray(a) && Array.isArray(b)) return a.every((x, i) => x === b[i]);
   return a === b;
 }
 
-/** "un entero de 0 a 200", para la ayuda y los errores. */
-export function describirTipo(t: Tipo): string {
-  const rango = (min?: number, max?: number) =>
+/** "an integer from 0 to 200", for the help and the errors. */
+export function describeType(t: Type): string {
+  const range = (min?: number, max?: number) =>
     min !== undefined && max !== undefined
-      ? ` de ${min} a ${max}`
+      ? ` from ${min} to ${max}`
       : min !== undefined
-        ? ` desde ${min}`
+        ? ` from ${min}`
         : max !== undefined
-          ? ` hasta ${max}`
+          ? ` up to ${max}`
           : '';
-  switch (t.tipo) {
-    case 'numero':
-      return `un número${rango(t.min, t.max)}`;
-    case 'entero':
-      return `un entero${rango(t.min, t.max)}`;
-    case 'booleano':
-      return 'si o no';
+  switch (t.kind) {
+    case 'number':
+      return `a number${range(t.min, t.max)}`;
+    case 'integer':
+      return `an integer${range(t.min, t.max)}`;
+    case 'boolean':
+      return 'on or off';
     case 'vector':
-      return 'tres números (x y z)';
-    case 'texto':
-      return 'un texto';
-    case 'opcion':
-      return `una de estas: ${t.opciones.join(', ')}`;
-    case 'resto':
-      return 'el resto de la línea';
+      return 'three numbers (x y z)';
+    case 'text':
+      return 'a text';
+    case 'option':
+      return `one of: ${t.options.join(', ')}`;
+    case 'rest':
+      return 'the rest of the line';
   }
 }

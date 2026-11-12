@@ -1,28 +1,28 @@
 ---
 /**
- * LA PÁGINA DEL DOJO: pantalla completa, sin el marco del sitio. El juego se monta en #juego.
- * La usan dos páginas: `/jugar/dojo/` y la de cada sala guardada (`/jugar/dojo/lluvia/`), que
- * le pasa su nombre (decisión 0010: cada sala tiene su dirección). Astro empaqueta el <script>
- * con Vite, como cualquier página: importa el Dojo como un paquete más del monorepo.
+ * THE DOJO'S PAGE: full screen, without the site's frame. The game is mounted in #game. Two pages
+ * use it: `/jugar/dojo/` and each saved room's (`/jugar/dojo/rain/`), which passes its name
+ * (decision 0010: every room has its address). Astro bundles the <script> with Vite, like any page:
+ * it imports the Dojo as one more package of the monorepo.
  */
 import '@fontsource-variable/cinzel';
-import oxido from '../assets/dibujos/oxido.svg';
+import rust from '../assets/drawings/rust.svg';
 
 interface Props {
-  /** La sala guardada (el nombre de su receta), si se entró por la dirección de una. */
-  sala?: string;
-  /** Su título, para la pestaña del navegador. */
-  titulo?: string;
+  /** The saved room (its recipe's name), if one came in through its address. */
+  room?: string;
+  /** Its title, for the browser tab. */
+  title?: string;
 }
-const { sala, titulo } = Astro.props;
-const inicio = import.meta.env.BASE_URL;
+const { room, title } = Astro.props;
+const home = import.meta.env.BASE_URL;
 ---
 
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{titulo ? `${titulo} · Dojo · Manifold Gaming` : 'Dojo · Manifold Gaming'}</title>
+    <title>{title ? `${title} · Dojo · Manifold Gaming` : 'Dojo · Manifold Gaming'}</title>
     <style>
       html,
       body {
@@ -33,22 +33,22 @@ const inicio = import.meta.env.BASE_URL;
         color: #e8e8ea;
         font: 14px/1.4 system-ui, sans-serif;
       }
-      #juego {
+      #game {
         position: fixed;
         inset: 0;
       }
-      /* Volver: una plaquita de metal viejo, como los botones del sitio. Abajo a la derecha: arriba
-         se abre la consola, y abajo a la izquierda está su botón. */
-      #volver {
+      /* Back: a small plate of old metal, like the site's buttons. Bottom right: the console opens
+         at the top, and its button is at the bottom left. */
+      #back {
         position: fixed;
         right: 12px;
         bottom: 12px;
         padding: 0.35rem 0.9rem;
         border: 1px solid #24170a;
         border-radius: 0.35rem;
-        /* El mismo metal que el sitio (taller.css): bronce viejo y la textura de óxido encima. */
+        /* The same metal as the site (workshop.css): old bronze with the rust texture on top. */
         background:
-          var(--oxido) 0 0 / 220px 220px,
+          var(--rust) 0 0 / 220px 220px,
           linear-gradient(160deg, #3c2916 0%, #4c351f 35%, #553c24 55%, #48321c 80%, #3f2b17 100%);
         box-shadow:
           inset 0 1px 0 rgb(255 225 180 / 0.1),
@@ -60,18 +60,18 @@ const inicio = import.meta.env.BASE_URL;
         text-decoration: none;
         opacity: 0.85;
       }
-      #volver:hover {
+      #back:hover {
         opacity: 1;
       }
     </style>
   </head>
   <body>
-    <div id="juego" data-sala={sala}></div>
-    <a id="volver" href={inicio} style={`--oxido: url(${oxido.src})`}>← Manifold Gaming</a>
+    <div id="game" data-room={room}></div>
+    <a id="back" href={home} style={`--rust: url(${rust.src})`}>← Manifold Gaming</a>
     <script>
-      import { arrancarDojo } from '@manifold/dojo';
-      const juego = document.getElementById('juego')!;
-      arrancarDojo(juego, { sala: juego.dataset.sala, base: import.meta.env.BASE_URL });
+      import { startDojo } from '@manifold/dojo';
+      const game = document.getElementById('game')!;
+      startDojo(game, { room: game.dataset.room, base: import.meta.env.BASE_URL });
     </script>
   </body>
 </html>

@@ -1,86 +1,88 @@
 ---
 /**
- * LA VITRINA del inicio: un marco de bronce con una escena 3D en vivo (src/vitrina/vitrina.ts),
- * dos engranajes que engranan de verdad, y una placa que dice qué se ve.
+ * THE HOME PAGE'S SHOWCASE: a bronze frame with a live 3D scene (src/showcase/showcase.ts), two
+ * gears that really mesh, and a plate that says what is seen.
  *
- * Three.js se pide DESPUÉS de que la página se dibuja (con un `import()` dinámico, que Vite
- * separa en su propio archivo): el inicio aparece enseguida, y la vitrina se enciende un momento
- * después. Si no hay WebGL, queda el marco con su fondo, y nada se rompe.
+ * Three.js is fetched AFTER the page is drawn (with a dynamic `import()`, which Vite splits into
+ * its own file): the home page shows up right away, and the showcase lights up a moment later.
+ * Without WebGL, the frame stays with its background, and nothing breaks.
  *
- * Los engranajes (scripts/dibujar.mjs) tienen el mismo módulo: 20 y 12 dientes, radios
- * primitivos 40 y 24, centros a 64 unidades. Para que no se traben, giran en sentidos opuestos
- * con períodos en razón 20 : 12 (40 s y 24 s), y arrancan con un diente frente a un hueco.
+ * The gears (scripts/draw.mjs) have the same module: 20 and 12 teeth, pitch radii 40 and 24,
+ * centers 64 units apart. So they do not jam, they turn in opposite directions with periods in a
+ * 20 : 12 ratio (40 s and 24 s), and start with a tooth facing a gap.
+ *
+ * (The plate's text is the site's, in Spanish.)
  */
-import engranaje20 from '../assets/dibujos/engranaje-20.svg';
-import engranaje12 from '../assets/dibujos/engranaje-12.svg';
+import gear20 from '../assets/drawings/gear-20.svg';
+import gear12 from '../assets/drawings/gear-12.svg';
 ---
 
-<figure class="vitrina not-content" data-estado="cargando">
-  <img class="engranaje engranaje-grande" src={engranaje20.src} alt="" aria-hidden="true" />
-  <img class="engranaje engranaje-chico" src={engranaje12.src} alt="" aria-hidden="true" />
-  <div class="vitrina-marco">
-    <div class="vitrina-ventana" role="img" aria-label="Tres cuerpos en órbita sobre un pozo de potencial, en 3D"></div>
+<figure class="showcase not-content" data-state="loading">
+  <img class="gear gear-big" src={gear20.src} alt="" aria-hidden="true" />
+  <img class="gear gear-small" src={gear12.src} alt="" aria-hidden="true" />
+  <div class="showcase-frame">
+    <div class="showcase-window" role="img" aria-label="Tres cuerpos en órbita sobre un pozo de potencial, en 3D"></div>
   </div>
-  <figcaption class="vitrina-placa">
+  <figcaption class="showcase-plate">
     <span>Pozo de potencial <i>Φ = −GM / r</i></span>
-    <span class="vitrina-paso">paso <b>0</b></span>
+    <span class="showcase-step">paso <b>0</b></span>
   </figcaption>
 </figure>
 
 <style>
-  .vitrina {
-    /* La unidad de los engranajes: 1 unidad del dibujo = --u píxeles. */
+  .showcase {
+    /* The gears' unit: 1 drawing unit = --u pixels. */
     --u: 1.1px;
     position: relative;
     margin: 0;
-    padding-top: 2.5rem; /* lugar para los engranajes que asoman arriba */
+    padding-top: 2.5rem; /* room for the gears that peek out at the top */
   }
 
-  /* ---------- los engranajes ---------- */
-  .engranaje {
+  /* ---------- the gears ---------- */
+  .gear {
     position: absolute;
     z-index: 0;
     pointer-events: none;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
   }
-  /* Centro del grande: 2.5rem + 6px desde arriba, y adentro del borde derecho (que no asome
-     afuera de la página). El chico, a 64 unidades del grande en la dirección de 200°: a la
-     izquierda y un poco más arriba. */
-  .engranaje-grande {
+  /* The big one's center: 2.5rem + 6px from the top, and inside the right edge (so it does not
+     stick out of the page). The small one, 64 units from the big one in the 200° direction: to the
+     left and a little higher. */
+  .gear-big {
     width: calc(92 * var(--u));
     top: calc(2.5rem + 6px - 46 * var(--u));
     right: 0.5rem;
-    rotate: 200deg; /* un diente apunta al chico */
-    animation-name: girar-grande;
+    rotate: 200deg; /* a tooth points at the small one */
+    animation-name: turn-big;
     animation-duration: 40s;
   }
-  .engranaje-chico {
+  .gear-small {
     width: calc(60 * var(--u));
     top: calc(2.5rem + 6px - 21.89 * var(--u) - 30 * var(--u));
     right: calc(0.5rem + 46 * var(--u) + 60.14 * var(--u) - 30 * var(--u));
-    rotate: 35deg; /* 200° + 180° + medio diente (15°): un hueco mira al grande */
-    animation-name: girar-chico;
+    rotate: 35deg; /* 200° + 180° + half a tooth (15°): a gap faces the big one */
+    animation-name: turn-small;
     animation-duration: 24s;
   }
-  @keyframes girar-grande {
+  @keyframes turn-big {
     to {
       rotate: 560deg;
     }
   }
-  @keyframes girar-chico {
+  @keyframes turn-small {
     to {
       rotate: -325deg;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .engranaje {
+    .gear {
       animation: none;
     }
   }
 
-  /* ---------- el marco y la ventana ---------- */
-  .vitrina-marco {
+  /* ---------- the frame and the window ---------- */
+  .showcase-frame {
     position: relative;
     z-index: 1;
     padding: 12px;
@@ -88,41 +90,41 @@ import engranaje12 from '../assets/dibujos/engranaje-12.svg';
     background: var(--mg-metal);
     box-shadow:
       0 0 0 1px #1f1408,
-      var(--mg-bisel),
+      var(--mg-bevel),
       0 34px 60px -30px rgb(0 0 0 / 0.95);
   }
-  .vitrina-marco::before {
+  .showcase-frame::before {
     content: '';
     position: absolute;
     inset: 3px;
     pointer-events: none;
     background:
-      var(--mg-remache) 0 0 / 8px 8px no-repeat,
-      var(--mg-remache) 100% 0 / 8px 8px no-repeat,
-      var(--mg-remache) 0 100% / 8px 8px no-repeat,
-      var(--mg-remache) 100% 100% / 8px 8px no-repeat;
+      var(--mg-rivet) 0 0 / 8px 8px no-repeat,
+      var(--mg-rivet) 100% 0 / 8px 8px no-repeat,
+      var(--mg-rivet) 0 100% / 8px 8px no-repeat,
+      var(--mg-rivet) 100% 100% / 8px 8px no-repeat;
   }
-  .vitrina-ventana {
+  .showcase-window {
     position: relative;
     aspect-ratio: 3 / 2;
     border-radius: 6px;
     overflow: hidden;
-    /* Siempre oscura, también en el modo claro: es una vitrina. */
+    /* Always dark, also in light mode: it is a showcase. */
     background: radial-gradient(ellipse 70% 70% at 50% 58%, #133530, #0a1513 58%, #060808);
     box-shadow:
       inset 0 0 0 1px #000,
       inset 0 0 34px rgb(0 0 0 / 0.9);
     touch-action: pan-y;
   }
-  /* El reflejo del vidrio. */
-  .vitrina-ventana::after {
+  /* The glass's reflection. */
+  .showcase-window::after {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
     background: linear-gradient(155deg, rgb(255 255 255 / 0.07), transparent 32%);
   }
-  .vitrina-ventana :global(canvas) {
+  .showcase-window :global(canvas) {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -130,12 +132,12 @@ import engranaje12 from '../assets/dibujos/engranaje-12.svg';
     opacity: 0;
     transition: opacity 0.9s ease;
   }
-  .vitrina[data-estado='lista'] .vitrina-ventana :global(canvas) {
+  .showcase[data-state='ready'] .showcase-window :global(canvas) {
     opacity: 1;
   }
 
-  /* ---------- la placa ---------- */
-  .vitrina-placa {
+  /* ---------- the plate ---------- */
+  .showcase-plate {
     position: relative;
     z-index: 2;
     display: flex;
@@ -149,81 +151,81 @@ import engranaje12 from '../assets/dibujos/engranaje-12.svg';
     padding: 0.3rem 1.6rem 0.35rem;
     border-radius: 4px;
     background:
-      var(--mg-remache) 0.45rem 50% / 8px 8px no-repeat,
-      var(--mg-remache) calc(100% - 0.45rem) 50% / 8px 8px no-repeat,
+      var(--mg-rivet) 0.45rem 50% / 8px 8px no-repeat,
+      var(--mg-rivet) calc(100% - 0.45rem) 50% / 8px 8px no-repeat,
       var(--mg-metal);
     box-shadow:
       0 0 0 1px #24170a,
-      var(--mg-bisel),
+      var(--mg-bevel),
       0 8px 16px -8px rgb(0 0 0 / 0.8);
-    color: var(--mg-texto-sobre-bronce);
-    /* Letras grabadas: la sombra arriba las hunde en el metal. */
-    text-shadow: var(--mg-grabado);
-    font-family: var(--mg-letra-titulo);
+    color: var(--mg-text-on-bronze);
+    /* Engraved letters: the shadow on top sinks them into the metal. */
+    text-shadow: var(--mg-engraved);
+    font-family: var(--mg-font-title);
     font-size: 0.74rem;
     font-weight: 700;
     letter-spacing: 0.09em;
     text-transform: uppercase;
     line-height: 1.5;
   }
-  .vitrina-placa span {
+  .showcase-plate span {
     white-space: nowrap;
   }
-  .vitrina-placa i {
+  .showcase-plate i {
     margin-inline-start: 0.35em;
-    font-family: var(--mg-letra-libro);
+    font-family: var(--mg-font-book);
     font-size: 1.05rem;
     font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
   }
-  .vitrina-paso b {
+  .showcase-step b {
     font-family: var(--sl-font-system-mono, ui-monospace, monospace);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0;
   }
 
   @media (max-width: 40rem) {
-    .vitrina {
+    .showcase {
       --u: 0.8px;
       padding-top: 1.8rem;
     }
-    .engranaje-grande {
+    .gear-big {
       top: calc(1.8rem + 6px - 46 * var(--u));
     }
-    .engranaje-chico {
+    .gear-small {
       top: calc(1.8rem + 6px - 21.89 * var(--u) - 30 * var(--u));
     }
-    .vitrina-marco {
+    .showcase-frame {
       padding: 8px;
     }
   }
 </style>
 
 <script>
-  const figura = document.querySelector<HTMLElement>('.vitrina');
-  const ventana = figura?.querySelector<HTMLElement>('.vitrina-ventana');
-  const contador = figura?.querySelector<HTMLElement>('.vitrina-paso b');
+  const figure = document.querySelector<HTMLElement>('.showcase');
+  const view = figure?.querySelector<HTMLElement>('.showcase-window');
+  const counter = figure?.querySelector<HTMLElement>('.showcase-step b');
 
-  async function encender(figura: HTMLElement, ventana: HTMLElement) {
+  async function light(figure: HTMLElement, view: HTMLElement) {
     try {
-      const { arrancarVitrina } = await import('../vitrina/vitrina');
-      arrancarVitrina(ventana, {
-        alPaso: (paso) => {
-          if (contador) contador.textContent = paso.toLocaleString('es');
+      const { startShowcase } = await import('../showcase/showcase');
+      startShowcase(view, {
+        onStep: (step) => {
+          if (counter) counter.textContent = step.toLocaleString('es');
         },
       });
-      figura.dataset.estado = 'lista';
+      figure.dataset.state = 'ready';
     } catch (e) {
-      // Sin WebGL (o sin red): queda el marco vacío, que también se ve bien.
-      figura.dataset.estado = 'sin-3d';
-      console.warn('La vitrina no pudo encenderse:', e);
+      // Without WebGL (or without network): the empty frame stays, which also looks fine.
+      figure.dataset.state = 'no-3d';
+      console.warn('The showcase could not start:', e);
     }
   }
 
-  if (figura && ventana) {
-    // Primero que se dibuje la página; después, Three.js.
-    if ('requestIdleCallback' in window) requestIdleCallback(() => void encender(figura, ventana), { timeout: 1200 });
-    else setTimeout(() => void encender(figura, ventana), 300);
+  if (figure && view) {
+    // First let the page be drawn; then, Three.js.
+    if ('requestIdleCallback' in window) requestIdleCallback(() => void light(figure, view), { timeout: 1200 });
+    else setTimeout(() => void light(figure, view), 300);
   }
 </script>

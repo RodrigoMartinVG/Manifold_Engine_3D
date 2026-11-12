@@ -1,89 +1,86 @@
 /**
- * LAS PIEZAS DEL REGISTRO (decisión 0010).
+ * THE PIECES OF THE REGISTRY (decision 0010).
  *
- * Cada parte del sistema (el núcleo, la presentación, cada juego) DECLARA lo que se puede
- * cambiar o hacer: variables y comandos. Nadie lee la dirección ni el teclado por su cuenta.
- * La consola, los enlaces, las salas y las pruebas usan estas declaraciones.
+ * Every part of the system (the core, the presentation, each game) DECLARES what can be changed
+ * or done: variables and commands. Nobody reads the address or the keyboard on their own. The
+ * console, links, rooms and tests all use these declarations.
+ *
+ * The console's vocabulary is English, and fixed (decision 0011): like a programming language, it
+ * is not translated, so a recipe works for anyone, anywhere.
  */
-
-/** Un texto en cada idioma. Por ahora, solo castellano: el inglés se suma después (decisión 0010). */
-export interface Texto {
-  es: string;
-  en?: string;
-}
 
 /**
- * Qué toca una variable, y por eso, qué pasa al cambiarla:
- * - `arranque`: cómo nace el mundo (la semilla, cuántos cubos). Cambiarla lo reinicia.
- * - `mundo`: algo del mundo que ya corre (la gravedad, un giro). Entra en un paso concreto,
- *   como una tecla del jugador, y queda en la historia de la partida: no rompe el determinismo.
- * - `vista`: solo lo que se ve (dibujar los triángulos, ir más lento). No toca la simulación.
+ * What a variable touches, and so, what happens when it changes:
+ * - `startup`: how the world is born (the seed, how many cubes). Changing it restarts the world.
+ * - `world`: something in the running world (gravity, a spin). It enters at a given step, like a
+ *   player's key press, and stays in the session's history: it does not break determinism.
+ * - `view`: only what is seen (drawing the triangles, going slower). It does not touch the simulation.
  */
-export type Alcance = 'arranque' | 'mundo' | 'vista';
+export type Scope = 'startup' | 'world' | 'view';
 
 export type Vec3 = [number, number, number];
-export type Valor = number | boolean | string | Vec3;
+export type Value = number | boolean | string | Vec3;
 
-/** El tipo de un valor, con lo que hace falta para validarlo (y para explicarlo en la ayuda). */
-export type Tipo =
-  | { tipo: 'numero'; min?: number; max?: number }
-  | { tipo: 'entero'; min?: number; max?: number }
-  | { tipo: 'booleano' }
-  | { tipo: 'vector' }
-  | { tipo: 'texto' }
-  | { tipo: 'opcion'; opciones: readonly string[] }
-  /** El resto de la línea, tal cual (para `atajo f ver.ejes si`). Solo como último argumento. */
-  | { tipo: 'resto' };
+/** The type of a value, with what is needed to validate it (and to explain it in the help). */
+export type Type =
+  | { kind: 'number'; min?: number; max?: number }
+  | { kind: 'integer'; min?: number; max?: number }
+  | { kind: 'boolean' }
+  | { kind: 'vector' }
+  | { kind: 'text' }
+  | { kind: 'option'; options: readonly string[] }
+  /** The rest of the line, as is (for `bind t toggle show.axes`). Only as the last argument. */
+  | { kind: 'rest' };
 
-/** Una variable: un nombre, un valor con su tipo, y qué hacer cuando cambia. `M` es el mundo. */
-export interface Variable<M = unknown> {
-  /** Con espacio de nombres: `dojo.cubos`, `ver.triangulos`. Minúsculas, números y `_`. */
-  nombre: string;
-  descripcion: Texto;
-  alcance: Alcance;
-  tipo: Tipo;
-  porDefecto: Valor;
-  /** De la vista: qué hacer cuando cambia (enseguida). */
-  alCambiar?(valor: Valor): void;
+/** A variable: a name, a typed value, and what to do when it changes. `W` is the world. */
+export interface Variable<W = unknown> {
+  /** Namespaced: `dojo.cubes`, `show.wireframe`. Lowercase letters, digits and `_`. */
+  name: string;
+  description: string;
+  scope: Scope;
+  type: Type;
+  default: Value;
+  /** For the view: what to do when it changes (right away). */
+  onChange?(value: Value): void;
   /**
-   * Del mundo: cómo se aplica al mundo. No se llama enseguida: lo llama la partida al empezar el
-   * paso siguiente (y al crear el mundo, si el valor no es el de por defecto).
+   * For the world: how it is applied to the world. Not called right away: the session calls it at
+   * the start of the next step (and when the world is created, if the value is not the default).
    */
-  alMundo?(mundo: M, valor: Valor): void;
+  onWorld?(world: W, value: Value): void;
 }
 
-export interface Argumento {
-  nombre: string;
-  tipo: Tipo;
-  opcional?: boolean;
+export interface Argument {
+  name: string;
+  type: Type;
+  optional?: boolean;
 }
 
-/** Un comando: una acción con argumentos (`reiniciar`, `paso 10`, `dojo.crear 0 5 0`). */
-export interface Comando<M = unknown> {
-  nombre: string;
-  descripcion: Texto;
-  argumentos?: readonly Argumento[];
+/** A command: an action with arguments (`restart`, `step 10`, `dojo.spawn 0 5 0`). */
+export interface Command<W = unknown> {
+  name: string;
+  description: string;
+  args?: readonly Argument[];
   /**
-   * Si una receta (la de un enlace, la de una sala, la de inicio) lo puede ejecutar. Por defecto
-   * NO: un enlace ajeno solo puede fijar variables y lo que se declare seguro (decisión 0010).
+   * Whether a recipe (a link's, a room's, the startup one) can run it. By default NO: someone
+   * else's link can only set variables and what is declared safe (decision 0010).
    */
-  enRecetas?: boolean;
-  /** Si es una acción del mundo: se aplica en un paso, como las variables del mundo. */
-  alMundo?(mundo: M, argumentos: Valor[]): void;
-  /** Si no es del mundo: se hace enseguida, y puede escribir en la consola. */
-  ejecutar?(argumentos: Valor[], salida: Salida): void;
+  inRecipes?: boolean;
+  /** If it is a world action: it is applied at a step, like world variables. */
+  onWorld?(world: W, args: Value[]): void;
+  /** If it is not a world action: it is done right away, and it can write to the console. */
+  run?(args: Value[], out: Output): void;
 }
 
-export type Nivel = 'info' | 'aviso' | 'error';
+export type Level = 'info' | 'warn' | 'error';
 
-export interface Mensaje {
-  nivel: Nivel;
-  texto: string;
+export interface Message {
+  level: Level;
+  text: string;
 }
 
-export interface Salida {
-  escribir(texto: string, nivel?: Nivel): void;
+export interface Output {
+  write(text: string, level?: Level): void;
 }
 
-/** De dónde viene una línea: escrita en la consola, o de una receta (un enlace, una sala, la de inicio). */
-export type Origen = 'consola' | 'receta';
+/** Where a line comes from: typed in the console, or from a recipe (a link, a room, the startup one). */
+export type Source = 'console' | 'recipe';

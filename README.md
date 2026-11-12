@@ -1,47 +1,50 @@
 # Manifold Gaming
 
-**Un laboratorio de mundos físicos en 3D para la web.** Un motor propio (TypeScript, [Three.js](https://threejs.org), [Rapier](https://rapier.rs)) donde la gravedad es un campo, las cosas se componen de capacidades y lo que pasa se puede repetir; un **Dojo** para experimentar con él; **juegos** encima; y un **tutorial** que se escribe a medida que el motor crece.
+**A lab of 3D physical worlds for the web.** An engine of its own (TypeScript, [Three.js](https://threejs.org), [Rapier](https://rapier.rs)) where gravity is a field, things are made of capabilities and what happens can be replayed; a **Dojo** to experiment with it; **games** on top; and a **tutorial** written as the engine grows.
 
-🌐 **Sitio:** https://rodrigomartinvg.github.io/Manifold_Gaming/
+🌐 **Site:** https://rodrigomartinvg.github.io/Manifold_Gaming/ (in Spanish for now)
 
-> Estado: **fase 0** (cimientos). El Dojo tiene un cubo que gira, calculado por la simulación.
+> Status: **phase 0** (foundations). The Dojo has a spinning cube, computed by the simulation, and a console to configure it.
 
-## Cómo está organizado
+## How it is organized
 
 ```
-paquetes/comun          azar con semilla y matemática sobre datos planos
-paquetes/nucleo         la simulación: el mundo, su paso fijo, sus eventos (sin pantalla)
-paquetes/presentacion   lo que se ve: Three.js
-juegos/dojo             el primer juego (el laboratorio)
-sitio                   la web: inicio, el proyecto, jugar, el tutorial y la bitácora (Astro + Starlight)
-sitio/src/lecciones     el código de las lecciones (se edita y se ejecuta en la página)
-docs/decisiones         las decisiones de arquitectura, con su porqué
-e2e                     pruebas en un navegador de verdad (Playwright)
+packages/common         seeded randomness and math on plain data
+packages/commands       the registry and interpreter behind the console (no screen)
+packages/core           the simulation: the world, its fixed step, its events (no screen)
+packages/presentation   what is seen: Three.js, and the console
+games/dojo              the first game (the lab), with its saved rooms in recipes/
+site                    the website: home, the project, play, the tutorial and the Bitácora (Astro + Starlight)
+site/src/lessons        the lessons' code (edited and run in the page)
+docs/decisions          the architecture decisions, with their why
+e2e                     tests in a real browser (Playwright)
 ```
 
-Las capas solo dependen hacia adentro: el núcleo no conoce a la presentación ni a los juegos. Lo vigilan el compilador y el linter ([decisión 0003](docs/decisiones/0003-fronteras.md)).
+The layers only depend inward: the core knows neither the presentation nor the games. The compiler and the linter guard it ([decision 0003](docs/decisions/0003-boundaries.md)).
 
-## Para trabajar
+**Languages:** the site (the tutorial, the Bitácora, its pages) is in Spanish; everything else, the code, the console, the tests, the decisions and the commits, is in English ([decision 0011](docs/decisions/0011-languages.md)).
 
-Hace falta [mise](https://mise.jdx.dev) (o Node 26).
+## Working on it
+
+You need [mise](https://mise.jdx.dev) (or Node 26).
 
 ```bash
-mise install          # Node 26, el de este proyecto
+mise install          # Node 26, this project's
 npm install
-npm run dev           # el sitio y el Dojo, con recarga en caliente
+npm run dev           # the site and the Dojo, with hot reload
 ```
 
-| Comando                    | Qué hace                                                                                  |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| `npm run dev`              | El sitio en http://localhost:4321/Manifold_Gaming/                                        |
-| `npm run verificar`        | Tipos, linter, formato y pruebas sin pantalla                                             |
-| `npm run pruebas:mirar`    | Las pruebas, que se vuelven a correr al guardar                                           |
-| `npm run e2e`              | Arma el sitio y lo prueba en Chromium (la primera vez: `npx playwright install chromium`) |
-| `npm run build`            | El sitio listo para publicar, en `sitio/dist`                                             |
-| `npm run dibujar -w sitio` | Vuelve a generar los dibujos del sitio (fondo, marca, engranajes) con su geometría        |
+| Command                | What it does                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| `npm run dev`          | The site at http://localhost:4321/Manifold_Gaming/                                           |
+| `npm run verify`       | Types, linter, formatting and headless tests                                                 |
+| `npm run test:watch`   | The tests, run again on every save                                                           |
+| `npm run e2e`          | Builds the site and tests it in Chromium (the first time: `npx playwright install chromium`) |
+| `npm run build`        | The site ready to publish, in `site/dist`                                                    |
+| `npm run draw -w site` | Generates the site's drawings again (background, logo, gears) from their geometry            |
 
-Cómo se trabaja: directo en `main`, verificando antes en la máquina ([decisión 0009](docs/decisiones/0009-directo-en-main.md)); commits, etiquetas por paso e idioma en la [decisión 0005](docs/decisiones/0005-forma-de-trabajo.md). Todas las decisiones: [docs/decisiones](docs/decisiones/README.md).
+How we work: straight on `main`, checking on the machine first ([decision 0009](docs/decisions/0009-straight-to-main.md)); commits and tags per stage in [decision 0005](docs/decisions/0005-way-of-working.md). All the decisions: [docs/decisions](docs/decisions/README.md).
 
-## De dónde viene
+## Where it comes from
 
-Es la segunda versión de un motor que creció paso a paso como un shooter. De esa versión no se copia código: se traen lecciones, escritas con sus números en la [decisión 0000](docs/decisiones/0000-por-que-la-v2.md).
+It is the second version of an engine that grew step by step as a shooter. No code is copied from that version: lessons are brought over, written down with their numbers in [decision 0000](docs/decisions/0000-why-a-v2.md).

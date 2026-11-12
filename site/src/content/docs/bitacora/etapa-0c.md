@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-> Informe de la etapa 0c: lo que se hizo después del [tutorial ejecutable](../etapa-0b/) y antes de empezar con la física. Las decisiones de esta etapa son la [0008](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0008-la-estetica-del-taller.md) (la estética), la [0009](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0009-directo-en-main.md) (directo en `main`) y un cambio en la [0001](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0001-monorepo-y-herramientas.md) (Node 26).
+> Informe de la etapa 0c: lo que se hizo después del [tutorial ejecutable](../etapa-0b/) y antes de empezar con la física. Las decisiones de esta etapa son la [0008](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0008-the-workshop-look.md) (la estética), la [0009](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0009-straight-to-main.md) (directo en `main`) y un cambio en la [0001](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0001-monorepo-and-tools.md) (Node 26).
 
 ## Qué hicimos
 

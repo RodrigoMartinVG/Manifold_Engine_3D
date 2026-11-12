@@ -5,9 +5,9 @@ sidebar:
   order: 4
 ---
 
-import CodigoVivo from '../../../../components/CodigoVivo.astro';
+import LiveCode from '../../../../components/LiveCode.astro';
 
-Los juegos usan azar para casi todo: dónde aparece un enemigo, cómo rebota algo, cómo se arma un nivel. Pero una computadora no tira dados: **calcula**. Los números "al azar" salen de una cuenta que, vista de afuera, no parece tener ningún patrón. Por eso se llaman **pseudoaleatorios**.
+Los juegos usan azar para casi todo: dónde aparece un enemigo, cómo rebota algo, cómo se arma un nivel. Pero una computadora no tira dados: **calcula**. Los números "al azar" salen de una cuenta que, vista de afuera, no parece tener ningún patrón. Por eso se llaman **pseudoaleatorios** (_pseudorandom_).
 
 `Math.random()`, el azar que trae JavaScript, empieza cada vez desde un lugar distinto, así que da otra secuencia cada vez. Para un juego eso es un problema:
 
@@ -15,24 +15,24 @@ Los juegos usan azar para casi todo: dónde aparece un enemigo, cómo rebota alg
 - **No se puede compartir un experimento.** "Con este nivel el auto vuelca" no sirve si el nivel sale distinto cada vez.
 - **El servidor y los jugadores no pueden ver lo mismo** sin mandarse cada número por la red.
 
-Un generador **con semilla** resuelve las tres cosas. La **semilla** es el número desde el que empieza la cuenta: la misma semilla da **siempre** la misma secuencia de números.
+Un generador **con semilla** (_seeded_) resuelve las tres cosas. La **semilla** (_seed_) es el número desde el que empieza la cuenta: la misma semilla da **siempre** la misma secuencia de números.
 
-<CodigoVivo leccion="etapa-0/04-azar-con-semilla" autoejecutar />
+<LiveCode lesson="stage-0/04-seeded-random" autorun />
 
 El ejemplo arma un "nivel": 60 cubos con lugar, tamaño, color y giro sacados del azar.
 
 **Qué probar:**
 
-1. **Tocá "regenerar" varias veces.** Con semilla, sale siempre el mismo nivel. Mirá la consola: los primeros números son siempre los mismos.
-2. **Cambiá la semilla**: otro nivel. Volvé a la anterior: vuelve el primero, idéntico.
-3. **Activá "usar Math.random"** y regenerá: cada vez sale otro nivel, y no hay manera de volver a uno.
+1. **Tocá _regenerate_ (regenerar) varias veces.** Con semilla, sale siempre el mismo nivel. Mirá la consola: los primeros números son siempre los mismos.
+2. **Cambiá la semilla** (_seed_): otro nivel. Volvé a la anterior: vuelve el primero, idéntico.
+3. **Activá _use Math.random_** y regenerá: cada vez sale otro nivel, y no hay manera de volver a uno.
 
 ## El código, paso a paso
 
-- **`azar.ts`** tiene el generador. `crearAzar(semilla)` guarda un **estado** (al principio, la semilla) y devuelve una función. Cada vez que se la llama, calcula el estado siguiente a partir del anterior y lo devuelve convertido en un número entre 0 y 1, igual que `Math.random()`.
-- **La cuenta** es `estado = a · estado + c`, quedándose solo con los últimos 32 bits. Un número de **32 bits** es un entero entre 0 y 4.294.967.295 (2³² − 1). Al pasarse de ese tope, "da la vuelta", como el cuentakilómetros de un auto viejo. Esa vuelta es lo que mezcla los números.
+- **`random.ts`** tiene el generador. `createRandom(seed)` guarda un **estado** (_state_; al principio, la semilla) y devuelve una función. Cada vez que se la llama, calcula el estado siguiente a partir del anterior y lo devuelve convertido en un número entre 0 y 1, igual que `Math.random()`.
+- **La cuenta** es `state = a · state + c`, quedándose solo con los últimos 32 bits. Un número de **32 bits** es un entero entre 0 y 4.294.967.295 (2³² − 1). Al pasarse de ese tope, "da la vuelta", como el cuentakilómetros de un auto viejo. Esa vuelta es lo que mezcla los números.
 - **`main.ts`** usa el generador como si fuera `Math.random`. Para cada cubo pide números: uno para el tamaño, uno para el color, tres para la posición y dos para el giro. Si la semilla es la misma, las respuestas son las mismas, y en el mismo orden.
-- **Son dos módulos:** `azar.ts` no sabe nada de cubos, y `main.ts` no sabe cómo se calcula el azar. Se podría cambiar el generador por uno mejor sin tocar el resto.
+- **Son dos módulos:** `random.ts` no sabe nada de cubos, y `main.ts` no sabe cómo se calcula el azar. Se podría cambiar el generador por uno mejor sin tocar el resto.
 
 ## Lo importante
 
@@ -45,7 +45,7 @@ El ejemplo arma un "nivel": 60 cubos con lugar, tamaño, color y giro sacados de
 <details>
 <summary>Por qué estos números: 1664525 y 1013904223</summary>
 
-Un generador `estado = a · estado + c` (módulo 2³²) puede caer en un ciclo corto y repetirse enseguida. Pero recorre **los 4.294.967.296 estados posibles** antes de repetir si se cumplen dos condiciones, que demostraron Hull y Dobell en 1962:
+Un generador `state = a · state + c` (módulo 2³²) puede caer en un ciclo corto y repetirse enseguida. Pero recorre **los 4.294.967.296 estados posibles** antes de repetir si se cumplen dos condiciones, que demostraron Hull y Dobell en 1962:
 
 - `c` es impar: 1013904223 lo es.
 - `a − 1` es múltiplo de 4: 1664525 − 1 = 1664524 = 4 × 416131.
@@ -57,9 +57,9 @@ Con números elegidos al azar, en cambio, el período puede ser mucho más corto
 <details>
 <summary>El defecto de los bits bajos</summary>
 
-Mirá solo el último bit del estado: como `a` y `c` son impares, en cada paso cambia. La secuencia del último bit es 0, 1, 0, 1… Los dos últimos bits se repiten cada 4 números, y en general el bit número `k` (contando desde 0) se repite cada `2^(k+1)` números.
+Mirá solo el último bit del estado (`state`): como `a` y `c` son impares, en cada paso cambia. La secuencia del último bit es 0, 1, 0, 1… Los dos últimos bits se repiten cada 4 números, y en general el bit número `k` (contando desde 0) se repite cada `2^(k+1)` números.
 
-Por eso el código divide el estado entero por 2³²: así mandan los bits altos, que son los que mejor se mezclan. Por eso también conviene no hacer `estado % 2` para tirar una moneda: saldría cara, ceca, cara, ceca…
+Por eso el código divide el estado entero por 2³²: así mandan los bits altos, que son los que mejor se mezclan. Por eso también conviene no hacer `state % 2` para tirar una moneda: saldría cara, ceca, cara, ceca…
 
 </details>
 
@@ -73,9 +73,9 @@ Por eso el código divide el estado entero por 2³²: así mandan los bits altos
 
 ## En Manifold
 
-El motor usa un generador mejor (SFC32), cuyo estado se puede guardar y restaurar, y cada mundo tiene **el suyo**: [`paquetes/comun/src/azar.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/azar.ts). En el [Dojo](../../../jugar/dojo/?cubos=30), el parámetro `?semilla=` de la dirección elige la semilla. Probá `?cubos=30&semilla=1` y `?cubos=30&semilla=2`.
+El motor usa un generador mejor (SFC32), cuyo estado se puede guardar y restaurar, y cada mundo tiene **el suyo**: [`packages/common/src/random.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-00/packages/common/src/random.ts). En el Dojo se elige desde su consola: abrí [este mundo de 30 cubos](../../../jugar/dojo/#recipe=dojo.cubes+30;seed+1), apretá la tecla `` ` `` y escribí `seed 2`. El mundo vuelve a empezar con otra semilla; con `seed 1` vuelve el primero, idéntico.
 
 ## Para saber más
 
 - [`Math.imul`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/imul), en MDN (en inglés).
-- [Generador lineal congruencial](https://es.wikipedia.org/wiki/Generador_lineal_congruencial), en Wikipedia: el tipo de generador de `azar.ts`, con su historia y sus defectos.
+- [Generador lineal congruencial](https://es.wikipedia.org/wiki/Generador_lineal_congruencial), en Wikipedia: el tipo de generador de `random.ts`, con su historia y sus defectos.

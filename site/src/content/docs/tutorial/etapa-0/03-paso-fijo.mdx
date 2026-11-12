@@ -5,40 +5,40 @@ sidebar:
   order: 3
 ---
 
-import CodigoVivo from '../../../../components/CodigoVivo.astro';
+import LiveCode from '../../../../components/LiveCode.astro';
 
-Una computadora no puede calcular el movimiento de manera continua: lo calcula **de a saltitos**. Sabiendo dónde está una pelota y a qué velocidad va, calcula dónde estará un instante después. Sabiendo la gravedad, calcula cómo cambia su velocidad en ese instante. Después repite, una y otra vez. Ese instante se llama **paso**, y en el código se escribe `dt`.
+Una computadora no puede calcular el movimiento de manera continua: lo calcula **de a saltitos**. Sabiendo dónde está una pelota y a qué velocidad va, calcula dónde estará un instante después. Sabiendo la gravedad, calcula cómo cambia su velocidad en ese instante. Después repite, una y otra vez. Ese instante se llama **paso** (_step_), y su duración en el código se escribe `dt`.
 
 Calcular así siempre se equivoca un poco, como dibujar una curva con rectitas: cuanto más largas las rectitas, más se nota. Por eso el tamaño del paso cambia el resultado.
 
 Y aquí está el problema. La pantalla dibuja cuando puede: 60, 30 o 144 veces por segundo, y a veces se traba. Si la física avanza "un cuadro de pantalla" por vez, el paso cambia con la pantalla, y **el resultado depende de la computadora**. En un juego eso significa que un salto llega a la plataforma en una máquina y en otra no. En un juego en red, que cada jugador ve una partida distinta.
 
-La solución es separar los dos relojes. La física avanza siempre de a **pasos fijos**, iguales. La pantalla dibuja cuando puede, y muestra lo que haya.
+La solución es separar los dos relojes. La física avanza siempre de a **pasos fijos** (_fixed steps_), iguales. La pantalla dibuja cuando puede, y muestra lo que haya.
 
-<CodigoVivo leccion="etapa-0/03-paso-fijo" autoejecutar />
+<LiveCode lesson="stage-0/03-fixed-step" autorun />
 
-Las dos pelotas salen hacia arriba a la misma velocidad y rebotan sin perder energía. En teoría deberían subir siempre hasta la misma altura, unos 2,75 metros. El panel muestra cuánto subió cada una.
+Las dos pelotas salen hacia arriba a la misma velocidad y rebotan sin perder energía. En teoría deberían subir siempre hasta la misma altura, unos 2,75 metros. El panel muestra cuánto subió cada una (_highest point_, la altura máxima).
 
 **Qué probar:**
 
-1. **Bajá la pantalla a 10 cuadros por segundo**: imita una computadora muy lenta. La **roja** (que avanza con el tiempo de cada cuadro) empieza a subir a otra altura. La **verde** (paso fijo) sigue igual. Tocá "reiniciar" para comparar desde el principio.
-2. **Volvé la pantalla a 60 y bajá el paso de la verde a 10 por segundo.** Ahora la verde avanza de a saltos grandes. Su altura cambia un poco, porque el paso cambió, pero sigue sin depender de la pantalla.
-3. **Con el paso de la verde en 10, apagá "interpolar la verde"**: se mueve a los saltos. Prendela: se mueve suave, y sube igual.
+1. **Bajá la pantalla (_screen_) a 10 cuadros por segundo**: imita una computadora muy lenta. La **roja** (_red_, que avanza con el tiempo de cada cuadro) empieza a subir a otra altura. La **verde** (_green_, paso fijo) sigue igual. Tocá _restart_ (reiniciar) para comparar desde el principio.
+2. **Volvé la pantalla a 60 y bajá el paso de la verde (_green step_) a 10 por segundo.** Ahora la verde avanza de a saltos grandes. Su altura cambia un poco, porque el paso cambió, pero sigue sin depender de la pantalla.
+3. **Con el paso de la verde en 10, apagá _interpolate the green_** (interpolar la verde): se mueve a los saltos. Prendela: se mueve suave, y sube igual.
 
 ## El código, paso a paso
 
-- **`integrar(p, dt)`** es la física: un paso de `dt` segundos. Primero cambia la velocidad por la gravedad (`vy -= G * dt`), después la posición con la velocidad nueva (`y += vy * dt`). Si la pelota se metió en el piso, la vuelve a poner encima y le da vuelta la velocidad: es el rebote.
-- **La pantalla lenta es de mentira:** el ejemplo junta tiempo en `tiempoDePantalla` y solo hace algo cuando llega un "cuadro" de la pantalla imaginaria. Así se puede simular una computadora lenta en una rápida.
-- **La roja** hace un solo paso, del tamaño del cuadro: `integrar(roja, dtPantalla)`.
-- **La verde** suma el tiempo del cuadro a un **acumulador**, y lo gasta de a pasos iguales con un `while`: mientras alcance para un paso, hace uno. Lo que sobra queda guardado para el cuadro siguiente.
-- **Al dibujar la verde**, `alfa` dice qué fracción del próximo paso ya pasó: `acumulador / paso`, un número entre 0 y 1. La pelota se dibuja ese tanto del camino entre su posición anterior y la actual.
+- **`integrate(b, dt)`** es la física (_integrate_: integrar): un paso de `dt` segundos. Primero cambia la velocidad por la gravedad (`vy -= G * dt`), después la posición con la velocidad nueva (`y += vy * dt`). Si la pelota se metió en el piso, la vuelve a poner encima y le da vuelta la velocidad: es el rebote.
+- **La pantalla lenta es de mentira:** el ejemplo junta tiempo en `screenTime` y solo hace algo cuando llega un "cuadro" de la pantalla imaginaria. Así se puede simular una computadora lenta en una rápida.
+- **La roja** hace un solo paso, del tamaño del cuadro: `integrate(red, screenDt)`.
+- **La verde** suma el tiempo del cuadro a un **acumulador** (`accumulator`), y lo gasta de a pasos iguales con un `while`: mientras alcance para un paso, hace uno. Lo que sobra queda guardado para el cuadro siguiente.
+- **Al dibujar la verde**, `alpha` dice qué fracción del próximo paso ya pasó: `accumulator / step`, un número entre 0 y 1. La pelota se dibuja ese tanto del camino entre su posición anterior y la actual.
 
 ## Lo importante
 
 - **La física avanza de a pasos.** Un paso más grande se equivoca más, así que el tamaño del paso es parte de la física.
 - **Si el paso sale de la pantalla, el resultado depende de la pantalla.** Con 10 cuadros por segundo, la roja sube a otra altura: la misma física, en otra computadora, da otro resultado.
 - **Con un acumulador, el paso es fijo.** El tiempo real se junta y se gasta de a pasos iguales. La altura de la verde depende del paso, que es siempre el mismo, y no de la pantalla.
-- **Interpolar.** Con pocos pasos por segundo, la verde se movería a saltos. Por eso se dibuja _entre_ el paso anterior y el actual, según cuánto del siguiente ya pasó.
+- **Interpolar** (_interpolate_). Con pocos pasos por segundo, la verde se movería a saltos. Por eso se dibuja _entre_ el paso anterior y el actual, según cuánto del siguiente ya pasó.
 
 ## Más a fondo
 
@@ -56,7 +56,7 @@ Pero con pasos de la mitad hay el doble de pasos, y los errores se suman. El err
 
 Tomá el movimiento más simple que oscila: un resorte, donde la aceleración es `−ω² · x`. Su energía, salvo un factor, es `E = v² + ω² · x²`, y en la realidad no cambia.
 
-Con **Euler explícito**, las dos líneas usan los valores viejos:
+Con **Euler explícito** (_explicit Euler_), las dos líneas usan los valores viejos:
 
 ```text
 x′ = x + v · dt
@@ -65,27 +65,27 @@ v′ = v − ω² · x · dt
 
 Haciendo la cuenta, la energía nueva queda **multiplicada** por `1 + ω² · dt²` en cada paso. Es un número un poquito mayor que 1, pero multiplicado miles de veces crece sin parar: el resorte oscila cada vez más, y una órbita se abre.
 
-Con **Euler semi-implícito**, la posición usa la velocidad nueva:
+Con **Euler semi-implícito** (_semi-implicit Euler_), la posición usa la velocidad nueva:
 
 ```text
 v′ = v − ω² · x · dt
 x′ = x + v′ · dt
 ```
 
-Esta versión conserva exactamente el **área** que ocupa un conjunto de estados en el plano posición-velocidad, porque el determinante de la cuenta es 1. Por eso la energía sube y baja un poco alrededor del valor real, pero no se va. Los métodos con esta propiedad se llaman **simplécticos**, y son los que usan los motores de física.
+Esta versión conserva exactamente el **área** que ocupa un conjunto de estados en el plano posición-velocidad, porque el determinante de la cuenta es 1. Por eso la energía sube y baja un poco alrededor del valor real, pero no se va. Los métodos con esta propiedad se llaman **simplécticos** (_symplectic_), y son los que usan los motores de física.
 
 </details>
 
 :::caution[Sutilezas]
 
 - **La interpolación muestra el pasado**: como mucho, un paso atrás. Con pasos de 1/60 de segundo no se nota.
-- **Hay que ponerle un tope al acumulador.** Si la pestaña se duerme diez segundos, el acumulador junta diez segundos, y al volver intentaría correr 600 pasos de golpe. Si cada paso tarda, el cuadro siguiente junta todavía más, y todo se traba: se la llama la "espiral de la muerte".
+- **Hay que ponerle un tope al acumulador.** Si la pestaña se duerme diez segundos, el acumulador junta diez segundos, y al volver intentaría correr 600 pasos de golpe. Si cada paso tarda, el cuadro siguiente junta todavía más, y todo se traba: se la llama la "espiral de la muerte" (_spiral of death_).
 - **El orden de las dos líneas importa.** Primero la velocidad, después la posición: se llama **Euler semi-implícito**, y es lo que usan casi todos los motores de física. Al revés (Euler explícito), la energía crece sola y las órbitas se abren. La vitrina del [inicio](../../../) usa el semi-implícito, y una prueba verifica que en diez minutos su energía no se va.
   :::
 
 ## En Manifold
 
-El reloj del motor es esto mismo, con el tope incluido: [`paquetes/nucleo/src/reloj.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/nucleo/src/reloj.ts). Da como mucho 5 pasos por cuadro: si hicieran falta más (por ejemplo, después de una pausa larga), descarta el resto en vez de intentar alcanzarlo. La presentación interpola cada objeto entre su posición anterior y la actual.
+El reloj (_clock_) del motor es esto mismo, con el tope incluido: [`packages/core/src/clock.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-00/packages/core/src/clock.ts). Da como mucho 5 pasos por cuadro: si hicieran falta más (por ejemplo, después de una pausa larga), descarta el resto en vez de intentar alcanzarlo. La presentación interpola cada objeto entre su posición anterior y la actual.
 
 ## Para saber más
 

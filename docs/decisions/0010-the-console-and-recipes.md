@@ -1,166 +1,169 @@
-# 0010. La consola y las recetas
+# 0010. The console and the recipes
 
-- **Estado:** aceptada (al revisarla se sumaron la dirección propia de cada sala y las reglas de los enlaces).
-- **Fecha:** 2026-11-11
+- **Status:** accepted (when revising it, each room's own address and the rules for links were added). Its language part, and the temporary translation of the Dojo's old address, replaced by [0011](0011-languages.md): the console's names are now in English, and this document uses them.
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-Hoy el Dojo se configura con parámetros en la dirección (`?cubos=20&semilla=3`). No se descubre qué se puede cambiar, no hay ayuda ni validación, y para cambiar algo hay que recargar la página.
+Today the Dojo is configured with parameters in the address (`?cubos=20&semilla=3`). What can be changed is not discoverable, there is no help nor validation, and to change something the page has to be reloaded.
 
-En la V1 pasaba lo mismo, y peor:
+In V1 the same happened, and worse:
 
-- **La dirección se leía en una decena de lugares** de `main.ts` (`servidor`, `nivel`, `repeticion`, `fantasma`, `nueva`…), y se le pasaba entera a las reglas de cada juego.
-- **Las vistas de depuración se prendían con teclas sueltas:** F, la física; N, la navegación; M, la fusión del nivel; P, la escala. Para saber que existían había que leer el código, y F1 no servía, porque en el MacBook es el brillo.
+- **The address was read in a dozen places** of `main.ts` (`servidor`, `nivel`, `repeticion`, `fantasma`, `nueva`…), and it was handed whole to each game's rules.
+- **The debug views were turned on with loose keys:** F, the physics; N, the navigation; M, the level's merge; P, the scale. To know they existed one had to read the code, and F1 was useless, because on the MacBook it is the brightness.
 
-Un panel con todas las opciones tampoco escala: cada opción nueva es un control más que diseñar y mantener, y a futuro van a ser muchas.
+A panel with all the options does not scale either: every new option is one more control to design and maintain, and in the future there will be many.
 
-Y algo que ordena todo lo demás: **el Dojo es un juego**, el primero, con el que se prueba cada cosa del motor. Los juegos que vengan tendrán sus propias reglas; quizás una consola, quizás no.
+And something that orders everything else: **the Dojo is a game**, the first one, used to try every piece of the engine. The games to come will have their own rules; maybe a console, maybe not.
 
-## Decisión
+## Decision
 
-### Un registro de comandos y variables; la consola es una de sus caras
+### A registry of commands and variables; the console is one of its faces
 
-- **Cada parte declara lo suyo en un registro:**
-  - **variables:** tipo, rango, valor por defecto y descripción;
-  - **comandos:** acciones con argumentos.
+- **Every part declares its own in a registry:**
+  - **variables:** type, range, default value and description;
+  - **commands:** actions with arguments.
 
-  Ningún módulo lee la dirección ni el teclado por su cuenta.
+  No module reads the address or the keyboard on its own.
 
-- **La consola**, como la de Quake, muestra, completa y ejecuta lo declarado. No hay panel de opciones: una opción nueva aparece sola en la consola.
-- **No es un lenguaje.** Una línea es un comando con sus argumentos; también se pueden poner varios en una línea, separados por `;`. No tiene variables propias, condiciones, bucles ni JavaScript. Para configurar, mirar y compartir, alcanza.
+- **The console**, like Quake's, shows, completes and runs what was declared. There is no options panel: a new option shows up in the console by itself.
+- **It is not a language.** A line is a command with its arguments; several can also go on one line, separated by `;`. It has no variables of its own, conditions, loops or JavaScript. To configure, look and share, it is enough.
 
-### Las capas: el motor ofrece, cada juego decide
+### The layers: the engine offers, each game decides
 
-| Capa                                                     | Qué pone                                                                                                                                                                                              | ¿Obligatorio para un juego?                                   |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| **Motor, sin pantalla** (`paquetes/comandos`, el núcleo) | El registro, el intérprete y el formato de las recetas. Las declaraciones que el motor trae listas (`semilla`, `fisica.gravedad`…). El canal por el que un cambio del mundo entra en un paso concreto | No: es una librería. Un juego que no la usa no paga nada      |
-| **Presentación**                                         | La consola, como una pieza que se monta, y las vistas de depuración `ver.*`                                                                                                                           | No: cada juego la monta o no, y puede darle su propio aspecto |
-| **Cada juego**                                           | Qué expone: sus variables y comandos, y cuáles del motor deja tocar. También sus escenarios, sus recetas, su receta de inicio y sus enlaces                                                           | Es la decisión de cada juego                                  |
+| Layer                                                        | What it brings                                                                                                                                                                                 | Required for a game?                                          |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Engine, without a screen** (`packages/commands`, the core) | The registry, the interpreter and the recipe format. The declarations the engine brings ready (`seed`, `physics.gravity`…). The channel through which a world change enters at a concrete step | No: it is a library. A game that does not use it pays nothing |
+| **Presentation**                                             | The console, as a piece that is mounted, and the debug views `show.*`                                                                                                                          | No: each game mounts it or not, and can give it its own look  |
+| **Each game**                                                | What it exposes: its variables and commands, and which of the engine's it lets be touched. Also its scenarios, its recipes, its startup recipe and its links                                   | It is each game's decision                                    |
 
-- **El Dojo expone todo**, porque es un laboratorio. Otro juego puede no tener consola, tenerla solo para desarrollo, o permitir solo comandos de la vista. En un juego competitivo, cambiar la gravedad desde la consola sería hacer trampa.
-- **El Dojo no tiene puertas traseras.** Usa el mismo contrato público que cualquier juego. Si le falta algo, le falta al motor.
-- **Cada nombre tiene su espacio:** los del motor (`semilla`, `fisica.gravedad`, `ver.triangulos`) y los de cada juego (`dojo.sala`, `dojo.cubos`).
+- **The Dojo exposes everything**, because it is a lab. Another game may have no console, have one only for development, or allow only view commands. In a competitive game, changing gravity from the console would be cheating.
+- **The Dojo has no back doors.** It uses the same public contract as any game. If something is missing for it, it is missing in the engine.
+- **Every name has its namespace:** the engine's (`seed`, `physics.gravity`, `show.wireframe`) and each game's (`dojo.room`, `dojo.cubes`).
 
-### Tres tipos de opciones, según qué tocan
+### Three kinds of options, by what they touch
 
-| Tipo            | Ejemplos                                          | Qué pasa al cambiarla                                                                                                                                        |
-| --------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **De arranque** | `semilla 7`, `dojo.sala planeta`, `dojo.cubos 20` | Definen cómo nace el mundo: cambiarlas lo reinicia                                                                                                           |
-| **Del mundo**   | `fisica.gravedad 0 -3 0`, `crear cubo 0 5 0`      | Entran a la simulación como una entrada más, en un paso concreto, igual que una tecla del jugador. Se graban en la repetición, y la huella sigue dando igual |
-| **De la vista** | `ver.triangulos si`, `vista.lento 0.25`           | Solo cambian lo que se ve. No tocan la simulación, no se graban en la repetición y no cambian la huella                                                      |
+| Kind        | Examples                                      | What happens when it changes                                                                                                                                      |
+| ----------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Startup** | `seed 7`, `dojo.room planet`, `dojo.cubes 20` | They define how the world is born: changing them restarts it                                                                                                      |
+| **World**   | `physics.gravity 0 -3 0`, `dojo.spawn 0 5 0`  | They enter the simulation as one more input, at a concrete step, just like a player's key. They are recorded in the replay, and the hash still comes out the same |
+| **View**    | `show.wireframe on`, `view.timescale 0.25`    | They only change what is seen. They do not touch the simulation, are not recorded in the replay and do not change the hash                                        |
 
-Esta división mantiene el determinismo, y prepara la red. Un cambio del mundo lo puede validar y repartir un servidor; uno de la vista nunca sale de la máquina.
+This split keeps determinism, and prepares for networking. A world change can be validated and distributed by a server; a view change never leaves the machine.
 
-`vista.lento` es de la vista: con paso fijo, ir más lento no cambia la física, solo la muestra más despacio.
+`view.timescale` belongs to the view: with a fixed step, going slower does not change the physics, it only shows it more slowly.
 
-### Las vistas de depuración: `ver.*`
+### The debug views: `show.*`
 
-- **Desde la primera versión:**
-  - `ver.triangulos`: las mallas como alambre;
-  - `ver.ejes`;
-  - `ver.estadisticas`: cuadros por segundo, paso y huella.
-- **Con la física, en la etapa 1:**
-  - `ver.fisica`: lo que Rapier ve, como la F de la V1;
-  - `ver.vectores`: velocidades y fuerzas;
-  - `ver.gravedad`: flechas del campo;
-  - `ver.contactos`.
-- **Cada vista es un módulo de la presentación que se declara solo.** Apagada no cuesta nada: no calcula ni dibuja.
-- **Las teclas vuelven como atajos configurables:** `atajo f ver.fisica`, como el `bind` de Quake. Se guardan en el navegador, aparte para cada juego.
+- **From the first version:**
+  - `show.wireframe`: the meshes as wire;
+  - `show.axes`;
+  - `show.stats`: frames per second, step and hash.
+- **With the physics, in stage 1:**
+  - `show.physics`: what Rapier sees, like V1's F;
+  - `show.vectors`: velocities and forces;
+  - `show.gravity`: arrows of the field;
+  - `show.contacts`.
+- **Every view is a presentation module that declares itself.** Off, it costs nothing: it neither computes nor draws.
+- **Keys come back as configurable bindings:** `bind f toggle show.physics`, like Quake's `bind`. They are saved in the browser, separately for each game.
 
-### Cómo se escribe
+### How it is written
 
-- **Leer y cambiar:**
-  - `nombre`, sin argumentos: muestra el valor, el rango, el valor por defecto, para qué sirve y de qué tipo es;
-  - `nombre valores…`: lo cambia, o ejecuta el comando;
-  - `alternar nombre`: da vuelta un sí o no.
-- **Los valores:**
-  - **sí o no:** `si`/`no`, y también `1`/`0`;
-  - **decimales:** con punto, como en el código (`0.25`);
-  - **vectores:** tres números separados por espacios;
-  - **texto:** entre comillas.
-- **En las recetas:** `#` empieza un comentario, y `;` separa comandos en una línea.
-- **Para orientarse:**
-  - `ayuda` y `ayuda nombre`;
-  - `buscar texto`: busca en nombres y descripciones;
-  - `variables prefijo` (por ejemplo, `variables ver.`): lista con los valores actuales;
-  - `cambiadas`: solo lo que difiere del valor por defecto.
-- **Los errores dicen qué esperaban,** y sugieren el nombre parecido: "¿quisiste decir `fisica.gravedad`?".
-- **La consola en pantalla:**
-  - se abre con la tecla de la izquierda del 1 (código `Backquote`: la **º** en un teclado español), como en Quake, y con un botón en pantalla para pantallas táctiles;
-  - mientras está abierta, las teclas son de la consola y no del juego;
-  - Tab completa nombres y opciones, y las flechas recorren el historial, que se guarda en el navegador, aparte para cada juego.
+- **Reading and changing:**
+  - `name`, with no arguments: shows the value, the range, the default value, what it is for and its type;
+  - `name values…`: changes it, or runs the command;
+  - `toggle name`: flips an on/off.
+- **The values:**
+  - **on or off:** `on`/`off`, and also `1`/`0`, `true`/`false`, `yes`/`no`;
+  - **decimals:** with a dot, as in code (`0.25`);
+  - **vectors:** three numbers separated by spaces;
+  - **text:** in quotes.
+- **In recipes:** `#` starts a comment, and `;` separates commands on one line.
+- **To find one's way:**
+  - `help` and `help name`;
+  - `find text`: searches names and descriptions;
+  - `vars prefix` (for example, `vars show.`): a list with the current values;
+  - `changed`: only what differs from the default value.
+- **Errors say what they expected,** and suggest the similar name: `Did you mean "physics.gravity"?`.
+- **The console on screen:**
+  - it opens with the key to the left of 1 (code `Backquote`: the **º** on a Spanish keyboard), as in Quake, and with an on-screen button for touch screens;
+  - while it is open, the keys belong to the console and not to the game;
+  - Tab completes names and options, and the arrows go through the history, which is saved in the browser, separately for each game.
 
-### Las recetas, y cómo arranca un juego con un escenario
+### The recipes, and how a game starts with a scenario
 
-Una **receta** es texto plano, que se lee y se copia:
+A **recipe** is plain text, that can be read and copied:
 
 ```
-# Órbitas que se cierran
-semilla 7
-dojo.sala planeta
-fisica.gravedad.intensidad 12
+# Orbits that close
+seed 7
+dojo.room planet
+physics.gravity.strength 12
 
-# Lo que se ve
-ver.vectores si
+# What is seen
+show.vectors on
 ```
 
-- **Un juego nace configurado.** Al abrirlo, y antes de crear el mundo, se juntan en este orden:
-  1. los valores por defecto;
-  2. la **receta de inicio**, si hay: lo que cada persona quiere siempre, como el `autoexec.cfg` de Quake. Se guarda en el navegador con `inicio guardar` y se borra con `inicio borrar`;
-  3. la **receta de la sala**, si se entró por la dirección de una sala guardada;
-  4. la **receta del enlace**, si vino una. Gana sobre las anteriores.
+- **A game is born configured.** When it opens, and before creating the world, these are gathered in this order:
+  1. the default values;
+  2. the **startup recipe**, if there is one: what each person always wants, like Quake's `autoexec.cfg`. It is saved in the browser with `startup save` and removed with `startup clear`;
+  3. the **room's recipe**, if one came in through the address of a saved room;
+  4. the **link's recipe**, if one came. It wins over the previous ones.
 
-  Recién entonces se crea el mundo, una sola vez y ya configurado. No arranca "básico" para después cambiar.
+  Only then is the world created, once and already configured. It does not start "basic" to change afterwards.
 
-- **Cada sala guardada tiene su propia dirección.** Una receta guardada en el repositorio del juego (`juegos/dojo/recetas/orbitas.txt`) se convierte, al armar el sitio, en una página propia: `…/jugar/dojo/orbitas/`. Es el mismo juego, que nace con esa receta. Se puede guardar en favoritos, la página "Jugar" la lista y una lección la puede enlazar. Es la dirección como _lugar_ ("la sala de las órbitas está acá"), no como panel de control.
-- **Un enlace puede llevar la receta adentro,** en el fragmento (`#`), que no viaja al servidor: `…/jugar/dojo/#receta=dojo.cubos+20;ver.triangulos+si`. Es lo que arma `exportar`. Las líneas se separan con `;` y los espacios se escriben `+`, así el enlace se puede leer y corregir a mano; lo demás se escapa como en cualquier dirección. Se puede sumar a la dirección de una sala: `…/jugar/dojo/orbitas/#receta=ver.vectores+si`.
+- **Every saved room has its own address.** A recipe saved in the game's repository (`games/dojo/recipes/orbits.txt`) becomes, when the site is built, a page of its own: `…/jugar/dojo/orbits/`. It is the same game, born with that recipe. It can be bookmarked, the "Jugar" page lists it and a lesson can link to it. It is the address as a _place_ ("the orbits room is here"), not as a control panel.
+- **A link can carry the recipe inside,** in the fragment (`#`), which does not travel to the server: `…/jugar/dojo/#recipe=dojo.cubes+20;show.wireframe+on`. It is what `export` builds. Lines are separated with `;` and spaces are written `+`, so the link can be read and fixed by hand; everything else is escaped as in any address. It can be added to a room's address: `…/jugar/dojo/orbits/#recipe=show.vectors+on`.
 
-- **Lo que un enlace no puede hacer.** Una receta (de un enlace, de una sala o la de inicio) solo puede fijar variables y ejecutar los comandos declarados como seguros para recetas. Nunca toca las preferencias guardadas en el navegador (`inicio`, `atajo`, `idioma`): un enlace ajeno no cambia la configuración de nadie. Y como la consola no ejecuta código y valida cada valor, un enlace no puede hacer nada que la consola no permita.
-- **Si una línea no se entiende** (por ejemplo, la receta viene de una versión más nueva), el juego arranca igual con el resto, y la consola avisa cuántas líneas no entendió y cuáles.
-- **`exportar` escribe la receta de lo que se cambió.** Lo de arranque y lo del mundo van con sus valores finales; lo de la vista, en una sección aparte.
-- **Una receta no es una repetición.** La receta es un _ajuste_: cómo arrancar y qué ver. La repetición es una _historia_: la semilla más cada cambio del mundo con su paso.
-- **Las pruebas corren recetas** sin pantalla y comparan la huella.
-- **La dirección vieja del Dojo** (`?cubos=…&semilla=…`) se traduce a receta durante un tiempo, para no romper enlaces, y después se retira.
+- **What a link cannot do.** A recipe (from a link, from a room or the startup one) can only set variables and run the commands declared safe for recipes. It never touches the preferences saved in the browser (`startup`, `bind`): someone else's link does not change anybody's configuration. And since the console runs no code and validates every value, a link cannot do anything the console does not allow.
+- **If a line is not understood** (for example, the recipe comes from a newer version), the game starts anyway with the rest, and the console reports how many lines it did not understand and which ones.
+- **`export` writes the recipe of what was changed.** Startup and world values go with their final values; view values, in a separate section.
+- **A recipe is not a replay.** The recipe is a _setting_: how to start and what to see. The replay is a _story_: the seed plus every world change with its step.
+- **The tests run recipes** without a screen and compare the hash.
+- **The Dojo's old address** (`?cubos=…&semilla=…`) is translated into a recipe for a while, so as not to break links, and is retired afterwards. (Replaced by 0011: retired already, nobody used it.)
 
-### El idioma
+### The language (replaced by [0011](0011-languages.md))
 
-- **Los nombres de comandos y variables son identificadores fijos, en castellano,** como el código. Una receta tiene que andar igual dentro de años, y en cualquier idioma.
-- **Lo que se traduce:**
-  - las descripciones, la ayuda y los mensajes. Cada declaración guarda su texto por idioma (`{ es: '…' }`) desde el principio, y el inglés se suma después;
-  - los valores de sí o no: `si` y `yes` valen los dos.
-- **Más adelante, alias en inglés:** `physics.gravity` ejecutaría `fisica.gravedad`. Pero `exportar` siempre escribe los nombres originales, para que una receta armada en inglés se abra en castellano, y al revés.
-- **`idioma en` en la misma consola**, guardado en el navegador. Cuando el sitio tenga inglés, la consola arranca en el idioma de la página.
-- Por ahora, todo en castellano.
+What was decided here, and no longer holds:
 
-### La primera parte, antes de la etapa 1
+- **The names of commands and variables were fixed identifiers, in Spanish** (`semilla`, `ver.triangulos`), like the code then. A recipe has to work the same years from now, and in any language.
+- **What was going to be translated:**
+  - the descriptions, the help and the messages. Each declaration kept its text per language (`{ es: '…' }`) from the start, and English would be added later;
+  - the on/off values: `si` and `yes` both valid.
+- **Later, English aliases:** `physics.gravity` would run `fisica.gravedad`. But `export` would always write the original names, so that a recipe made in English opens in Spanish, and the other way around.
+- **`idioma en` in the console itself**, saved in the browser.
 
-1. **El registro, el intérprete y el formato de las recetas**, sin pantalla y con pruebas en Vitest.
-2. **El canal para los cambios del mundo, en un paso concreto.** Es el mismo que va a usar el personaje en la etapa 1.
-3. **La consola**, como pieza de la presentación.
-4. **El Dojo la monta** y declara `semilla`, `dojo.cubos`, `reiniciar`, `pausa` y `paso`. Suma `ver.triangulos`, `ver.ejes` y `ver.estadisticas`, las recetas (`exportar`, `cargar`, `inicio`), los atajos, y la dirección vieja traducida a receta.
-5. **Una prueba en Chromium:** abrir la consola, escribir `dojo.cubos 20` y ver 21 mallas.
+Since 0011, the console is in English and is not translated, like the keywords of a programming language: names, help and messages. The only fixed identifier is the English one, so there are no aliases to keep.
 
-## Consecuencias
+### The first part, before stage 1
 
-- **Una opción nueva cuesta una declaración**, no un control de interfaz.
-- **Un solo formato y un solo intérprete** para configurar, mirar, compartir y probar: la consola, los enlaces, las recetas del repositorio y las pruebas.
-- **Los cambios del mundo pasan por el canal de las entradas del jugador:** hay que construirlo ya. De todos modos lo necesita la etapa 1.
-- **Escribir es menos amable que tocar un control.** La ayuda, el autocompletado, `buscar` y las recetas con nombre tienen que compensarlo.
-- **Los nombres son un contrato:** una receta guardada tiene que seguir andando. Si un nombre cambia, el viejo queda como alias.
-- **Falta decidir los permisos para la red:** quién puede ejecutar un cambio del mundo en una partida en red. Se decide con la red.
+1. **The registry, the interpreter and the recipe format**, without a screen and with Vitest tests.
+2. **The channel for world changes, at a concrete step.** It is the same the character will use in stage 1.
+3. **The console**, as a presentation piece.
+4. **The Dojo mounts it** and declares `seed`, `dojo.cubes`, `restart`, `pause` and `step`. It adds `show.wireframe`, `show.axes` and `show.stats`, the recipes (`export`, `load`, `startup`), the bindings, and (until 0011) the old address translated into a recipe.
+5. **A test in Chromium:** open the console, type `dojo.cubes 20` and see 21 meshes.
 
-## Alternativas descartadas
+## Consequences
 
-- **Parámetros en la dirección**, lo de hoy: no se descubren, no tienen ayuda y obligan a recargar. Quedan solo como transporte de una receta.
-- **Un panel con todas las opciones** (lil-gui o uno propio): se vuelve inmantenible a medida que crecen las opciones.
-- **Una consola que ejecuta JavaScript:** potente, pero rompe el determinismo y la frontera entre la simulación y la pantalla.
-- **Teclas sueltas para cada vista de depuración,** como en la V1: no se descubren y chocan con el sistema. Vuelven como atajos configurables.
-- **Una consola del sitio o del motor, igual para todos los juegos:** cada juego tiene su idiosincrasia; el motor ofrece las piezas y el juego decide.
+- **A new option costs one declaration**, not an interface control.
+- **A single format and a single interpreter** to configure, look, share and test: the console, the links, the repository's recipes and the tests.
+- **World changes go through the player inputs' channel:** it has to be built now. Stage 1 needs it anyway.
+- **Typing is less friendly than touching a control.** The help, the completion, `find` and the named recipes have to make up for it.
+- **The names are a contract:** a saved recipe has to keep working. If a name changes, the old one stays as an alias. (0011 renamed them all at once, while nobody used them yet.)
+- **The permissions for networking are still to be decided:** who can run a world change in a networked game. It is decided with the networking.
 
-## Lo que se decidió por defecto (se puede cambiar más adelante)
+## Alternatives discarded
 
-- **La tecla para abrirla:** la de la izquierda del 1 (**º**), más un botón en pantalla.
-- **Los sí y no:** `si`/`no`, y también `1`/`0`.
-- **Los decimales:** con punto.
-- **Las recetas:** también guardan lo de la vista, en una sección aparte.
-- **Los atajos:** van en la primera versión.
+- **Parameters in the address**, today's: not discoverable, no help, and they force a reload. They remain only as the transport of a recipe.
+- **A panel with all the options** (lil-gui or our own): it becomes unmaintainable as the options grow.
+- **A console that runs JavaScript:** powerful, but it breaks determinism and the boundary between the simulation and the screen.
+- **Loose keys for each debug view,** as in V1: not discoverable, and they clash with the system. They come back as configurable bindings.
+- **A console of the site or of the engine, the same for every game:** each game has its idiosyncrasy; the engine offers the pieces and the game decides.
+
+## What was decided by default (it can be changed later)
+
+- **The key to open it:** the one to the left of 1 (**º**), plus an on-screen button.
+- **On and off:** `on`/`off`, and also `1`/`0` (since 0011; before, `si`/`no`).
+- **Decimals:** with a dot.
+- **Recipes:** they also keep the view values, in a separate section.
+- **Bindings:** they go in the first version.

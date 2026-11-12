@@ -1,6 +1,6 @@
-export { Registro, type Programador } from './registro';
-export { declararAyudas } from './ayudas';
-export { recetaDelEnlace, recetaParaEnlace, tituloDeReceta, PREFIJO_DEL_ENLACE } from './recetas';
-export { escribirValor, separarLineas } from './valores';
-export { parecido } from './parecido';
-export type { Alcance, Argumento, Comando, Mensaje, Nivel, Origen, Salida, Texto, Tipo, Valor, Variable, Vec3 } from './tipos';
+export { Registry, type Scheduler } from './registry';
+export { declareHelp } from './help';
+export { recipeFromLink, recipeToLink, recipeTitle, LINK_PREFIX } from './recipes';
+export { formatValue, splitLines } from './values';
+export { closest } from './closest';
+export type { Argument, Command, Level, Message, Output, Scope, Source, Type, Value, Variable, Vec3 } from './types';

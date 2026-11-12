@@ -1,32 +1,32 @@
-import { crearEscena } from './escena';
-import { avanzar, crearMundo, PASO, resumen } from './simulacion';
-import { crearVista } from './vista';
+import { createScene } from './scene';
+import { advance, createWorld, STEP, summary } from './simulation';
+import { createView } from './view';
 
-// 1. SIN PANTALLA: dos mundos con la misma semilla, 600 pasos (10 s de juego) cada uno, ya.
-const inicio = performance.now();
-const a = crearMundo(7, 25);
-const b = crearMundo(7, 25);
+// 1. WITHOUT A SCREEN: two worlds with the same seed, 600 steps (10 s of game) each, right now.
+const start = performance.now();
+const a = createWorld(7, 25);
+const b = createWorld(7, 25);
 for (let i = 0; i < 600; i++) {
-  avanzar(a);
-  avanzar(b);
+  advance(a);
+  advance(b);
 }
-console.log(`dos mundos, 600 pasos cada uno, en ${(performance.now() - inicio).toFixed(1)} ms`);
-console.log(`resumen A: ${resumen(a)}`);
-console.log(`resumen B: ${resumen(b)}  → ${resumen(a) === resumen(b) ? 'iguales' : 'DISTINTOS'}`);
+console.log(`two worlds, 600 steps each, in ${(performance.now() - start).toFixed(1)} ms`);
+console.log(`summary A: ${summary(a)}`);
+console.log(`summary B: ${summary(b)}  → ${summary(a) === summary(b) ? 'equal' : 'DIFFERENT'}`);
 
-// 2. CON PANTALLA: el mismo tipo de mundo, ahora dibujado. El tiempo real se gasta de a pasos fijos.
-const { escena, alCuadro } = crearEscena();
-const mundo = crearMundo(7, 25);
-const vista = crearVista(escena, mundo);
-let acumulador = 0;
-alCuadro((dt) => {
-  acumulador += dt;
-  while (acumulador >= PASO) {
-    avanzar(mundo);
-    acumulador -= PASO;
+// 2. WITH A SCREEN: the same kind of world, now drawn. Real time is spent in fixed steps.
+const { scene, onFrame } = createScene();
+const world = createWorld(7, 25);
+const view = createView(scene, world);
+let accumulator = 0;
+onFrame((dt) => {
+  accumulator += dt;
+  while (accumulator >= STEP) {
+    advance(world);
+    accumulator -= STEP;
   }
-  vista.dibujar();
+  view.draw();
 });
 
-// Probá: cambiá la semilla de B. Y en simulacion.ts, agregá `import * as THREE from 'three'`:
-// funciona, pero ya no podría correr sin pantalla (en el motor, eso no compila).
+// Try: change B's seed. And in simulation.ts, add `import * as THREE from 'three'`: it works, but
+// it could no longer run without a screen (in the engine, that does not compile).

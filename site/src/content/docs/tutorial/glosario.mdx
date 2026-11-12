@@ -1,0 +1,143 @@
+---
+title: Glosario
+description: Las palabras del tutorial en español, con la que se usa en el código, en la documentación y en la consola del Dojo.
+---
+
+El texto del tutorial está en español y el código, en inglés ([por qué](../#el-código-en-inglés)). Este glosario junta cada término con su nombre en inglés, que es el que vas a encontrar en el código de las lecciones, en el motor, en la documentación de Three.js y en la consola del Dojo.
+
+## Dibujar en 3D
+
+| En español           | En inglés                    | Dónde aparece                                               |
+| -------------------- | ---------------------------- | ----------------------------------------------------------- |
+| píxel                | _pixel_                      | [Del 3D a la pantalla](../etapa-0/00-del-3d-a-la-pantalla/) |
+| coordenadas          | _coordinates_                | [Del 3D a la pantalla](../etapa-0/00-del-3d-a-la-pantalla/) |
+| origen               | _origin_                     | [Del 3D a la pantalla](../etapa-0/00-del-3d-a-la-pantalla/) |
+| eje, ejes            | _axis_, _axes_               | `AxesHelper`; en la consola, `show.axes`                    |
+| placa de video       | _graphics card_, GPU         | [Del 3D a la pantalla](../etapa-0/00-del-3d-a-la-pantalla/) |
+| triángulo            | _triangle_                   | [Del 3D a la pantalla](../etapa-0/00-del-3d-a-la-pantalla/) |
+| malla                | _mesh_                       | `THREE.Mesh`                                                |
+| vértice              | _vertex_ (plural _vertices_) | `geometry.attributes.position`                              |
+| geometría            | _geometry_                   | `BoxGeometry`, `SphereGeometry`                             |
+| material             | _material_                   | `MeshStandardMaterial`                                      |
+| en alambre           | _wireframe_                  | `WireframeGeometry`; en la consola, `show.wireframe`        |
+| cámara               | _camera_                     | `PerspectiveCamera`                                         |
+| campo de visión      | _field of view_ (FOV)        | `camera.fov`                                                |
+| perspectiva          | _perspective_                | `PerspectiveCamera`                                         |
+| matriz de proyección | _projection matrix_          | `updateProjectionMatrix()`                                  |
+| escena               | _scene_                      | `THREE.Scene`                                               |
+| árbol, hijo          | _tree_, _child_              | `object.add(child)`                                         |
+| luz hemisférica      | _hemisphere light_           | `HemisphereLight`                                           |
+| luz direccional      | _directional light_          | `DirectionalLight`                                          |
+| textura              | _texture_                    | `CanvasTexture`                                             |
+| lienzo               | _canvas_                     | `<canvas>`                                                  |
+| el que dibuja        | _renderer_                   | `WebGLRenderer` (en español también se dice _renderer_)     |
+| cuadro               | _frame_                      | `requestAnimationFrame`                                     |
+| cuadros por segundo  | _frames per second_ (FPS)    | en la consola, `show.stats`                                 |
+| bucle                | _loop_                       | [Tu primer cubo](../etapa-0/01-primer-cubo/)                |
+| ajustar (al tamaño)  | _fit_, _resize_              | `fit()`, el evento `resize`                                 |
+
+## Girar
+
+| En español               | En inglés                        | Dónde aparece                                     |
+| ------------------------ | -------------------------------- | ------------------------------------------------- |
+| radián                   | _radian_                         | `MathUtils.degToRad`                              |
+| posición                 | _position_                       | `object.position`                                 |
+| orientación              | _orientation_                    | [Girar sin trabarse](../etapa-0/02-cuaterniones/) |
+| ángulos de Euler         | _Euler angles_                   | `object.rotation`                                 |
+| guiñada, cabeceo, alabeo | _yaw_, _pitch_, _roll_           | [Girar sin trabarse](../etapa-0/02-cuaterniones/) |
+| cuaternión               | _quaternion_                     | `object.quaternion`; en el motor, `quat`          |
+| bloqueo de cardán        | _gimbal lock_                    | [Girar sin trabarse](../etapa-0/02-cuaterniones/) |
+| conjugado                | _conjugate_                      | `q.conjugate()`                                   |
+| normalizar               | _normalize_                      | `q.normalize()`                                   |
+| interpolación esférica   | _spherical linear interpolation_ | `slerp`                                           |
+| girar sobre sí mismo     | _spin_                           | en la consola, `dojo.spin`                        |
+
+## El tiempo
+
+| En español           | En inglés             | Dónde aparece                            |
+| -------------------- | --------------------- | ---------------------------------------- |
+| paso                 | _step_                | `STEP`; en la consola, `step`            |
+| paso fijo            | _fixed step_          | [El paso fijo](../etapa-0/03-paso-fijo/) |
+| diferencia de tiempo | _delta time_          | `dt`                                     |
+| acumulador           | _accumulator_         | `accumulator`                            |
+| interpolar           | _interpolate_         | `alpha`                                  |
+| integrar             | _integrate_           | `integrate()`                            |
+| Euler explícito      | _explicit Euler_      | [El paso fijo](../etapa-0/03-paso-fijo/) |
+| Euler semi-implícito | _semi-implicit Euler_ | [El paso fijo](../etapa-0/03-paso-fijo/) |
+| simpléctico          | _symplectic_          | [El paso fijo](../etapa-0/03-paso-fijo/) |
+| espiral de la muerte | _spiral of death_     | [El paso fijo](../etapa-0/03-paso-fijo/) |
+| reloj                | _clock_               | en el motor, `Clock`                     |
+| escala de tiempo     | _timescale_           | en la consola, `view.timescale`          |
+| en pausa             | _paused_              | en la consola, `pause` y `view.paused`   |
+
+## El azar
+
+| En español      | En inglés      | Dónde aparece                                       |
+| --------------- | -------------- | --------------------------------------------------- |
+| azar            | _randomness_   | `Math.random()`; en el motor, `Random`              |
+| pseudoaleatorio | _pseudorandom_ | [Azar con semilla](../etapa-0/04-azar-con-semilla/) |
+| semilla         | _seed_         | en la consola, `seed`                               |
+| con semilla     | _seeded_       | [Azar con semilla](../etapa-0/04-azar-con-semilla/) |
+| estado          | _state_        | `state`                                             |
+| generador       | _generator_    | `createRandom()`                                    |
+
+## El motor
+
+| En español                         | En inglés      | Dónde aparece                                             |
+| ---------------------------------- | -------------- | --------------------------------------------------------- |
+| simulación                         | _simulation_   | [Simulación y dibujo](../etapa-0/05-simulacion-y-dibujo/) |
+| vista                              | _view_         | `createView()`; en la consola, los nombres `view.…`       |
+| mundo                              | _world_        | `World`                                                   |
+| entidad                            | _entity_       | en el motor, `Entity`                                     |
+| evento                             | _event_        | en el motor, `entityCreated`                              |
+| determinismo                       | _determinism_  | [Simulación y dibujo](../etapa-0/05-simulacion-y-dibujo/) |
+| huella (del estado)                | _hash_         | en el motor, `stateHash`; en la consola, `hash`           |
+| núcleo                             | _core_         | `packages/core`                                           |
+| presentación                       | _presentation_ | `packages/presentation`                                   |
+| cartucho (el juego, para el motor) | _cartridge_    | `Cartridge`                                               |
+| sesión                             | _session_      | `Session`                                                 |
+| depuración                         | _debugging_    | una vista de depuración: _debug view_                     |
+| revisor del código                 | _linter_       | ESLint                                                    |
+
+## La consola del Dojo
+
+La consola está en inglés y no se traduce: sus nombres son como las palabras de un lenguaje de programación. Todo esto se puede escribir en ella, y `help` lo explica desde adentro.
+
+| En español       | En inglés        | Qué es                                                                                        |
+| ---------------- | ---------------- | --------------------------------------------------------------------------------------------- |
+| consola          | _console_        | se abre con la tecla **º** (o `` ` ``)                                                        |
+| comando          | _command_        | una orden: `restart`, `load rain`                                                             |
+| variable         | _variable_       | un valor con nombre: `dojo.cubes 20`                                                          |
+| receta           | _recipe_         | un texto con valores, uno por línea; viaja en un enlace con `#recipe=`                        |
+| sala             | _room_           | una receta guardada, con su dirección: `load rain`                                            |
+| receta de inicio | _startup recipe_ | la que corre siempre al entrar, en tu navegador: `startup save`                               |
+| atajo            | _key binding_    | una tecla para un comando: `bind t toggle show.axes`                                          |
+| valor de siempre | _default_        | el que tiene una variable si nadie la cambió                                                  |
+| alcance          | _scope_          | cuándo entra un cambio: al empezar (_startup_), en el paso siguiente (_world_), o ya (_view_) |
+
+Y los nombres que hay hoy:
+
+| Nombre           | Qué hace                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `help`           | cómo se usa la consola, o la ayuda de un nombre: `help seed`                               |
+| `find`           | busca en los nombres y en sus descripciones: `find cube`                                   |
+| `vars`           | las variables y sus valores; `vars show.` muestra solo las que empiezan así                |
+| `changed`        | solo las variables que no tienen su valor de siempre                                       |
+| `toggle`         | da vuelta una variable de prendido y apagado (_on_ / _off_): `toggle show.axes`            |
+| `export`         | arma un enlace con la receta de lo que cambiaste (_export_: exportar)                      |
+| `load`           | carga una sala guardada (_load_: cargar); sin nombre, la lista                             |
+| `startup`        | la receta de inicio: `startup save` la guarda (_save_), `startup clear` la borra (_clear_) |
+| `bind`, `unbind` | asigna o quita un atajo de teclado (_bind_: atar)                                          |
+| `clear`          | borra lo que está escrito en la consola                                                    |
+| `seed`           | la semilla del azar del mundo                                                              |
+| `restart`        | el mundo vuelve a empezar, con los valores actuales                                        |
+| `pause`, `step`  | detiene o sigue el mundo; `step 10` avanza diez pasos y lo deja en pausa                   |
+| `hash`           | el paso del mundo y su huella                                                              |
+| `show.wireframe` | las mallas en alambre (_show_: mostrar)                                                    |
+| `show.axes`      | los ejes del mundo en el origen                                                            |
+| `show.stats`     | el paso, la huella, las entidades y los cuadros por segundo (_stats_: estadísticas)        |
+| `view.timescale` | la velocidad a la que se muestra el mundo (no cambia la simulación)                        |
+| `view.paused`    | el mundo detenido, como variable                                                           |
+| `dojo.cubes`     | cuántos cubos chicos hay (_cubes_: cubos)                                                  |
+| `dojo.spin`      | cómo gira el cubo grande, en radianes por segundo alrededor de cada eje                    |
+| `dojo.spawn`     | crea un cubo chico en un lugar (_spawn_: hacer aparecer)                                   |

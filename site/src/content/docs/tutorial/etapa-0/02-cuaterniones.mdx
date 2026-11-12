@@ -5,30 +5,30 @@ sidebar:
   order: 2
 ---
 
-import CodigoVivo from '../../../../components/CodigoVivo.astro';
+import LiveCode from '../../../../components/LiveCode.astro';
 
-Todo objeto en un mundo 3D tiene una **posición**, que dice dónde está, y una **orientación**, que dice hacia dónde mira. Una nave, una cámara, un personaje que camina por una pared: el programa tiene que guardar su orientación, sumarle giros nuevos y pasar suavemente de una a otra.
+Todo objeto en un mundo 3D tiene una **posición** (_position_), que dice dónde está, y una **orientación** (_orientation_), que dice hacia dónde mira. Una nave, una cámara, un personaje que camina por una pared: el programa tiene que guardar su orientación, sumarle giros nuevos y pasar suavemente de una a otra.
 
 Cómo se la guarda no es un detalle. Hay dos maneras habituales:
 
-- **Tres ángulos**, los _ángulos de Euler_. Se entienden enseguida.
-- **Un cuaternión**, que son cuatro números. Cuesta un poco más entenderlo, pero no tiene la trampa de los ángulos: hay posiciones en las que, con ángulos, **se pierde una manera de girar**. Se llama **bloqueo de cardán**, y el ejemplo lo muestra.
+- **Tres ángulos**, los _ángulos de Euler_ (_Euler angles_). Se entienden enseguida.
+- **Un cuaternión** (_quaternion_), que son cuatro números. Cuesta un poco más entenderlo, pero no tiene la trampa de los ángulos: hay posiciones en las que, con ángulos, **se pierde una manera de girar**. Se llama **bloqueo de cardán** (_gimbal lock_), y el ejemplo lo muestra.
 
 Los tres ángulos tienen nombres de aviación:
 
-- **Guiñada:** girar a la izquierda o a la derecha, como al decir "no" con la cabeza. Es un giro alrededor del eje vertical (`y`).
-- **Cabeceo:** subir o bajar la nariz, como al decir "sí". Es un giro alrededor del eje que va de ala a ala (`x`).
-- **Alabeo:** inclinarse de costado, como un avión que dobla. Es un giro alrededor del eje que va de la cola a la punta (`z`).
+- **Guiñada** (_yaw_): girar a la izquierda o a la derecha, como al decir "no" con la cabeza. Es un giro alrededor del eje vertical (`y`).
+- **Cabeceo** (_pitch_): subir o bajar la nariz, como al decir "sí". Es un giro alrededor del eje que va de ala a ala (`x`).
+- **Alabeo** (_roll_): inclinarse de costado, como un avión que dobla. Es un giro alrededor del eje que va de la cola a la punta (`z`).
 
-<CodigoVivo leccion="etapa-0/02-cuaterniones" autoejecutar />
+<LiveCode lesson="stage-0/02-quaternions" autorun />
 
-La punta naranja de la nave dice hacia dónde mira, y la aleta roja dice cuál es su "arriba".
+La punta naranja de la nave (_ship_) dice hacia dónde mira, y la aleta roja dice cuál es su "arriba". En el panel, los giros tienen sus nombres en inglés.
 
 **Qué probar:**
 
-1. **Con ángulos:** mové la guiñada, el cabeceo y el alabeo, de a uno. Hasta aquí, todo bien.
+1. **Con ángulos** (_with angles_): mové la guiñada, el cabeceo y el alabeo, de a uno. Hasta aquí, todo bien.
 2. **Ahora poné el cabeceo en 90°**: la nave apunta hacia arriba. Mové la guiñada, y después el alabeo. **Hacen lo mismo**: los dos la hacen girar alrededor del mismo eje. Se perdió una manera de girar: eso es el bloqueo de cardán.
-3. **Con el cuaternión:** tocá "volver al principio", y después "cabecear" seis veces (6 × 15° = 90°). La nave apunta hacia arriba, igual que antes. Ahora probá "guiñar" y "alabear": **cada uno hace algo distinto**. No se trabó.
+3. **Con el cuaternión** (_with a quaternion_): tocá _back to the start_ (volver al principio), y después _pitch (its X)_ seis veces (6 × 15° = 90°). La nave apunta hacia arriba, igual que antes. Ahora probá _yaw (its Y)_ y _roll (its Z)_: **cada uno hace algo distinto**. No se trabó.
 4. **Mirá los cuatro números del cuaternión** mientras girás. Cambian todos juntos, pero la suma de sus cuadrados siempre da 1.
 
 ## ¿Qué es un cuaternión?
@@ -38,19 +38,19 @@ Hay un resultado de geometría, también de Euler: **cualquier orientación se a
 No hace falta saber hacer sus cuentas a mano, porque Three.js las hace. Sí hace falta saber cómo se usan:
 
 - **Se combinan multiplicando.** Aplicar un giro y después otro es multiplicar sus cuaterniones.
-- **Se suavizan con `slerp`.** Pasar de una orientación a otra por el camino más corto, sin saltos, es lo que hace un juego para que una cámara gire de a poco.
+- **Se suavizan con `slerp`** (de _spherical linear interpolation_, interpolación lineal esférica). Pasar de una orientación a otra por el camino más corto, sin saltos, es lo que hace un juego para que una cámara gire de a poco.
 
 ## El código, paso a paso
 
 - **La nave es un `Group`:** un objeto vacío que agrupa a otros. El cuerpo, la punta, la aleta y las alas son sus hijos: al girar el grupo, giran todos juntos. Cada pieza es una caja o un cono, corrido de lugar con `translate`.
-- **Con ángulos**, cada deslizador llama a `nave.rotation.set(cabeceo, guiñada, alabeo, 'YXZ')`. Los grados se pasan a radianes con `degToRad`. `'YXZ'` es el **orden** en que se aplican los giros: primero la guiñada, después el cabeceo y al final el alabeo. Cada giro gira también los ejes de los que vienen después, y ahí aparece la trampa.
-- **Con el cuaternión**, cada botón hace `nave.quaternion.multiply(giro)`. `giro` es un cuaternión de 15° alrededor de un eje, armado con `setFromAxisAngle(eje, ángulo)`. Multiplicar suma ese giro **desde donde la nave esté**, alrededor de sus propios ejes.
-- **La lectura en vivo** copia los cuatro números del cuaternión en cada cuadro, para mostrarlos en el panel.
+- **Con ángulos**, cada deslizador llama a `ship.rotation.set(pitch, yaw, roll, 'YXZ')`. Los grados se pasan a radianes con `degToRad`. `'YXZ'` es el **orden** en que se aplican los giros: primero la guiñada, después el cabeceo y al final el alabeo. Cada giro gira también los ejes de los que vienen después, y ahí aparece la trampa.
+- **Con el cuaternión**, cada botón hace `ship.quaternion.multiply(turn)`. `turn` (el giro) es un cuaternión de 15° alrededor de un eje, armado con `setFromAxisAngle(axis, angle)`. Multiplicar suma ese giro **desde donde la nave esté**, alrededor de sus propios ejes.
+- **La lectura en vivo** (`readout`) copia los cuatro números del cuaternión en cada cuadro, para mostrarlos en el panel.
 
 ## Lo importante
 
 - **Con ángulos, cada giro se aplica después del anterior**, en un orden fijo. En cierta posición (aquí, cabeceo en 90°), dos de los giros terminan siendo el mismo: es el bloqueo de cardán.
-- **Con un cuaternión, cada giro se suma desde donde estés**, alrededor de los ejes del propio objeto (`q.multiply(giro)`). No hay posición en la que se trabe.
+- **Con un cuaternión, cada giro se suma desde donde estés**, alrededor de los ejes del propio objeto (`q.multiply(turn)`). No hay posición en la que se trabe.
 - **Un cuaternión es un eje y un ángulo, codificados**: `(x, y, z) = eje · sen(θ/2)` y `w = cos(θ/2)`, donde `θ` (la letra griega _theta_) es el ángulo. Por eso sus cuatro números siempre cumplen `x² + y² + z² + w² = 1`.
 - **Para mostrar o para escribir a mano, los ángulos están bien.** Para guardar orientaciones y combinarlas, conviene el cuaternión.
 
@@ -74,7 +74,7 @@ Para girar un vector `v` con un cuaternión `q`, la cuenta es:
 
 `v′ = q · v · q*`
 
-Aquí `v` se escribe como cuaternión con `w = 0`, y `q*` es el **conjugado** de `q`: el mismo cuaternión con `x`, `y` y `z` cambiados de signo. El cuaternión aparece **dos veces**, una a cada lado, y cada una aporta la mitad del giro. Por eso adentro se guarda `θ/2`: entre las dos suman `θ`.
+Aquí `v` se escribe como cuaternión con `w = 0`, y `q*` es el **conjugado** (_conjugate_) de `q`: el mismo cuaternión con `x`, `y` y `z` cambiados de signo. El cuaternión aparece **dos veces**, una a cada lado, y cada una aporta la mitad del giro. Por eso adentro se guarda `θ/2`: entre las dos suman `θ`.
 
 Eso también explica lo de `q` y `−q`: si se cambian todos los signos, aparecen dos signos menos en `q · v · q*`, que se cancelan. Los cuaterniones de largo 1 forman la superficie de una esfera en cuatro dimensiones, y cada orientación del espacio aparece en ella dos veces, en puntos opuestos.
 
@@ -83,13 +83,13 @@ Eso también explica lo de `q` y `−q`: si se cambian todos los signos, aparece
 :::caution[Sutilezas]
 
 - **El orden de la multiplicación importa.** `a.multiply(b)` (por la derecha) gira en el marco **propio** del objeto: su derecha, su arriba. `a.premultiply(b)` (por la izquierda) gira en el marco **del mundo**: la derecha y el arriba de la escena. Cambiá uno por el otro en el código y probá.
-- **Hay que renormalizar.** Después de miles de multiplicaciones, los redondeos hacen que el cuaternión deje de medir 1, y empieza a deformar lo que gira. `q.normalize()` lo corrige.
+- **Hay que renormalizar** (_normalize_). Después de miles de multiplicaciones, los redondeos hacen que el cuaternión deje de medir 1, y empieza a deformar lo que gira. `q.normalize()` lo corrige.
 - **El mismo giro tiene dos cuaterniones**: `q` y `−q` (todos los números cambiados de signo) representan la misma orientación. Al interpolar, hay que elegir el más cercano, o el objeto da la vuelta larga. `slerp` ya lo hace.
   :::
 
 ## En Manifold
 
-El motor guarda las orientaciones como cuaterniones y tiene su propia matemática, escrita sobre listas de números simples: [`paquetes/comun/src/matematica.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/paso-00/paquetes/comun/src/matematica.ts). Cuando un personaje camine por una pared o por una cinta de Möbius, no puede haber ninguna orientación "prohibida".
+El motor guarda las orientaciones como cuaterniones y tiene su propia matemática, escrita sobre listas de números simples: [`packages/common/src/math.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-00/packages/common/src/math.ts). Cuando un personaje camine por una pared o por una cinta de Möbius, no puede haber ninguna orientación "prohibida".
 
 ## Para saber más
 

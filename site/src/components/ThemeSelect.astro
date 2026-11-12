@@ -1,56 +1,58 @@
 ---
 /**
- * El selector de tema de Starlight (reemplaza a "ThemeSelect" en astro.config.mjs), con dos
- * botones al lado para ocultar o mostrar los PANELES DE LOS COSTADOS: el índice del sitio, a la
- * izquierda, y "En esta página", a la derecha. Sin ellos, la lección y sus ejemplos usan ese ancho.
+ * Starlight's theme selector (it replaces "ThemeSelect" in astro.config.mjs), with two buttons
+ * beside it to hide or show the SIDE PANELS: the site's index, on the left, and "En esta página"
+ * (on this page), on the right. Without them, the lesson and its examples use that width.
  *
- * Van aquí porque la cabecera es lo único que se ve siempre, también con los dos paneles ocultos.
- * Lo elegido se recuerda en el navegador (localStorage) y se aplica ANTES de dibujar la página, con
- * un script en el <head> (astro.config.mjs), para que no parpadee al cambiar de página.
+ * They go here because the header is the only thing always visible, also with both panels hidden.
+ * The choice is remembered in the browser (localStorage) and applied BEFORE the page is drawn, with
+ * a script in the <head> (astro.config.mjs), so it does not flicker when changing pages.
  *
- * Este componente también aparece en el menú del celular: ahí los botones no se muestran, porque
- * en una pantalla angosta los paneles ya no ocupan lugar al costado.
+ * This component also shows up in the phone menu: there the buttons are not shown, because on a
+ * narrow screen the panels no longer take room at the side.
  *
- * El código de este componente atiende a todos los botones con `data-panel`: los de la cabecera,
- * los "Ocultar" de arriba de cada panel (BarraLateral.astro e IndiceLateral.astro) y las pestañas
- * del borde que los vuelven a mostrar.
+ * This component's code handles every button with `data-panel`: the header's, the "Ocultar" (hide)
+ * ones at the top of each panel (Sidebar.astro and PageSidebar.astro) and the edge tabs that show
+ * them again.
+ *
+ * (The labels are the site's text, in Spanish.)
  */
 import Default from '@astrojs/starlight/components/ThemeSelect.astro';
 ---
 
-<div class="mg-paneles">
-  <button type="button" class="mg-panel" data-panel="barra" aria-pressed="true" aria-label="Índice del sitio">
+<div class="mg-panels">
+  <button type="button" class="mg-panel" data-panel="sidebar" aria-pressed="true" aria-label="Índice del sitio">
     <svg viewBox="0 0 20 16" aria-hidden="true">
-      <rect class="mg-lado" x="2" y="2" width="5" height="12" />
+      <rect class="mg-side" x="2" y="2" width="5" height="12" />
       <rect x="1" y="1" width="18" height="14" rx="2" />
       <path d="M7 1v14" />
     </svg>
   </button>
-  <button type="button" class="mg-panel" data-panel="indice" aria-pressed="true" aria-label="En esta página">
+  <button type="button" class="mg-panel" data-panel="toc" aria-pressed="true" aria-label="En esta página">
     <svg viewBox="0 0 20 16" aria-hidden="true">
-      <rect class="mg-lado" x="13" y="2" width="5" height="12" />
+      <rect class="mg-side" x="13" y="2" width="5" height="12" />
       <rect x="1" y="1" width="18" height="14" rx="2" />
       <path d="M13 1v14" />
     </svg>
   </button>
 </div>
 <!--
-  Cuando un panel está oculto, una pestaña en el borde de la pantalla lo vuelve a mostrar: siempre
-  hay un camino de vuelta, aunque la cabecera no se vea entera (con mucho zoom, por ejemplo).
+  When a panel is hidden, a tab at the edge of the screen shows it again: there is always a way back,
+  even if the header is not fully visible (with a lot of zoom, for example).
 -->
-<!-- (Sin la clase "mg-panel": su estilo de aquí las mostraría siempre. Las esconde y muestra taller.css.) -->
-<button type="button" class="mg-mostrar mg-mostrar-barra" data-panel="barra">› Índice</button>
-<button type="button" class="mg-mostrar mg-mostrar-indice" data-panel="indice">En esta página ‹</button>
+<!-- (Without the "mg-panel" class: its style here would always show them. workshop.css hides and shows them.) -->
+<button type="button" class="mg-show mg-show-sidebar" data-panel="sidebar">› Índice</button>
+<button type="button" class="mg-show mg-show-toc" data-panel="toc">En esta página ‹</button>
 <Default />
 
 <style>
-  .mg-paneles {
+  .mg-panels {
     display: none;
     gap: 0.15rem;
     align-items: center;
   }
   @media (min-width: 50rem) {
-    :global(:root[data-has-sidebar]) .mg-paneles {
+    :global(:root[data-has-sidebar]) .mg-panels {
       display: flex;
     }
   }
@@ -65,7 +67,7 @@ import Default from '@astrojs/starlight/components/ThemeSelect.astro';
   }
   .mg-panel:hover {
     color: var(--sl-color-white);
-    border-color: var(--mg-linea-bronce);
+    border-color: var(--mg-bronze-line);
   }
   .mg-panel svg {
     width: 1.25rem;
@@ -74,59 +76,59 @@ import Default from '@astrojs/starlight/components/ThemeSelect.astro';
     stroke: currentColor;
     stroke-width: 1.4;
   }
-  /* El costado relleno = el panel está a la vista. */
-  .mg-lado {
+  /* The filled side = the panel is in view. */
+  .mg-side {
     stroke: none;
     fill: transparent;
   }
-  .mg-panel[aria-pressed='true'] .mg-lado {
+  .mg-panel[aria-pressed='true'] .mg-side {
     fill: color-mix(in srgb, currentColor 55%, transparent);
   }
-  /* "En esta página" solo existe al costado desde los 72rem, y solo si la página tiene secciones. */
-  .mg-panel[data-panel='indice'] {
+  /* "En esta página" only exists at the side from 72rem on, and only if the page has sections. */
+  .mg-panel[data-panel='toc'] {
     display: none;
   }
   @media (min-width: 72rem) {
-    :global(:root[data-has-toc]) .mg-panel[data-panel='indice'] {
+    :global(:root[data-has-toc]) .mg-panel[data-panel='toc'] {
       display: inline-flex;
     }
   }
 </style>
 
 <script>
-  /** Cada panel: dónde se recuerda y qué atributo de <html> lo oculta (el CSS está en taller.css). */
-  const PANELES = {
-    barra: { clave: 'mg-sin-barra', atributo: 'data-sin-barra', nombre: 'el índice del sitio' },
-    indice: { clave: 'mg-sin-indice', atributo: 'data-sin-indice', nombre: '«En esta página»' },
+  /** Each panel: where it is remembered and which <html> attribute hides it (the CSS is in workshop.css). */
+  const PANELS = {
+    sidebar: { key: 'mg-no-sidebar', attribute: 'data-no-sidebar', name: 'el índice del sitio' },
+    toc: { key: 'mg-no-toc', attribute: 'data-no-toc', name: '«En esta página»' },
   } as const;
-  type Panel = keyof typeof PANELES;
-  const raiz = document.documentElement;
+  type Panel = keyof typeof PANELS;
+  const root = document.documentElement;
 
-  function pintar() {
-    for (const boton of document.querySelectorAll<HTMLButtonElement>('button[data-panel]')) {
-      const panel = PANELES[boton.dataset.panel as Panel];
-      const oculto = raiz.hasAttribute(panel.atributo);
-      boton.title = `${oculto ? 'Mostrar' : 'Ocultar'} ${panel.nombre}`;
-      // Los de la cabecera prenden y apagan. Los de arriba de cada panel ("mg-ocultar") solo
-      // ocultan, y las pestañas del borde ("mg-mostrar") solo muestran.
-      const soloUnaCosa = boton.classList.contains('mg-ocultar') || boton.classList.contains('mg-mostrar');
-      if (!soloUnaCosa) boton.setAttribute('aria-pressed', String(!oculto));
+  function paint() {
+    for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-panel]')) {
+      const panel = PANELS[button.dataset.panel as Panel];
+      const hidden = root.hasAttribute(panel.attribute);
+      button.title = `${hidden ? 'Mostrar' : 'Ocultar'} ${panel.name}`;
+      // The header's turn on and off. The ones at the top of each panel ("mg-hide") only hide, and
+      // the edge tabs ("mg-show") only show.
+      const oneWay = button.classList.contains('mg-hide') || button.classList.contains('mg-show');
+      if (!oneWay) button.setAttribute('aria-pressed', String(!hidden));
     }
   }
 
-  for (const boton of document.querySelectorAll<HTMLButtonElement>('button[data-panel]')) {
-    boton.addEventListener('click', () => {
-      const panel = PANELES[boton.dataset.panel as Panel];
-      const ocultar = !raiz.hasAttribute(panel.atributo);
-      raiz.toggleAttribute(panel.atributo, ocultar);
+  for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-panel]')) {
+    button.addEventListener('click', () => {
+      const panel = PANELS[button.dataset.panel as Panel];
+      const hide = !root.hasAttribute(panel.attribute);
+      root.toggleAttribute(panel.attribute, hide);
       try {
-        if (ocultar) localStorage.setItem(panel.clave, '1');
-        else localStorage.removeItem(panel.clave);
+        if (hide) localStorage.setItem(panel.key, '1');
+        else localStorage.removeItem(panel.key);
       } catch {
-        // Sin almacenamiento (una ventana privada, por ejemplo): vale solo para esta página.
+        // No storage (a private window, for example): it only lasts for this page.
       }
-      pintar();
+      paint();
     });
   }
-  pintar();
+  paint();
 </script>

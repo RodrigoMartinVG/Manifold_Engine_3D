@@ -1,12 +1,12 @@
 {
-  "name": "sitio",
+  "name": "site",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "La web de la plataforma: el inicio, el proyecto, el tutorial y las páginas desde las que se juega.",
+  "description": "The platform's website: the home page, the project, the tutorial and the pages where you play.",
   "scripts": {
     "vendor": "node scripts/vendor.mjs",
-    "dibujar": "node scripts/dibujar.mjs",
+    "draw": "node scripts/draw.mjs",
     "predev": "npm run vendor",
     "dev": "astro dev",
     "prebuild": "npm run vendor",

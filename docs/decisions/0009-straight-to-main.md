@@ -1,32 +1,32 @@
-# 0009. Directo en main, sin pull requests
+# 0009. Straight to main, without pull requests
 
-- **Estado:** aceptada (reemplaza lo de ramas y PR de la [0005](0005-forma-de-trabajo.md))
-- **Fecha:** 2026-11-11
+- **Status:** accepted (it replaces the branches and PRs of [0005](0005-way-of-working.md))
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-La [0005](0005-forma-de-trabajo.md) pedía que todo entrara a `main` por _pull request_ (PR), con la integración continua en verde. En la práctica, en las primeras etapas:
+[0005](0005-way-of-working.md) asked for everything to enter `main` through a _pull request_ (PR), with continuous integration green. In practice, in the first stages:
 
-- **Nadie revisa los PR.** El proyecto lo hace una persona con un asistente: el autor revisa mirando el sitio, no el PR.
-- **Fusionar era un trámite** que caía en el autor: aprobar, esperar, fusionar. Con PR encadenados (uno encima de otro) fue peor: al fusionar el primero y borrar su rama, GitHub cerró el que estaba encima, y hubo que rebasar cada uno y esperar otra verificación.
-- **La verificación de GitHub puede trabarse.** El 2026-11-11, las ejecuciones quedaron en cola casi una hora sin arrancar. Como `main` exigía que pasaran, nada podía entrar.
+- **Nobody reviews the PRs.** The project is made by one person with an assistant: the author reviews by looking at the site, not at the PR.
+- **Merging was a chore** that fell on the author: approve, wait, merge. With stacked PRs (one on top of the other) it was worse: when the first one was merged and its branch deleted, GitHub closed the one on top, and each one had to be rebased and wait for another check.
+- **GitHub's checks can get stuck.** On 2026-11-11, the runs stayed queued for almost an hour without starting. Since `main` required them to pass, nothing could get in.
 
-## Decisión
+## Decision
 
-- **Se trabaja directo en `main`.** Cada cambio es uno o varios commits convencionales (siguen las reglas de la 0005), que se suben a `main`.
-- **Antes de subir, se verifica en la máquina:** `npm run verificar` (tipos, linter, formato y pruebas sin pantalla) y las pruebas en Chromium sobre el sitio armado. Es lo mismo que corre GitHub.
-- **GitHub sigue verificando cada cambio de `main`, y el sitio solo se publica si pasa.** Si algo se rompe, el sitio publicado sigue siendo el anterior hasta que se arregle.
-- **`main` sigue protegida contra lo irreversible:** no se puede borrar ni reescribir su historia (nada de `push --force`).
-- **Las etiquetas por etapa siguen** (`paso-00`, `paso-01`...): el tutorial y la bitácora enlazan al código de su etiqueta.
-- **Un PR sigue siendo posible** para algo que convenga mirar aparte antes de que entre: un experimento grande, o las actualizaciones de Dependabot.
+- **We work straight on `main`.** Every change is one or more conventional commits (they follow 0005's rules, in English since [0011](0011-languages.md)), pushed to `main`.
+- **Before pushing, it is checked on the machine:** `npm run verify` (types, linter, formatting and headless tests) and the tests in Chromium on the built site. It is the same that GitHub runs.
+- **GitHub keeps checking every change to `main`, and the site is only published if it passes.** If something breaks, the published site stays the previous one until it is fixed.
+- **`main` is still protected against the irreversible:** it cannot be deleted nor can its history be rewritten (no `push --force`).
+- **The tags per stage stay** (`stage-00`, `stage-01`...; before 0011, `paso-00`): the tutorial and the Bitácora link to the code of their tag.
+- **A PR is still possible** for something worth looking at apart before it goes in: a big experiment, or Dependabot's updates.
 
-## Consecuencias
+## Consequences
 
-- El autor no tiene que aprobar ni fusionar nada: ve los cambios en el sitio o en su servidor local, y pide ajustes.
-- Un error que pase la verificación local puede llegar a `main`. Lo frena la verificación de GitHub antes de publicar, y se arregla con un commit nuevo encima: no se reescribe la historia.
-- El historial de `main` muestra cada commit, en vez de un commit por PR.
+- The author does not have to approve or merge anything: they see the changes on the site or on their local server, and ask for adjustments.
+- A mistake that passes the local check can reach `main`. GitHub's check stops it before publishing, and it is fixed with a new commit on top: history is not rewritten.
+- `main`'s history shows every commit, instead of one commit per PR.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-- **Seguir con PR, pero que se fusionen solos** cuando pase la verificación: ahorra los clics, pero no las esperas, ni el problema de los PR encadenados.
-- **Una rama de trabajo que se fusiona de vez en cuando:** una capa más, sin nadie que la revise.
+- **Keep PRs, but have them merge by themselves** when the check passes: it saves the clicks, but not the waits, nor the stacked PRs problem.
+- **A working branch that is merged once in a while:** one more layer, with nobody to review it.

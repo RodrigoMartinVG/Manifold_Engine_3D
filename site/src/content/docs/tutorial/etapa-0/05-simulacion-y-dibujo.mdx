@@ -5,12 +5,12 @@ sidebar:
   order: 5
 ---
 
-import CodigoVivo from '../../../../components/CodigoVivo.astro';
+import LiveCode from '../../../../components/LiveCode.astro';
 
 Hasta ahora, cada ejemplo mezclaba las cuentas con el dibujo: la misma variable era la posición de la pelota y la de su malla en Three.js. En un programa chico no importa. En un motor, es la decisión más importante: **lo que pasa** y **lo que se ve** son dos programas distintos.
 
-- La **simulación** es solo datos y cuentas: dónde está cada cosa, a qué velocidad va, qué chocó. No importa Three.js ni sabe que existe una pantalla.
-- La **vista** lee esos datos y los dibuja. Nunca los cambia.
+- La **simulación** (_simulation_) es solo datos y cuentas: dónde está cada cosa, a qué velocidad va, qué chocó. No importa Three.js ni sabe que existe una pantalla.
+- La **vista** (_view_) lee esos datos y los dibuja. Nunca los cambia.
 
 Pensalo como un partido de fútbol y su transmisión por televisión. El partido pasa igual aunque nadie lo filme. La transmisión elige las cámaras, repite jugadas y agrega gráficos, pero no puede mover la pelota.
 
@@ -19,28 +19,28 @@ Pensalo como un partido de fútbol y su transmisión por televisión. El partido
 - **se puede probar sin navegador**, miles de veces, en segundos;
 - **puede correr en un servidor**, que no tiene pantalla, para un juego en red;
 - **puede ir más rápido que el tiempo real**, para adelantar o para buscar un error en una partida larga;
-- **puede tener varias vistas a la vez**, como el juego, un minimapa o una vista de depuración con flechas;
+- **puede tener varias vistas a la vez**, como el juego, un minimapa o una vista de depuración (_debug view_) con flechas;
 - **no depende de Three.js**: si algún día se cambia la librería de dibujo, la física no se entera.
 
-<CodigoVivo leccion="etapa-0/05-simulacion-y-dibujo" autoejecutar />
+<LiveCode lesson="stage-0/05-simulation-and-drawing" autorun />
 
 **Qué probar:**
 
-1. **Mirá la consola.** Antes de dibujar nada, el programa simuló **dos** mundos de 10 segundos cada uno, en unos pocos milisegundos. Con la misma semilla, los dos resúmenes son **exactamente** iguales.
-2. **En `main.ts`, cambiá la semilla del mundo B** (el `7` de `crearMundo(7, 25)` en la línea de `b`) y ejecutá: los resúmenes ya no coinciden.
-3. **En `simulacion.ts`, cambiá `0.92`** (cuánta velocidad conserva una pelota al rebotar) por `1` o por `0.5`.
+1. **Mirá la consola.** Antes de dibujar nada, el programa simuló **dos** mundos de 10 segundos cada uno, en unos pocos milisegundos. Con la misma semilla, los dos resúmenes (_summary_) son **exactamente** iguales (_equal_).
+2. **En `main.ts`, cambiá la semilla del mundo B** (el `7` de `createWorld(7, 25)` en la línea de `b`) y ejecutá: los resúmenes ya no coinciden.
+3. **En `simulation.ts`, cambiá `0.92`** (cuánta velocidad conserva una pelota al rebotar) por `1` o por `0.5`.
 4. **Recorré las tres pestañas** y mirá qué importa cada archivo.
 
 ## El código, paso a paso
 
-- **`simulacion.ts`** no importa nada.
-  - Define un `Mundo`: una lista de pelotas, cada una con posición, velocidad y radio, más un contador de pasos.
-  - `crearMundo(semilla, cantidad)` las ubica con un azar con semilla, como el de la lección anterior.
-  - `avanzar(mundo)` da **un** paso fijo: la gravedad, el movimiento y los rebotes contra el piso y las paredes de la caja.
-  - `resumen(mundo)` reduce todo el mundo a un número con 9 decimales, para comparar dos mundos de un vistazo.
-- **`vista.ts`** importa Three.js y lee el `Mundo`.
+- **`simulation.ts`** no importa nada.
+  - Define un mundo, `World`: una lista de pelotas (`balls`), cada una con posición, velocidad y radio (`position`, `velocity`, `radius`), más un contador de pasos (`steps`).
+  - `createWorld(seed, count)` las ubica con un azar con semilla, como el de la lección anterior.
+  - `advance(world)` da **un** paso fijo (_advance_: avanzar): la gravedad, el movimiento y los rebotes contra el piso y las paredes de la caja.
+  - `summary(world)` reduce todo el mundo a un número con 9 decimales, para comparar dos mundos de un vistazo.
+- **`view.ts`** importa Three.js y lee el `World`.
   - Crea una malla por pelota y las líneas de la caja.
-  - `dibujar()` copia la posición de cada pelota a su malla. Esa es la **única** conexión entre los dos mundos: datos que van de la simulación a la vista, nunca al revés.
+  - `draw()` copia la posición de cada pelota a su malla. Esa es la **única** conexión entre los dos mundos: datos que van de la simulación a la vista, nunca al revés.
 - **`main.ts`** une todo.
   - Primero corre los dos mundos sin pantalla: 600 pasos cada uno, sin dibujar.
   - Después crea un tercero, con su vista, y en cada cuadro lo avanza de a pasos fijos, como en la [lección del paso fijo](../03-paso-fijo/), y lo dibuja.
@@ -49,7 +49,7 @@ Pensalo como un partido de fútbol y su transmisión por televisión. El partido
 
 - **La simulación es datos y cuentas.** La vista lee los datos y dibuja. Las flechas van en un solo sentido.
 - **Sin pantalla, la simulación corre a la velocidad que dé la máquina.** 600 pasos tardan milisegundos, en vez de los 10 segundos que dura verlos.
-- **Misma semilla, mismos pasos, mismo resultado, número por número.** Eso es el **determinismo**, y es lo que permite repeticiones, pruebas y juego en red.
+- **Misma semilla, mismos pasos, mismo resultado, número por número.** Eso es el **determinismo** (_determinism_), y es lo que permite repeticiones, pruebas y juego en red.
 - **Por eso se puede probar sin navegador y correr en un servidor:** es la misma simulación, sin la vista.
 
 ## Más a fondo
@@ -63,7 +63,7 @@ Los números de JavaScript guardan unos 16 dígitos significativos, así que cas
 
 Además, el orden importa. `(0.1 + 0.2) + 0.3` da `0.6000000000000001`, pero `0.1 + (0.2 + 0.3)` da `0.6`. Por eso dos simulaciones dan igual solo si hacen **exactamente las mismas cuentas, en el mismo orden**.
 
-Y una diferencia mínima no se queda mínima. En un mundo con choques, una pelota que llega una millonésima de metro antes rebota con un ángulo apenas distinto. Eso cambia dónde choca la vez siguiente, y la diferencia crece choque tras choque. En matemática se llama **sensibilidad a las condiciones iniciales**, y es la base de lo que se conoce como caos. Por eso el motor no compara "más o menos": compara número por número, y si en algún paso difiere, quiere saber en cuál.
+Y una diferencia mínima no se queda mínima. En un mundo con choques, una pelota que llega una millonésima de metro antes rebota con un ángulo apenas distinto. Eso cambia dónde choca la vez siguiente, y la diferencia crece choque tras choque. En matemática se llama **sensibilidad a las condiciones iniciales** (_sensitivity to initial conditions_), y es la base de lo que se conoce como caos. Por eso el motor no compara "más o menos": compara número por número, y si en algún paso difiere, quiere saber en cuál.
 
 </details>
 
@@ -71,17 +71,17 @@ Y una diferencia mínima no se queda mínima. En un mundo con choques, una pelot
 
 - **La vista lee y nunca escribe.** Si la vista moviera una pelota, la simulación y la pantalla dejarían de estar de acuerdo, y la repetición ya no daría igual.
 - **"Exactamente igual" quiere decir número por número.** Por eso el resumen se compara como texto, con 9 decimales, y no "más o menos". Una diferencia en el noveno decimal hoy es una pelota en otro lugar dentro de un minuto.
-- **En este ejemplo, la separación es una costumbre:** nada le impide a `simulacion.ts` importar Three.js (probalo: funciona). En el motor no es costumbre, es una regla que el compilador hace cumplir.
+- **En este ejemplo, la separación es una costumbre:** nada le impide a `simulation.ts` importar Three.js (probalo: funciona). En el motor no es costumbre, es una regla que el compilador hace cumplir.
   :::
 
 ## En Manifold
 
 Así está armado todo el motor:
 
-- `paquetes/nucleo` es la simulación. Compila **sin** las funciones del navegador: si alguien escribe `document` adentro, el programa no compila.
-- `paquetes/presentacion` dibuja. Un juego solo puede importar las partes que le corresponden, y eso también lo revisa una herramienta automática (el _linter_).
+- `packages/core` (el núcleo) es la simulación. Compila **sin** las funciones del navegador: si alguien escribe `document` adentro, el programa no compila.
+- `packages/presentation` (la presentación) dibuja. Un juego solo puede importar las partes que le corresponden, y eso también lo revisa una herramienta automática (el _linter_).
 
-Lo cuenta la [bitácora de la etapa 0](../../../bitacora/etapa-0/), y las reglas están en la [decisión 0003](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0003-fronteras.md).
+Lo cuenta la [bitácora de la etapa 0](../../../bitacora/etapa-0/), y las reglas están en la [decisión 0003](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0003-boundaries.md) (en inglés, como todas las decisiones).
 
 ## Para saber más
 

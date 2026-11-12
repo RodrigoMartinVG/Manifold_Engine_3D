@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
-<!-- Generado por sitio/scripts/dibujar.mjs: óxido y picado, para repetir como textura. -->
+<!-- Made by site/scripts/draw.mjs: rust and pitting, to repeat as a texture. -->
 <filter id="f" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-<feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="3" seed="7" stitchTiles="stitch" result="manchas"/>
-<feColorMatrix in="manchas" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.17 0 0 0 0 0.08 3.2 0 0 0 -1.95" result="oxido"/>
-<feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="3" stitchTiles="stitch" result="grano"/>
-<feColorMatrix in="grano" type="matrix" values="0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0 0.02 0 2.4 0 0 -1.2" result="picado"/>
-<feMerge><feMergeNode in="oxido"/><feMergeNode in="picado"/></feMerge>
+<feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="3" seed="7" stitchTiles="stitch" result="stains"/>
+<feColorMatrix in="stains" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.17 0 0 0 0 0.08 3.2 0 0 0 -1.95" result="rust"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="3" stitchTiles="stitch" result="grain"/>
+<feColorMatrix in="grain" type="matrix" values="0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0 0.02 0 2.4 0 0 -1.2" result="pits"/>
+<feMerge><feMergeNode in="rust"/><feMergeNode in="pits"/></feMerge>
 </filter>
 <rect width="220" height="220" filter="url(#f)"/>
 </svg>

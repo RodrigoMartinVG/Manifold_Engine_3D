@@ -1,9 +1,9 @@
 {
-  "name": "@manifold/comandos",
+  "name": "@manifold/commands",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Las variables y los comandos que declara cada parte, el intérprete de una línea y las recetas (decisión 0010). Sin pantalla, sin dependencias: lo usan la consola, los enlaces, las salas y las pruebas.",
+  "description": "The variables and commands each part declares, the one-line interpreter and the recipes (decision 0010). No screen, no dependencies: used by the console, links, rooms and tests.",
   "exports": {
     ".": "./src/index.ts"
   },

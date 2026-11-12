@@ -1,6 +1,6 @@
-export { Mundo, PASO, type OpcionesMundo } from './mundo';
-export { Partida, declararNucleo, registroDe, type CambioDelMundo, type OpcionesPartida } from './partida';
-export { Reloj } from './reloj';
-export { huella } from './huella';
-export type { Cartucho } from './cartucho';
-export type { Apariencia, Componentes, Entidad, Evento, Giro, IdEntidad, Transformacion } from './tipos';
+export { World, STEP, type WorldOptions } from './world';
+export { Session, declareCore, registryFor, type SessionOptions, type WorldChange } from './session';
+export { Clock } from './clock';
+export { stateHash } from './hash';
+export type { Cartridge } from './cartridge';
+export type { Appearance, Components, Entity, Event, EntityId, Spin, Transform } from './types';

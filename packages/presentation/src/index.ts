@@ -1,2 +1,2 @@
-export { montar, type Montaje, type OpcionesMontaje, type RecetaInicial } from './cliente';
-export { montarConsola, type Consola, type OpcionesConsola } from './consola';
+export { mount, type Mount, type MountOptions, type InitialRecipe } from './client';
+export { mountConsole, type GameConsole, type ConsoleOptions } from './console';

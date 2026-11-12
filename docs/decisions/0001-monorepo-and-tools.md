@@ -1,47 +1,48 @@
-# 0001. Un monorepo, y sus herramientas
+# 0001. A monorepo, and its tools
 
-- **Estado:** aceptada
-- **Fecha:** 2026-11-11
+- **Status:** accepted
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-La plataforma tiene piezas que se usan entre sí: el motor (en capas), los juegos y el sitio. Se tienen que poder cambiar juntas (tocar el motor y ver el cambio en el Dojo al instante) sin publicar paquetes a ningún lado.
+The platform has pieces that use each other: the engine (in layers), the games and the site. They have to be changeable together (touch the engine and see the change in the Dojo right away) without publishing packages anywhere.
 
-## Decisión
+## Decision
 
-**Un solo repositorio con _workspaces_ de npm:**
+**A single repository with npm _workspaces_:**
 
 ```
-paquetes/comun          azar, matemática (sin dependencias)
-paquetes/nucleo         la simulación (sin pantalla)
-paquetes/presentacion   Three.js: lo que se ve
-juegos/dojo             el primer juego
-sitio                   la web (Astro)
+packages/common         randomness, math (no dependencies)
+packages/commands       the console's registry and interpreter (decision 0010)
+packages/core           the simulation (no screen)
+packages/presentation   Three.js: what is seen
+games/dojo              the first game
+site                    the web (Astro)
 ```
 
-Cada paquete se llama `@manifold/...` y exporta su código fuente TypeScript directamente (sin compilar): Vite y Vitest lo entienden, y los cambios se ven en caliente.
+Each package is called `@manifold/...` and exports its TypeScript source code directly (without compiling): Vite and Vitest understand it, and changes show up hot.
 
-**Herramientas:**
+**Tools:**
 
-| Para qué                | Qué                                                                                                              | Por qué                                                                                                                                                      |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Node                    | **26 LTS** (desde el 2026-11-11; antes, la 24), fijado con `mise.toml` (local) y `.nvmrc` (integración continua) | La 26 es la LTS activa desde octubre de 2026, con soporte hasta abril de 2029; la 24 pasó a mantenimiento. Los tipos (`@types/node`) se suben junto con Node |
-| Paquetes                | **npm** con _workspaces_                                                                                         | Viene con Node; sin otra herramienta que instalar. (pnpm es más estricto con las dependencias; esa estrictez la dan aquí el compilador y el linter: 0003)    |
-| Lenguaje                | **TypeScript 6.0**                                                                                               | La 7 (reescrita en Go) ya salió, pero el linter y el chequeo de Astro todavía no la aceptan. Se revisa cuando la acepten                                     |
-| Compilar y servir       | **Vite** (a través de Astro)                                                                                     | Rápido y con recarga en caliente; ya conocido                                                                                                                |
-| Pruebas sin pantalla    | **Vitest**, archivos `*.prueba.ts` junto al código                                                               | Entiende los workspaces y TypeScript sin configuración                                                                                                       |
-| Pruebas en el navegador | **Playwright** (Chromium)                                                                                        | Abre cada página como una persona. En la V1, un cambio en el arranque rompió todas las teclas sin que ninguna prueba lo viera                                |
-| Estilo                  | **ESLint** (con typescript-eslint) y **Prettier**                                                                | El linter, además, vigila las fronteras (0003)                                                                                                               |
+| For what             | What                                                                                                             | Why                                                                                                                                                    |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Node                 | **26 LTS** (since 2026-11-11; before, 24), pinned with `mise.toml` (local) and `.nvmrc` (continuous integration) | 26 is the active LTS since October 2026, supported until April 2029; 24 went into maintenance. The types (`@types/node`) are bumped together with Node |
+| Packages             | **npm** with _workspaces_                                                                                        | It comes with Node; no other tool to install. (pnpm is stricter with dependencies; that strictness comes here from the compiler and the linter: 0003)  |
+| Language             | **TypeScript 6.0**                                                                                               | 7 (rewritten in Go) is out, but the linter and Astro's check do not accept it yet. It is revisited when they do                                        |
+| Build and serve      | **Vite** (through Astro)                                                                                         | Fast and with hot reload; already known                                                                                                                |
+| Headless tests       | **Vitest**, `*.test.ts` files next to the code                                                                   | It understands workspaces and TypeScript with no configuration                                                                                         |
+| Tests in the browser | **Playwright** (Chromium), in `e2e/`                                                                             | It opens every page like a person. In V1, a change in the start-up broke every key without any test seeing it                                          |
+| Style                | **ESLint** (with typescript-eslint) and **Prettier**                                                             | The linter also guards the boundaries (0003)                                                                                                           |
 
-**Scripts de la raíz:** `npm run dev`, `build`, `check` (tipos), `lint`, `formato`, `pruebas`, `e2e`, y `verificar` (todo lo anterior menos el navegador).
+**Root scripts:** `npm run dev`, `build`, `check` (types), `lint`, `format`, `format:check`, `test`, `e2e`, and `verify` (all of the above except the browser).
 
-## Consecuencias
+## Consequences
 
-- Un solo `npm install`, un solo historial y una sola integración continua.
-- Exportar el código fuente sin compilar es simple, pero ata los paquetes a herramientas que entiendan TypeScript. Si algún día un paquete se publica, se agrega su compilación.
+- A single `npm install`, a single history and a single continuous integration.
+- Exporting the source code without compiling is simple, but it ties the packages to tools that understand TypeScript. If a package is ever published, its build is added.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-- **Varios repositorios:** cada cambio del motor necesitaría publicar una versión para verlo en un juego.
-- **pnpm o Turborepo:** útiles en monorepos grandes; aquí agregan herramientas sin un problema que resolver todavía.
-- **El ejecutor de pruebas de Node** (`node:test`, el de la V1): anduvo bien, pero Vitest da mejores reportes, modo "mirar" y se integra con Vite.
+- **Several repositories:** every engine change would need a published version to see it in a game.
+- **pnpm or Turborepo:** useful in big monorepos; here they add tools without a problem to solve yet.
+- **Node's test runner** (`node:test`, V1's): it worked fine, but Vitest gives better reports, a watch mode and integrates with Vite.

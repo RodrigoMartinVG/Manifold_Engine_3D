@@ -1,100 +1,101 @@
 import * as THREE from 'three';
 import GUI from 'three/addons/libs/lil-gui.module.min.js';
-import { crearEscena } from './escena';
+import { createScene } from './scene';
 
-const { escena, alCuadro } = crearEscena();
+const { scene, onFrame } = createScene();
 
 const G = 9.81; // m/s²
-const RADIO = 0.25;
-const VELOCIDAD_INICIAL = 7; // m/s hacia arriba: en teoría sube RADIO + v²/2g ≈ 2,75 m
+const RADIUS = 0.25;
+const INITIAL_SPEED = 7; // m/s upward: in theory it rises to RADIUS + v²/2g ≈ 2.75 m
 
-/** Una pelota que solo sube y baja: su altura y su velocidad. Rebota sin perder energía. */
-interface Pelota {
+/** A ball that only goes up and down: its height and its velocity. It bounces without losing energy. */
+interface Ball {
   y: number;
   vy: number;
-  maxima: number; // la altura más alta a la que llegó
+  highest: number; // the highest point it reached
 }
-const nueva = (): Pelota => ({ y: RADIO, vy: VELOCIDAD_INICIAL, maxima: RADIO });
+const fresh = (): Ball => ({ y: RADIUS, vy: INITIAL_SPEED, highest: RADIUS });
 
-/** Un paso de física de `dt` segundos (Euler semi-implícito: primero la velocidad, después la posición). */
-function integrar(p: Pelota, dt: number) {
-  p.vy -= G * dt;
-  p.y += p.vy * dt;
-  p.maxima = Math.max(p.maxima, p.y);
-  if (p.y < RADIO) {
-    p.y = RADIO;
-    p.vy = Math.abs(p.vy);
+/** A physics step of `dt` seconds (semi-implicit Euler: first the velocity, then the position). */
+function integrate(b: Ball, dt: number) {
+  b.vy -= G * dt;
+  b.y += b.vy * dt;
+  b.highest = Math.max(b.highest, b.y);
+  if (b.y < RADIUS) {
+    b.y = RADIUS;
+    b.vy = Math.abs(b.vy);
   }
 }
 
-const esfera = (color: number, x: number) => {
+const sphere = (color: number, x: number) => {
   const m = new THREE.Mesh(
-    new THREE.SphereGeometry(RADIO, 24, 16),
+    new THREE.SphereGeometry(RADIUS, 24, 16),
     new THREE.MeshStandardMaterial({ color }),
   );
   m.position.x = x;
-  escena.add(m);
+  scene.add(m);
   return m;
 };
-const mallaRoja = esfera(0xe06c75, -1);
-const mallaVerde = esfera(0x98c379, 1);
+const redMesh = sphere(0xe06c75, -1);
+const greenMesh = sphere(0x98c379, 1);
 
-let roja = nueva();
-let verde = nueva();
-let verdeAnterior = verde.y; // para interpolar
-let acumulador = 0;
-let tiempoDePantalla = 0;
+let red = fresh();
+let green = fresh();
+let greenBefore = green.y; // to interpolate
+let accumulator = 0;
+let screenTime = 0;
 
-const opciones = {
-  pantalla: 60, // cuadros por segundo que SIMULAMOS (una pantalla lenta)
-  paso: 60, // pasos fijos por segundo de la pelota verde
-  interpolar: true,
-  reiniciar: () => {
-    roja = nueva();
-    verde = nueva();
-    verdeAnterior = verde.y;
-    acumulador = 0;
+const options = {
+  screen: 60, // frames per second that we SIMULATE (a slow screen)
+  step: 60, // fixed steps per second of the green ball
+  interpolate: true,
+  restart: () => {
+    red = fresh();
+    green = fresh();
+    greenBefore = green.y;
+    accumulator = 0;
   },
 };
-const lectura = { roja: 0, verde: 0 };
-const gui = new GUI({ title: 'Paso fijo' });
-gui.add(opciones, 'pantalla', 5, 120, 1).name('pantalla (cuadros/s)');
-gui.add(opciones, 'paso', 5, 120, 1).name('paso verde (por s)');
-gui.add(opciones, 'interpolar').name('interpolar la verde');
-gui.add(opciones, 'reiniciar');
-const alturas = gui.addFolder('Altura máxima (m)');
-alturas.add(lectura, 'roja').name('roja (dt de la pantalla)').listen().disable();
-alturas.add(lectura, 'verde').name('verde (paso fijo)').listen().disable();
+const readout = { red: 0, green: 0 };
+const gui = new GUI({ title: 'Fixed step' });
+gui.add(options, 'screen', 5, 120, 1).name('screen (frames/s)');
+gui.add(options, 'step', 5, 120, 1).name('green step (per s)');
+gui.add(options, 'interpolate').name('interpolate the green');
+gui.add(options, 'restart');
+const heights = gui.addFolder('Highest point (m)');
+heights.add(readout, 'red').name('red (the screen dt)').listen().disable();
+heights.add(readout, 'green').name('green (fixed step)').listen().disable();
 
-alCuadro((dt) => {
-  // Una pantalla LENTA, a propósito: el mundo solo avanza cuando "llega" un cuadro de ella.
-  tiempoDePantalla += dt;
-  if (tiempoDePantalla < 1 / opciones.pantalla) return;
-  const dtPantalla = tiempoDePantalla;
-  tiempoDePantalla = 0;
+onFrame((dt) => {
+  // A SLOW screen, on purpose: the world only advances when one of its frames "arrives".
+  screenTime += dt;
+  if (screenTime < 1 / options.screen) return;
+  const screenDt = screenTime;
+  screenTime = 0;
 
-  // ROJA: un paso del tamaño del cuadro. Si la pantalla va lenta, los pasos son grandes, y el
-  // resultado (cuánto sube) depende de la pantalla.
-  integrar(roja, dtPantalla);
+  // RED: one step the size of the frame. If the screen is slow, the steps are big, and the result
+  // (how high it goes) depends on the screen.
+  integrate(red, screenDt);
 
-  // VERDE: el tiempo se junta, y se gasta de a pasos IGUALES. Lo que sobra queda para después.
-  const paso = 1 / opciones.paso;
-  acumulador += dtPantalla;
-  while (acumulador >= paso) {
-    verdeAnterior = verde.y;
-    integrar(verde, paso);
-    acumulador -= paso;
+  // GREEN: the time piles up, and is spent in EQUAL steps. What is left over waits for later.
+  const step = 1 / options.step;
+  accumulator += screenDt;
+  while (accumulator >= step) {
+    greenBefore = green.y;
+    integrate(green, step);
+    accumulator -= step;
   }
 
-  mallaRoja.position.y = roja.y;
-  // Interpolar: dibujarla ENTRE el paso anterior y el actual, según cuánto del siguiente ya pasó.
-  const alfa = acumulador / paso;
-  mallaVerde.position.y = opciones.interpolar
-    ? verdeAnterior + (verde.y - verdeAnterior) * alfa
-    : verde.y;
-  lectura.roja = +roja.maxima.toFixed(2);
-  lectura.verde = +verde.maxima.toFixed(2);
+  redMesh.position.y = red.y;
+  // Interpolate: draw it BETWEEN the previous step and the current one, by how much of the next
+  // one already went by.
+  const alpha = accumulator / step;
+  greenMesh.position.y = options.interpolate
+    ? greenBefore + (green.y - greenBefore) * alpha
+    : green.y;
+  readout.red = +red.highest.toFixed(2);
+  readout.green = +green.highest.toFixed(2);
 });
 
-// Probá: pantalla en 10 → la roja sube distinto (cambió la física). Paso verde en 10 con la
-// interpolación apagada → la verde se mueve a saltos; prendela → suave, y sube igual.
+// Try: screen at 10 → the red one rises differently (the physics changed). Green step at 10 with
+// interpolation off → the green one moves in jumps; turn it on → smooth, and it rises the same.

@@ -3,28 +3,30 @@ import { EditorState, Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { documentoDelIframe } from './iframe';
-import { montarPantallaCompleta } from './pantalla-completa';
-import { nombreDeModulo, transpilar } from './transpilar';
+import { iframeDocument } from './iframe';
+import { mountFullscreen } from './fullscreen';
+import { moduleName, transpile } from './transpile';
 
 /**
- * UN EJEMPLO VIVO (decisión 0007): un editor con un archivo por pestaña, y al ejecutar, el
- * código corre en un iframe aislado debajo, con su consola.
+ * A LIVE EXAMPLE (decision 0007): an editor with one file per tab, and when run, the code runs in
+ * an isolated iframe below it, with its console.
  *
- * Solo uno corre a la vez en toda la página: cada ejemplo con 3D usa un contexto de WebGL (los
- * navegadores permiten unos 16, y una gráfica integrada sufre con varios). Al ejecutar uno, el
- * que estaba corriendo se detiene: su iframe se borra, y con él su contexto.
+ * Only one runs at a time in the whole page: every 3D example uses a WebGL context (browsers allow
+ * about 16, and an integrated GPU suffers with several). Running one stops the one that was
+ * running: its iframe is removed, and its context with it.
  *
- * Para las pruebas en el navegador, el elemento anota su estado en atributos `data-`:
- * `estado` (corriendo / detenido), `cuadros` (cuántos dibujó) y `errores`.
+ * For the browser tests, the element writes its state in `data-` attributes: `state` (running /
+ * stopped), `frames` (how many it drew) and `errors`.
+ *
+ * (What the reader sees, the iframe's title and the error texts, is the site's text, in Spanish.)
  */
 
 /**
- * Los colores del taller encima de One Dark: carbón cálido en vez de gris azulado, y el cursor de
- * bronce. Los colores del código (palabras clave, textos, números) siguen siendo los de One Dark.
- * `Prec.high`: entre dos temas gana el de más precedencia.
+ * The workshop's colors on top of One Dark: warm charcoal instead of bluish gray, and a bronze
+ * cursor. The code's colors (keywords, strings, numbers) are still One Dark's.
+ * `Prec.high`: between two themes, the one with more precedence wins.
  */
-const taller = Prec.high(
+const workshop = Prec.high(
   EditorView.theme(
     {
       '&': { backgroundColor: '#1a1714', color: '#dcd2c3' },
@@ -40,168 +42,163 @@ const taller = Prec.high(
   ),
 );
 
-interface Archivo {
-  nombre: string;
-  codigo: string;
+interface File {
+  name: string;
+  code: string;
 }
 
-interface Control {
-  detener(): void;
+interface Running {
+  stop(): void;
 }
 
-let activo: Control | null = null;
+let active: Running | null = null;
 
-/** Las librerías (Three.js...): se piden una sola vez por página, la primera vez que algo se ejecuta. */
-let librerias: Promise<Record<string, string>> | null = null;
+/** The libraries (Three.js...): fetched once per page, the first time something runs. */
+let libraries: Promise<Record<string, string>> | null = null;
 
-function cargarLibrerias(base: string): Promise<Record<string, string>> {
-  librerias ??= (async () => {
-    const pedir = async (archivo: string) => {
-      const respuesta = await fetch(`${base}/vendor/${archivo}`);
-      if (!respuesta.ok) throw new Error(`No se pudo cargar ${archivo} (${respuesta.status})`);
-      return respuesta;
+function loadLibraries(base: string): Promise<Record<string, string>> {
+  libraries ??= (async () => {
+    const get = async (file: string) => {
+      const response = await fetch(`${base}/vendor/${file}`);
+      if (!response.ok) throw new Error(`No se pudo cargar ${file} (${response.status})`);
+      return response;
     };
-    const manifiesto = (await (await pedir('manifiesto.json')).json()) as Record<string, string>;
-    const textos = await Promise.all(
-      Object.entries(manifiesto).map(
-        async ([especificador, archivo]) => [especificador, await (await pedir(archivo)).text()] as const,
-      ),
+    const manifest = (await (await get('manifest.json')).json()) as Record<string, string>;
+    const texts = await Promise.all(
+      Object.entries(manifest).map(async ([specifier, file]) => [specifier, await (await get(file)).text()] as const),
     );
-    return Object.fromEntries(textos);
+    return Object.fromEntries(texts);
   })();
-  return librerias;
+  return libraries;
 }
 
-export function montarCodigoVivo(raiz: HTMLElement) {
-  if (raiz.dataset.montado) return;
-  raiz.dataset.montado = '1';
-  const archivos = JSON.parse(raiz.dataset.archivos ?? '[]') as Archivo[];
-  const base = (raiz.dataset.base ?? '/').replace(/\/$/, '');
-  const pestanas = raiz.querySelector<HTMLElement>('.cv-pestanas')!;
-  const lugarDelEditor = raiz.querySelector<HTMLElement>('.cv-editor')!;
-  const resultado = raiz.querySelector<HTMLElement>('.cv-resultado')!;
-  const portada = raiz.querySelector<HTMLButtonElement>('.cv-portada')!;
-  const consola = raiz.querySelector<HTMLElement>('.cv-consola')!;
-  const control: Control = { detener };
+export function mountLiveCode(root: HTMLElement) {
+  if (root.dataset.mounted) return;
+  root.dataset.mounted = '1';
+  const files = JSON.parse(root.dataset.files ?? '[]') as File[];
+  const base = (root.dataset.base ?? '/').replace(/\/$/, '');
+  const tabs = root.querySelector<HTMLElement>('.lc-tabs')!;
+  const editorPlace = root.querySelector<HTMLElement>('.lc-editor')!;
+  const result = root.querySelector<HTMLElement>('.lc-result')!;
+  const cover = root.querySelector<HTMLButtonElement>('.lc-cover')!;
+  const output = root.querySelector<HTMLElement>('.lc-console')!;
+  const running: Running = { stop };
 
-  // ---------- El editor: un estado por archivo; la vista muestra el de la pestaña elegida ----------
-  const extensiones = [
-    Prec.highest(keymap.of([{ key: 'Mod-Enter', run: () => (void ejecutar(), true) }])),
+  // ---------- The editor: one state per file; the view shows the chosen tab's ----------
+  const extensions = [
+    Prec.highest(keymap.of([{ key: 'Mod-Enter', run: () => (void run(), true) }])),
     basicSetup,
     javascript({ typescript: true }),
     oneDark,
-    taller,
-    EditorView.lineWrapping, // el editor es angosto: las líneas largas siguen abajo, sin barra horizontal
+    workshop,
+    EditorView.lineWrapping, // the editor is narrow: long lines continue below, with no horizontal bar
   ];
-  const crearEstado = (codigo: string) => EditorState.create({ doc: codigo, extensions: extensiones });
-  let estados = archivos.map((a) => crearEstado(a.codigo));
-  let actual = 0;
-  const vista = new EditorView({ state: estados[0], parent: lugarDelEditor });
+  const createState = (code: string) => EditorState.create({ doc: code, extensions });
+  let states = files.map((f) => createState(f.code));
+  let current = 0;
+  const view = new EditorView({ state: states[0], parent: editorPlace });
 
-  const marcarPestana = () =>
-    pestanas.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-selected', String(i === actual)));
-  archivos.forEach((a, i) => {
-    const boton = document.createElement('button');
-    boton.type = 'button';
-    boton.role = 'tab';
-    boton.textContent = a.nombre;
-    boton.addEventListener('click', () => {
-      estados[actual] = vista.state;
-      actual = i;
-      vista.setState(estados[i]!);
-      marcarPestana();
+  const markTab = () => tabs.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-selected', String(i === current)));
+  files.forEach((f, i) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.role = 'tab';
+    button.textContent = f.name;
+    button.addEventListener('click', () => {
+      states[current] = view.state;
+      current = i;
+      view.setState(states[i]!);
+      markTab();
     });
-    pestanas.append(boton);
+    tabs.append(button);
   });
-  marcarPestana();
+  markTab();
 
-  // ---------- La consola ----------
-  let errores = 0;
-  const escribir = (nivel: string, texto: string) => {
-    const linea = document.createElement('div');
-    linea.className = `cv-linea cv-${nivel}`;
-    linea.textContent = texto;
-    consola.append(linea);
-    while (consola.childElementCount > 200) consola.firstElementChild?.remove();
-    consola.hidden = false;
-    consola.scrollTop = consola.scrollHeight;
+  // ---------- The console ----------
+  let errors = 0;
+  const write = (level: string, text: string) => {
+    const line = document.createElement('div');
+    line.className = `lc-line lc-${level}`;
+    line.textContent = text;
+    output.append(line);
+    while (output.childElementCount > 200) output.firstElementChild?.remove();
+    output.hidden = false;
+    output.scrollTop = output.scrollHeight;
   };
-  const anotarError = (texto: string) => {
-    raiz.dataset.errores = String(++errores);
-    escribir('error', `✖ ${texto}`);
+  const reportError = (text: string) => {
+    root.dataset.errors = String(++errors);
+    write('error', `✖ ${text}`);
   };
 
-  // ---------- Ejecutar ----------
+  // ---------- Running ----------
   let iframe: HTMLIFrameElement | null = null;
-  let modulos: Record<string, string> | null = null;
+  let modules: Record<string, string> | null = null;
 
   window.addEventListener('message', (e: MessageEvent) => {
-    if (!iframe || e.source !== iframe.contentWindow || !e.data?.deCodigoVivo) return;
-    const m = e.data as { tipo: string; nivel?: string; texto?: string; n?: number };
-    if (m.tipo === 'listo' && modulos) iframe.contentWindow?.postMessage({ tipo: 'ejecutar', modulos }, '*');
-    else if (m.tipo === 'consola') escribir(m.nivel ?? 'log', m.texto ?? '');
-    else if (m.tipo === 'error') anotarError(m.texto ?? 'error');
-    else if (m.tipo === 'cuadros') raiz.dataset.cuadros = String(m.n ?? 0);
+    if (!iframe || e.source !== iframe.contentWindow || !e.data?.fromLiveCode) return;
+    const m = e.data as { type: string; level?: string; text?: string; n?: number };
+    if (m.type === 'ready' && modules) iframe.contentWindow?.postMessage({ type: 'run', modules }, '*');
+    else if (m.type === 'console') write(m.level ?? 'log', m.text ?? '');
+    else if (m.type === 'error') reportError(m.text ?? 'error');
+    else if (m.type === 'frames') root.dataset.frames = String(m.n ?? 0);
   });
 
-  async function ejecutar() {
-    estados[actual] = vista.state;
-    activo?.detener();
-    consola.replaceChildren();
-    consola.hidden = true;
-    errores = 0;
-    raiz.dataset.errores = '0';
-    raiz.dataset.cuadros = '0';
+  async function run() {
+    states[current] = view.state;
+    active?.stop();
+    output.replaceChildren();
+    output.hidden = true;
+    errors = 0;
+    root.dataset.errors = '0';
+    root.dataset.frames = '0';
     try {
-      const propios = Object.fromEntries(
-        archivos.map((a, i) => [nombreDeModulo(a.nombre), transpilar(estados[i]!.doc.toString())]),
-      );
-      modulos = { ...(await cargarLibrerias(base)), ...propios };
+      const own = Object.fromEntries(files.map((f, i) => [moduleName(f.name), transpile(states[i]!.doc.toString())]));
+      modules = { ...(await loadLibraries(base)), ...own };
     } catch (e) {
-      // Un error de sintaxis aparece aquí, antes de correr nada.
-      anotarError((e as Error).message);
+      // A syntax error shows up here, before anything runs.
+      reportError((e as Error).message);
       return;
     }
-    portada.hidden = true;
+    cover.hidden = true;
     iframe = document.createElement('iframe');
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.title = 'Lo que dibuja el código';
-    iframe.srcdoc = documentoDelIframe();
-    resultado.append(iframe);
-    raiz.dataset.estado = 'corriendo';
-    activo = control;
+    iframe.srcdoc = iframeDocument();
+    result.append(iframe);
+    root.dataset.state = 'running';
+    active = running;
   }
 
-  function detener() {
+  function stop() {
     iframe?.remove();
     iframe = null;
-    modulos = null;
-    portada.hidden = false;
-    raiz.dataset.estado = 'detenido';
-    if (activo === control) activo = null;
+    modules = null;
+    cover.hidden = false;
+    root.dataset.state = 'stopped';
+    if (active === running) active = null;
   }
 
-  raiz.querySelector('.cv-ejecutar')?.addEventListener('click', () => void ejecutar());
-  portada.addEventListener('click', () => void ejecutar());
-  raiz.querySelector('.cv-restaurar')?.addEventListener('click', () => {
-    estados = archivos.map((a) => crearEstado(a.codigo));
-    vista.setState(estados[actual]!);
+  root.querySelector('.lc-run')?.addEventListener('click', () => void run());
+  cover.addEventListener('click', () => void run());
+  root.querySelector('.lc-reset')?.addEventListener('click', () => {
+    states = files.map((f) => createState(f.code));
+    view.setState(states[current]!);
   });
 
-  montarPantallaCompleta(raiz, {
-    alEntrar: () => {
-      if (raiz.dataset.estado !== 'corriendo') void ejecutar();
-      vista.focus(); // para escribir enseguida
+  mountFullscreen(root, {
+    onEnter: () => {
+      if (root.dataset.state !== 'running') void run();
+      view.focus(); // to type right away
     },
   });
 
-  // El primer ejemplo de una lección arranca solo cuando aparece en pantalla (si nada más está corriendo).
-  if (raiz.dataset.autoejecutar) {
-    const observador = new IntersectionObserver((entradas) => {
-      if (!entradas.some((e) => e.isIntersecting)) return;
-      observador.disconnect();
-      if (!activo) void ejecutar();
+  // A lesson's first example starts by itself when it shows up on screen (if nothing else is running).
+  if (root.dataset.autorun) {
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      observer.disconnect();
+      if (!active) void run();
     });
-    observador.observe(raiz);
+    observer.observe(root);
   }
 }

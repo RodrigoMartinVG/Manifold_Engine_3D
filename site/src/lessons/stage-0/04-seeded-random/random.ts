@@ -1,19 +1,19 @@
 /**
- * Un generador de azar CON SEMILLA, el más simple que hay: un "congruencial lineal".
+ * A SEEDED random generator, the simplest there is: a "linear congruential" one.
  *
- *     estado = (a · estado + c) módulo 2³²
+ *     state = (a · state + c) modulo 2³²
  *
- * Cada número sale del anterior con una multiplicación y una suma. El mismo estado inicial (la
- * SEMILLA) da siempre la misma secuencia: parece azar, pero se puede repetir.
+ * Each number comes from the previous one with a multiplication and an addition. The same initial
+ * state (the SEED) always gives the same sequence: it looks random, but it can be repeated.
  *
- * Sutileza: este es muy simple y sus bits bajos se repiten seguido (para un juego alcanza; el
- * motor usa uno mejor, SFC32). Y para criptografía, ninguno de los dos sirve.
+ * Subtlety: this one is very simple and its low bits repeat often (for a game it is enough; the
+ * engine uses a better one, SFC32). And for cryptography, neither of them will do.
  */
-export function crearAzar(semilla: number): () => number {
-  let estado = semilla >>> 0; // `>>> 0`: un entero de 32 bits sin signo
+export function createRandom(seed: number): () => number {
+  let state = seed >>> 0; // `>>> 0`: an unsigned 32-bit integer
   return () => {
-    // Math.imul multiplica como un procesador de 32 bits (una multiplicación común se pasaría de rango).
-    estado = (Math.imul(estado, 1664525) + 1013904223) >>> 0;
-    return estado / 4294967296; // entre 0 y 1, como Math.random()
+    // Math.imul multiplies like a 32-bit processor (a plain multiplication would go out of range).
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296; // between 0 and 1, like Math.random()
   };
 }

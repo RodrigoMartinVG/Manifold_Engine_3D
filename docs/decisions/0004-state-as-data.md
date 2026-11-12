@@ -1,29 +1,29 @@
-# 0004. El estado del mundo como datos planos
+# 0004. The world's state as plain data
 
-- **Estado:** aceptada (se completa en la fase 1, con la física)
-- **Fecha:** 2026-11-11
+- **Status:** accepted (it is completed in phase 1, with the physics)
+- **Date:** 2026-11-11
 
-## Contexto
+## Context
 
-En la V1, el estado estaba repartido en clases con objetos adentro (vectores de Three.js, cuerpos de Rapier, referencias entre objetos). Funcionaba, pero "sacar una foto del mundo" (para guardar la partida en cualquier momento, volver atrás o compartir un experimento) quedó afuera en el paso 16k: había que juntar a mano el estado de cada sistema.
+In V1, the state was spread over classes with objects inside (Three.js vectors, Rapier bodies, references between objects). It worked, but "taking a snapshot of the world" (to save the game at any moment, go back or share an experiment) was left out in step 16k: each system's state had to be gathered by hand.
 
-Medido sobre la V1: la foto que Rapier saca de su propio mundo pesa 244 KB en el mapa principal (710 colliders), se saca en 0,75 ms y se restaura en 3 ms. Y **restaurarla crea un mundo de Rapier nuevo**: todo lo que guardara una referencia a un cuerpo queda apuntando al mundo viejo.
+Measured on V1: the snapshot Rapier takes of its own world weighs 244 KB on the main map (710 colliders), takes 0.75 ms and is restored in 3 ms. And **restoring it creates a new Rapier world**: anything that kept a reference to a body is left pointing at the old world.
 
-## Decisión
+## Decision
 
-- **Todo el estado de la simulación vive en `Mundo`**: el reloj, el contador de ids, el azar (con su estado legible y restaurable) y las entidades.
-- **Una entidad es un id y componentes**: objetos planos de números, textos y tuplas. Sin clases, sin métodos, sin objetos de Three.js ni de Rapier.
-- **Vectores y cuaterniones son tuplas** (`[x, y, z]`, `[x, y, z, w]`), con una matemática mínima propia en `comun`. Así el núcleo no depende de Three.js (que es de la presentación).
-- **Fase 1 (física):** las entidades guardan el **identificador** de su cuerpo de Rapier, nunca el cuerpo; el cuerpo se busca por identificador cuando hace falta.
-- **La huella** (`huella(mundo)`) resume todo el estado en un número, para comprobar el determinismo paso a paso.
+- **All of the simulation's state lives in `World`**: the clock, the id counter, the randomness (with its state readable and restorable) and the entities.
+- **An entity is an id and components**: plain objects of numbers, strings and tuples. No classes, no methods, no Three.js or Rapier objects.
+- **Vectors and quaternions are tuples** (`[x, y, z]`, `[x, y, z, w]`), with a minimal math of our own in `common`. This way the core does not depend on Three.js (which belongs to the presentation).
+- **Phase 1 (physics):** entities keep the **identifier** of their Rapier body, never the body; the body is looked up by identifier when needed.
+- **The hash** (`stateHash(world)`) sums up the whole state in one number, to check determinism step by step.
 
-## Consecuencias
+## Consequences
 
-- Una foto del mundo es "los componentes, más la foto de Rapier, más el estado del azar"; compararlos o mandarlos por la red no requiere convertir nada.
-- Escribir la matemática a mano cuesta (y hay que probarla); a cambio, se entiende cada cuenta.
-- Las tuplas se crean y se descartan seguido: en los bucles calientes se usarán funciones que escriban en una tupla existente, cuando el medidor lo pida.
+- A snapshot of the world is "the components, plus Rapier's snapshot, plus the randomness's state"; comparing them or sending them over the network needs no conversion.
+- Writing the math by hand costs (and it has to be tested); in exchange, every calculation is understood.
+- Tuples are created and thrown away often: in hot loops, functions that write into an existing tuple will be used, when the profiler asks for it.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-- **Usar la matemática de Three.js en el núcleo** (como la V1, que permitía solo sus clases matemáticas): ataba el núcleo a Three.js y metía objetos con métodos en el estado.
-- **Una librería de ECS** (como bitecs): pensada para miles de entidades con datos contiguos; aquí son decenas, Rapier ya guarda la física, y se lee peor para aprender. Se puede revisar si alguna vez son miles.
+- **Using Three.js's math in the core** (like V1, which allowed only its math classes): it tied the core to Three.js and put objects with methods in the state.
+- **An ECS library** (like bitecs): meant for thousands of entities with contiguous data; here there are dozens, Rapier already keeps the physics, and it reads worse for learning. It can be revisited if there are ever thousands.
