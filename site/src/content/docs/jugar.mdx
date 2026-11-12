@@ -38,6 +38,8 @@ En la sala `course` hay un **personaje** para manejar, en un nivel chico con esc
 
 **Un momento se puede guardar:** `snapshot` guarda el mundo entero tal como está, física incluida, y `snapshot load` vuelve a él, como el "guardar estado" de un emulador. Desde ahí, las mismas teclas dan la misma huella, y la repetición sigue valiendo.
 
+**Dos pestañas, una partida.** Aunque juegues solo, la página juega a través de un servidor propio, que vive en la misma página: cada segundo, su copia del mundo se compara con la del servidor. Para jugar con otra pestaña del mismo navegador, escribí `net open` en una; en la otra, abrí la misma sala y escribí `net join`: entrás con tu propio personaje, y cada una ve moverse al de la otra. `net` dice dónde estás y cuántas comprobaciones dieron igual, y `net leave` vuelve a jugar solo.
+
 Con el mouse se mira: **arrastrá** para girar alrededor de la escena, la **rueda** (o pellizcar) acerca y aleja, y un **clic** sobre un objeto lo inspecciona: muestra en la consola de qué está hecho, con sus números.
 
 Con la tecla **º** (la que está a la izquierda del 1), o con el botón de abajo a la izquierda, se abre la consola, como la de los juegos de antes. Ahí se ve y se cambia todo lo que el Dojo deja tocar. Lo que aparece resaltado en la consola (los ejemplos de `help`, las salas, las sugerencias) se puede tocar: un clic lo pone en la línea, y Enter lo ejecuta.

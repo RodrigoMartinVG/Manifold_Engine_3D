@@ -99,7 +99,9 @@ describe('replays (stage 1c)', () => {
   test('a replay of another version says so (the same inputs would give another hash)', () => {
     // The first ones (stage 1c) had no version in their first line, and their inputs were only numbers.
     const old = '# Manifold replay\ngame level\ninput 40 1 0.6 0 -0.8 0 0 0 -\nend 240 00000000';
-    expect(() => replayFromText(old)).toThrow(/line 1: a replay of version 1, and this engine plays version 3/);
+    expect(() => replayFromText(old)).toThrow(
+      new RegExp(`line 1: a replay of version 1, and this engine plays version ${SIMULATION_VERSION}`),
+    );
     // Those of stage 1c2 already wrote their inputs as words, but their hash counted other things.
     expect(() => replayFromText('# Manifold replay 2\ngame level\nend 1 00000000')).toThrow(/version 2/);
   });

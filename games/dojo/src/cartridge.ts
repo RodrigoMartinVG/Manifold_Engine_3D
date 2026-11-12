@@ -84,6 +84,28 @@ function ball(world: World, position: Vec3, velocity: Vec3 = [0, 0, 0]) {
   });
 }
 
+/** Each player's color: the first one's is the course's; the others', from this list. */
+const PLAYER_COLORS = [0x4a9fd8, 0xd86a4a, 0x7ac25a, 0xc25ab8, 0xd8c04a];
+
+/**
+ * In a level with characters (the course), every player who comes into the match (stage 1e:
+ * `players.join`) gets one, next to the first one's; whoever leaves loses it. Player 1's belongs to
+ * the level: it is there from the start, and it stays.
+ */
+function joinedPlayers(world: World) {
+  const characters = [...world.entities.values()].filter((e) => e.character);
+  if (!characters.some((e) => e.character!.player === 1)) return;
+  for (const p of world.players)
+    if (p !== 1 && !characters.some((e) => e.character!.player === p))
+      world.createEntity({
+        transform: { position: [1.2 * (p - 1), 1, 6], rotation: quat.identity() },
+        body: { type: 'character', shape: { kind: 'capsule', halfHeight: 0.5, radius: 0.3 } },
+        character: { player: p },
+        appearance: { shape: 'capsule', size: [0.6, 1.6, 0.6], color: PLAYER_COLORS[(p - 2) % PLAYER_COLORS.length]! },
+      });
+  for (const e of characters) if (e.character!.player !== 1 && !world.players.has(e.character!.player)) world.removeEntity(e.id);
+}
+
 /**
  * THE DOJO'S CARTRIDGE: the first game, the engine's lab. A floor, a big cube that spins (a
  * kinematic body: it pushes what it touches), small cubes that fall from the world's randomness, and
@@ -105,6 +127,8 @@ export const DojoCartridge: Cartridge = {
   id: 'dojo',
   title: 'Dojo',
   inputs: [{ name: 'dojo.throw', kind: 'button', description: 'the character throws a ball forward' }],
+  // A lab: in a match, everybody may change the world (another game may let only its host).
+  mayChange: () => true,
 
   onDeclare(registry) {
     registry.declareVariable({
@@ -146,6 +170,7 @@ export const DojoCartridge: Cartridge = {
   },
 
   onStep(world) {
+    joinedPlayers(world);
     // Each press throws one ball (held, it does not throw more): from the chest, forward and up a little.
     for (const e of world.entities.values()) {
       if (!e.character || !e.transform || !pressed(world, e.character.player, 'dojo.throw')) continue;

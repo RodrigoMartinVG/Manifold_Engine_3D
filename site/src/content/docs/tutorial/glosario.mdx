@@ -145,6 +145,11 @@ El texto del tutorial está en español y el código, en inglés ([por qué](../
 | instantánea              | _snapshot_             | el mundo entero en un momento, física incluida, para volver a él: `snapshot`          |
 | acción                   | _action_               | algo que un jugador puede pedir, con su nombre: `move`, `jump`, `dojo.throw`          |
 | botón, eje, vector       | _button, axis, vector_ | las tres clases de acción: apretado o no, un número de −1 a 1, tres números           |
+| servidor                 | _server_               | el que guarda la partida y decide en qué paso entra cada cosa; vive en la página      |
+| cliente                  | _client_               | el lugar de una página en la partida: simula su propia copia del mundo                |
+| anfitrión                | _host_                 | la pestaña cuya partida es: `net open`                                                |
+| desincronización         | _desync_               | una copia que, con las mismas entradas, no dio la misma huella: un error, no demora   |
+| predicción               | _prediction_           | mover al personaje propio sin esperar al servidor (fase 6)                            |
 | apretar                  | _press_                | que un botón pase de suelto a apretado en un paso (`pressed`); mantenerlo no cuenta   |
 
 ## La consola del Dojo
@@ -184,6 +189,7 @@ Y los nombres que hay hoy:
 | `controls.scheme` | cómo manejan las teclas al personaje: `camera`, según la cámara, o `tank`, según hacia dónde mira él (_scheme_: esquema)          |
 | `replay`          | la repetición de este mundo: `replay export` arma un enlace, `replay play` la vuelve a mostrar, `replay stop` devuelve el control |
 | `snapshot`        | guarda este momento del mundo; `snapshot load` vuelve a él                                                                        |
+| `net`             | la partida y dónde vive: `net open` la abre a otras pestañas, `net join` se une a una, `net leave` vuelve a jugar solo            |
 | `inputs`          | lo que un jugador puede pedir en este juego, y qué tecla lo pide                                                                  |
 | `ghost`           | vuelve a empezar con un fantasma que repite lo que hiciste; `ghost export` arma el enlace, `ghost clear` lo saca                  |
 | `seed`            | la semilla del azar del mundo                                                                                                     |

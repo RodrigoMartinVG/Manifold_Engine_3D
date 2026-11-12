@@ -193,3 +193,17 @@ test('dojo.throw, the Dojo’s own button: one ball per press, thrown where the 
   expect(playReplay(DojoCartridge, replayFromText(text)).same).toBe(true);
   session.world.dispose();
 });
+
+test('in the course, every player who comes into the match gets a character, and loses it when leaving', () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+  const characters = () => [...session.world.entities.values()].filter((e) => e.character).map((e) => e.character!.player);
+  session.registry.run('players.join 1; players.join 2');
+  session.step();
+  session.step();
+  expect(characters()).toEqual([1, 2]);
+  session.registry.run('players.leave 2');
+  session.step();
+  session.step();
+  expect(characters()).toEqual([1]);
+  session.world.dispose();
+});

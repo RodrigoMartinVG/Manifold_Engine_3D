@@ -7,5 +7,6 @@
  *   1  stage 1c: the first replays
  *   2  stage 1c2: turning (`ahead`, `side`, `turn`), the character's `turnSpeed`
  *   3  stage 1d: inputs as named values; the hash includes the id counter and the previous inputs
+ *   4  stage 1e: who is in the match (`players`), in the hash and in snapshots
  */
-export const SIMULATION_VERSION = 3;
+export const SIMULATION_VERSION = 4;

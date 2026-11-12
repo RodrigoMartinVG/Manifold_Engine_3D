@@ -114,6 +114,14 @@ export class Registry<W = unknown> {
     }
   }
 
+  /**
+   * The startup and world values back to their defaults, WITHOUT applying anything (stage 1e: a
+   * client that receives a match starts from the defaults, and then its birth). The view's stay.
+   */
+  resetWorldValues() {
+    for (const s of this.vars.values()) if (s.decl.scope !== 'view') s.value = copy(s.decl.default);
+  }
+
   /** The world values that are not at their default, applied to a freshly created world. */
   applyToWorld(world: W) {
     for (const s of this.vars.values())
@@ -125,6 +133,18 @@ export class Registry<W = unknown> {
    * Returns what should be shown. If a startup value changed, it says so once at the end, even if
    * it changed on several lines.
    */
+  /**
+   * Whether a line is ONE world change: a world value set, or a world action (stage 1e: the only
+   * thing a server accepts from a player's console; a view change never leaves the page).
+   */
+  isWorldChange(line: string): boolean {
+    if (splitLines(line).length !== 1) return false;
+    const name = tokenize(line)[0]?.text.toLowerCase() ?? '';
+    const variable = this.vars.get(name);
+    if (variable) return variable.decl.scope === 'world' && tokenize(line).length > 1;
+    return this.cmds.get(name)?.onWorld !== undefined;
+  }
+
   /** The world values (scope `world`) as they are now: for a session's save (stage 1d). */
   worldValues(): Map<string, Value> {
     const out = new Map<string, Value>();

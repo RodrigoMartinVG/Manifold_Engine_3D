@@ -31,6 +31,12 @@ export interface Cartridge {
    */
   readonly inputs?: readonly InputAction[];
   /**
+   * In a match (stage 1e): whether this player may change the world, from the console (world values
+   * and actions, a restart, a snapshot, a replay). Without it, only player 1, who opened the match.
+   * The Dojo, a lab, lets everybody. (Finer permissions: phase 6, decision 0010.)
+   */
+  mayChange?(player: number): boolean;
+  /**
    * Once, with the freshly created world: put whatever there is at the start. STARTUP values (how
    * many cubes, which room) are read from the registry, which already has the recipes applied.
    */

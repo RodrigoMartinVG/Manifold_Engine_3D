@@ -34,6 +34,7 @@ export interface WorldSnapshot {
   readonly gravity: GravityField;
   readonly inputs: readonly [number, PlayerInput][];
   readonly lastInputs: readonly [number, PlayerInput][];
+  readonly players: readonly number[];
   readonly entities: readonly Entity[];
   /** Rapier's snapshot: its bodies, colliders, contacts and solver, as bytes. */
   readonly physics: Uint8Array;
@@ -47,6 +48,8 @@ export interface WorldSnapshot {
  */
 export function copyData<T>(x: T): T {
   if (Array.isArray(x)) return x.map(copyData) as T;
+  // Bytes (Rapier's snapshot): copied as bytes, not as an object with numbered keys.
+  if (ArrayBuffer.isView(x)) return (x as unknown as Uint8Array).slice() as T;
   if (x && typeof x === 'object') {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(x)) out[k] = copyData(v);
@@ -88,6 +91,11 @@ export class World {
    * now and was not then (`pressed` in input.ts). Also part of the state.
    */
   readonly lastInputs = new Map<number, PlayerInput>();
+  /**
+   * Who is in the match (stage 1e): the server says it, with `players.join` and `players.leave`, at a
+   * concrete step. The game decides what that means (in the Dojo's course, a character for each one).
+   */
+  readonly players = new Set<number>();
   /** Its gravity field: data, like the rest of its state (decision 0012). */
   private field: GravityField;
   /**
@@ -127,6 +135,7 @@ export class World {
       gravity: copyData(this.field),
       inputs: copyData([...this.inputs]),
       lastInputs: copyData([...this.lastInputs]),
+      players: [...this.players],
       entities: copyData([...this.entities.values()]),
       physics: this.physics.snapshot(),
     };
@@ -145,6 +154,7 @@ export class World {
     world.random.restore(s.random);
     for (const [player, input] of copyData(s.inputs)) world.inputs.set(player, input);
     for (const [player, input] of copyData(s.lastInputs)) world.lastInputs.set(player, input);
+    for (const player of s.players) world.players.add(player);
     for (const e of copyData(s.entities)) world.entities.set(e.id, e);
     return world;
   }

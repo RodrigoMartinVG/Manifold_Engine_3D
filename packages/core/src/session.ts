@@ -4,7 +4,7 @@ import type { Cartridge } from './cartridge';
 import { EARTH } from './gravity';
 import { actionsFor, NO_INPUT, normalizeInput, sameInput, type InputAction } from './input';
 import type { PlayerInput } from './types';
-import { World, type WorldSnapshot } from './world';
+import { copyData, World, type WorldSnapshot } from './world';
 
 export interface SessionOptions {
   /**
@@ -45,6 +45,20 @@ export interface SessionSave {
   readonly pendingInputs: ReadonlyMap<number, PlayerInput>;
 }
 
+/**
+ * A session's state as it TRAVELS (stage 1e): what someone who joins a match already started
+ * receives. Like a save, but only data (no functions), so it can be sent: the world's snapshot, the
+ * history and inputs from the birth (so the joiner's replay also starts at the birth), and the world
+ * values as pairs. What was waiting for the next step does not go: the next step will bring it.
+ */
+export interface SessionState {
+  readonly birth: string;
+  readonly world: WorldSnapshot;
+  readonly history: readonly WorldChange[];
+  readonly inputs: readonly InputChange[];
+  readonly values: readonly [string, Value][];
+}
+
 /** A registry with what the engine and the cartridge declare (without the presentation or the console). */
 export function registryFor(cartridge: Cartridge): Registry<World> {
   const registry = new Registry<World>();
@@ -61,6 +75,19 @@ export function declareCore(registry: Registry<World>) {
     scope: 'startup',
     type: { kind: 'integer', min: 0, max: 4294967295 },
     default: 1,
+  });
+  registry.declareCommand({
+    name: 'players.join',
+    description:
+      'A player comes into the match (the server says it, at a step): the game decides what that means, like a character for them.',
+    args: [{ name: 'player', type: { kind: 'integer', min: 1, max: 64 } }],
+    onWorld: (world, [player]) => void world.players.add(Number(player)),
+  });
+  registry.declareCommand({
+    name: 'players.leave',
+    description: 'A player leaves the match (the server says it, at a step).',
+    args: [{ name: 'player', type: { kind: 'integer', min: 1, max: 64 } }],
+    onWorld: (world, [player]) => void world.players.delete(Number(player)),
   });
   registry.declareVariable({
     name: 'physics.gravity',
@@ -153,6 +180,29 @@ export class Session {
     this.pendingInputs.clear();
     this.world.step();
     this.cartridge.onStep?.(this.world, this.world.stepEvents);
+  }
+
+  /** This session's state, to send it: whoever receives it goes on from here (`saveOf`, then `load`). */
+  state(): SessionState {
+    return {
+      birth: this.birth,
+      world: this.world.snapshot(),
+      history: copyData([...this.history]),
+      inputs: copyData([...this.inputs]),
+      values: [...this.registry.worldValues()],
+    };
+  }
+
+  /** A save made of a state that came from elsewhere (nothing was waiting: the next step will bring it). */
+  static saveOf(state: SessionState): SessionSave {
+    return {
+      world: state.world,
+      history: copyData([...state.history]),
+      inputs: copyData([...state.inputs]),
+      values: new Map(state.values),
+      scheduled: [],
+      pendingInputs: new Map(),
+    };
   }
 
   /** A save of this moment, to come back to it with `load`. */

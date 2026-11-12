@@ -22,6 +22,10 @@ const presentation = {
   group: ['@manifold/presentation', '@manifold/presentation/*'],
   message: 'The simulation does not know the presentation (decision 0003).',
 };
+const network = {
+  group: ['@manifold/net', '@manifold/net/*'],
+  message: 'The simulation does not know the network: the network uses the simulation (decision 0003).',
+};
 const headless = "A game's rules run without a screen (also on a server and in tests): decision 0003.";
 
 export default defineConfig(
@@ -69,6 +73,11 @@ export default defineConfig(
   },
   {
     files: ['packages/core/src/**'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [drawing, presentation, games, network] }] },
+  },
+  {
+    // The networking skeleton (stage 1e): no screen, no games; it runs in a page, in a tab, in Node.
+    files: ['packages/net/src/**'],
     rules: { 'no-restricted-imports': ['error', { patterns: [drawing, presentation, games] }] },
   },
   {

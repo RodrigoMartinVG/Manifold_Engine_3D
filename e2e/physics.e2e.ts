@@ -44,6 +44,8 @@ test('the same world in the browser and in Node gives the same hash after the sa
   const registry = registryFor(DojoCartridge);
   expect(registry.run('seed 7\ndojo.cubes 40', 'recipe').filter((m) => m.level === 'error')).toEqual([]);
   const session = new Session(DojoCartridge, { registry });
+  // Like the page's server (stage 1e): its player comes into the match at the first step.
+  session.registry.run('players.join 1');
   for (let i = 0; i < Number(step); i++) session.step();
   expect(hex(stateHash(session.world)), `step ${step}`).toBe(browserHash);
   session.world.dispose();

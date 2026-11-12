@@ -1,0 +1,18 @@
+{
+  "name": "@manifold/net",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The networking skeleton: a server that keeps the match and passes on every step, and a client that simulates its own copy. No screen and no transport of its own: it runs in a page, in another tab, in Node, in tests.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@manifold/commands": "0.0.0",
+    "@manifold/common": "0.0.0",
+    "@manifold/core": "0.0.0"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json"
+  }
+}

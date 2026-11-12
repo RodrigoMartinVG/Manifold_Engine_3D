@@ -67,6 +67,9 @@ export function stateHash(world: World): number {
   number(world.lastEntityId);
   for (const n of world.random.state) number(n);
   value(world.gravity);
+  // Who is in the match (stage 1e).
+  number(world.players.size);
+  for (const player of [...world.players].sort((a, b) => a - b)) number(player);
   for (const inputs of [world.inputs, world.lastInputs]) {
     number(inputs.size); // so {1: x} now and {} before do not hash like {} now and {1: x} before
     for (const player of [...inputs.keys()].sort((a, b) => a - b)) {

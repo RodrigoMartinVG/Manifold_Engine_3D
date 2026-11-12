@@ -51,6 +51,7 @@ export async function startDojo(container: HTMLElement, o: DojoOptions = {}): Pr
         'load course',
         'controls.scheme tank',
         'snapshot',
+        'net',
         'dojo.spawn 0 5 0',
         'physics.gravity 0 -1.62 0',
         'show.physics on',

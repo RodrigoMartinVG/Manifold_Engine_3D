@@ -3,14 +3,12 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Quat, Vec3 } from '@manifold/common';
 import { declareHelp, formatValue, type Message, type Registry } from '@manifold/commands';
 import {
-  Clock,
   registryFor,
   replayFromText,
   replayOf,
   ReplayPlayer,
   replayToText,
   Session,
-  type SessionSave,
   sessionFor,
   stateHash,
   upAt,
@@ -21,9 +19,11 @@ import {
   type EntityId,
   type World,
 } from '@manifold/core';
+import { Client, localPair, Server, type Channel, type Match, type ToClient, type ToServer } from '@manifold/net';
 import { mountConsole, type ConsoleOptions, type GameConsole } from './console';
 import { CHARACTER_KEYS, mountPlayerControls, type ControlScheme, type GameButton } from './player';
 import { GHOST_PREFIX, REPLAY_PREFIX, replayToFragment } from './replay-link';
+import { joinFromTabs, openToTabs } from './tabs';
 
 /** A recipe to start with, and where it comes from (for the warnings: "the link's recipe…"). */
 export interface InitialRecipe {
@@ -74,9 +74,11 @@ interface Pose {
  * THE CLIENT: mounts a cartridge in an element of the page and makes it run.
  *
  * On every screen frame:
- *   1. the clock says how many fixed steps are due (V1's step 1: the simulation does not depend on FPS);
- *   2. before each step, every thing's pose is saved (the "previous" one);
- *   3. the session advances;
+ *   1. the server's clock says how many fixed steps are due (V1's step 1: the simulation does not
+ *      depend on FPS), and the server takes them: the match (stage 1e: even alone, through a server);
+ *   2. this page's copy takes the same steps, with what the server says entered at each one; before
+ *      each, every thing's pose is saved (the "previous" one);
+ *   3. (that is the client's session: the one drawn);
  *   4. every thing is drawn between its previous pose and the current one, by `alpha` (interpolation).
  *
  * The presentation READS the world and never writes it: what is seen is a consequence of the
@@ -179,9 +181,24 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     mesh.add(visor);
     return mesh;
   };
+  /**
+   * THE MATCH (stage 1e). Even playing alone, the page plays THROUGH A SERVER: one that lives in this
+   * same page, and keeps the match. What is drawn is this page's own copy, its client's session,
+   * simulated with what the server says entered at each step, and checked with its hash every second.
+   * So every game, even alone, goes the network's way (and checks its determinism while it is played).
+   */
   let session: Session;
-  let started = false;
-  let clock = new Clock();
+  /** The match, if this page hosts it (alone, or open to other tabs); null if it joined another tab's. */
+  let server: Server | null = null;
+  /** This page's place in the match. */
+  let link!: Client;
+  /** Its player number. */
+  let me = 1;
+  /** How this page plays: alone, with its match open to other tabs, or in another tab's match. */
+  let net: 'alone' | 'open' | 'joined' = 'alone';
+  let tabs: { close(): void } | null = null;
+  /** Whether the next welcome is the one of a match just joined (its number comes with it). */
+  let joining = false;
 
   // ---------- What the view lets people change (decision 0010: scope "view") ----------
   let wireframe = false;
@@ -248,10 +265,17 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     default: false,
     onChange: (v) => (paused = v === true),
   });
+  /** The match's clock is its host's: a page that joined another tab's match cannot stop it. */
+  const hostsTheClock = (out: { write(t: string, l?: 'warn'): void }) => {
+    if (server) return true;
+    out.write("the match's clock is its host's: this page joined another tab's match", 'warn');
+    return false;
+  };
   registry.declareCommand({
     name: 'pause',
     description: 'Stops or resumes the world (the same as `toggle view.paused`).',
     run: (_, out) => {
+      if (!hostsTheClock(out)) return;
       for (const m of registry.run(`view.paused ${paused ? 'off' : 'on'}`)) out.write(m.text, m.level);
     },
   });
@@ -260,8 +284,12 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     description: 'Advances the world n steps (1, if not said), and leaves it paused.',
     args: [{ name: 'n', type: { kind: 'integer', min: 1, max: 600 }, optional: true }],
     run: ([n], out) => {
+      if (!hostsTheClock(out)) return;
       registry.run('view.paused on');
-      for (let i = 0; i < (typeof n === 'number' ? n : 1); i++) advance();
+      for (let i = 0; i < (typeof n === 'number' ? n : 1); i++) {
+        server!.step();
+        drainMatch();
+      }
       out.write(`step ${session.world.tick}`);
     },
   });
@@ -447,8 +475,8 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
 
   // ---------- The player's character (stage 1b): its inputs, and the camera that follows it ----------
   const playerControls = mountPlayerControls({ blocked: () => gameConsole?.isOpen ?? false, buttons: o.buttons });
-  /** Player 1's character, if the world has one (an entity with `character`). */
-  const player = () => [...session.world.entities.values()].find((e) => e.character?.player === 1);
+  /** This page's player's character, if the world has one (an entity with `character`). */
+  const player = () => [...session.world.entities.values()].find((e) => e.character?.player === me);
   /**
    * Behind the character and a little above, looking at its head. Or, without a character, where it
    * started. (With damping, what is left of a turn keeps being applied after a reset, and the camera
@@ -475,67 +503,24 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     controls.enableDamping = true;
   }
 
-  // ---------- Snapshots (stage 1d) ----------
-  /** The moment `snapshot` saved, and of which session (after a restart, it belongs to another world). */
-  let saved: { session: Session; save: SessionSave } | null = null;
-  /** After a world comes back from a snapshot, its meshes, as its entities are: no event tells it. */
-  function syncMeshes() {
-    for (const id of [...meshes.keys()]) if (!session.world.entities.has(id)) removeMesh(id);
-    for (const e of session.world.entities.values()) createMesh(e);
-    session.world.takeEvents();
-    savePrevious();
-  }
+  // ---------- Snapshots (stage 1d): the server's, so everybody in the match goes back ----------
   registry.declareCommand({
     name: 'snapshot',
     description:
-      'Saves this moment (`snapshot`), and goes back to it (`snapshot load`), like an emulator\'s "save state": the whole world, its physics included. From there, the same inputs give the same hash, and its replay still holds.',
+      'Saves this moment (`snapshot`), and goes back to it (`snapshot load`), like an emulator\'s "save state": the whole world, its physics included. From there, the same inputs give the same hash, and its replay still holds. In a match with others, everybody goes back.',
     args: [{ name: 'action', type: { kind: 'option', options: ['save', 'load'] }, optional: true }],
-    run: ([action], out) => {
-      const hash = () => hex(stateHash(session.world));
-      if (action === 'load') {
-        if (!saved || saved.session !== session)
-          return out.write('there is no snapshot of this world: `snapshot` takes one', 'warn');
-        if (playback) return out.write('a replay is playing: `replay stop` first', 'warn');
-        const start = performance.now();
-        session.load(saved.save);
-        const ms = performance.now() - start;
-        syncMeshes();
-        out.write(`back at step ${session.world.tick} · hash ${hash()} · in ${ms.toFixed(2)} ms`);
-        return;
-      }
-      const start = performance.now();
-      const save = session.save();
-      const ms = performance.now() - start;
-      saved = { session, save };
-      const kb = (bytes: number) => (bytes / 1024).toFixed(1);
-      const entities = JSON.stringify(save.world.entities).length;
-      out.write(
-        `a snapshot at step ${session.world.tick} · hash ${hash()} · ${kb(save.world.physics.length)} KB of physics and about ${kb(entities)} KB of entities · in ${ms.toFixed(2)} ms. \`snapshot load\` comes back here.`,
-      );
-    },
+    run: ([action]) => link.request({ type: 'snapshot', action: action === 'load' ? 'load' : 'save' }),
   });
 
   // ---------- Replays and ghosts (stage 1c) ----------
-  /** The replay being played (the live player waits until it ends), if any. */
-  let playback: ReplayPlayer | null = null;
+  /** The replay the server is playing (the live player waits until it ends): its last step and hash. */
+  let replaying: Match['replay'] | null = null;
   /** A ghost: another world, born like a replay and fed its inputs, run in step with this one. */
   let ghost: { replay: Replay; session: Session; player: ReplayPlayer; mesh: THREE.Mesh | null } | null = null;
 
-  /** The world starts again, born like the replay, and the replay plays (checked at its end). */
+  /** The server plays the replay: the match starts over like it, and each copy checks its hash at the end. */
   function playReplayNow(replay: Replay) {
-    // From scratch, like `load`: the world values back to their defaults, then the replay's birth.
-    const onStartupChange = registry.onStartupChange;
-    registry.onStartupChange = null;
-    const back = registry
-      .changed()
-      .filter((v) => v.decl.scope !== 'view')
-      .map((v) => `${v.decl.name} ${formatValue(v.decl.default)}`);
-    registry.run(back.join('\n'), 'recipe');
-    warn("the replay's birth", registry.run(replay.birth, 'recipe'));
-    registry.onStartupChange = onStartupChange;
-    playback = new ReplayPlayer(replay);
-    startSession();
-    container.dataset.replay = 'playing';
+    link.request({ type: 'play', replay: replayToText(replay) });
   }
 
   function startGhost(replay: Replay) {
@@ -591,12 +576,11 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
         playReplayNow(replay);
         out.write(`playing the replay: ${replay.end.step} steps`);
       } else if (action === 'stop') {
-        if (!playback) out.write('no replay is playing');
-        else {
-          playback = null;
+        if (replaying) {
+          replaying = null;
           container.dataset.replay = 'stopped';
-          out.write('stopped: the control is yours');
         }
+        link.request({ type: 'stop' });
       } else
         out.write(
           `recorded since the world was born: ${replay.end.step} steps, ${replay.inputs.length} input changes, ${replay.changes.length} world changes. \`replay export\` builds a link, \`replay play\` plays it again, \`ghost\` races it.`,
@@ -629,26 +613,122 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     },
   });
 
-  /** Creates the world (at the start, and on restart), with the registry's current values. */
-  function startSession() {
+  /** The recipe the match is born with: the startup and world values that are not at their defaults. */
+  const birthOf = () =>
+    registry
+      .changed()
+      .filter((v) => v.decl.scope !== 'view')
+      .map((v) => `${v.decl.name} ${formatValue(v.value)}`)
+      .join('\n');
+
+  /** A match hosted in this page: a server here, and this page's client, joined to it in the same page. */
+  function hostMatch() {
+    leaveMatch();
+    server = new Server(cartridge, { birth: birthOf(), now: () => performance.now() });
+    const pair = localPair<ToClient, ToServer>();
+    server.connect(pair.a);
+    net = 'alone';
+    connect(pair.b);
+  }
+
+  /** This page's client, on a channel to a server (this page's, or another tab's). */
+  function connect(channel: Channel<ToServer, ToClient>) {
+    link = new Client(cartridge, registry, channel, {
+      welcome: onWelcome,
+      say: (text, level) => (gameConsole ? gameConsole.write(text, level) : level !== 'info' && console.warn(text)),
+      desync: (step, mine, theirs) => {
+        container.dataset.desyncs = String(link.desyncs);
+        gameConsole?.write(`DESYNC at step ${step}: this copy's hash is ${hex(mine)}, the server's ${hex(theirs)}`, 'error');
+      },
+    });
+    link.hello();
+  }
+
+  /** Leaves the current match: this page's client, and its server (and its tabs) if it hosted one. */
+  function leaveMatch() {
+    link?.close();
+    tabs?.close();
+    tabs = null;
+    server?.dispose();
+    server = null;
+  }
+
+  /** A match came (at the start, after a restart, a snapshot load, a replay, a join): its copy, drawn. */
+  function onWelcome(next: Session, match: Match) {
+    const fresh = !match.session;
+    session = next;
+    me = link.player;
+    if (joining) {
+      joining = false;
+      gameConsole?.write(`you joined the match: you are player ${me}`);
+    }
     for (const id of [...meshes.keys()]) removeMesh(id);
-    // The old world's physics lives in WebAssembly's memory, which the garbage collector does not see.
-    if (started) session.world.dispose();
-    started = true;
-    session = new Session(cartridge, { registry });
-    session.world.takeEvents(); // the ones from its creation: its meshes are created by walking the world
+    session.world.takeEvents(); // the world is already there: its meshes are created by walking it
     for (const e of session.world.entities.values()) createMesh(e);
     savePrevious();
-    clock = new Clock();
-    if (controls && player()) resetCamera();
+    replaying = match.replay ?? null;
+    if (replaying) container.dataset.replay = 'playing';
+    if (controls && player() && (fresh || replaying)) resetCamera();
     // A ghost starts over with the world: both are born at step 0, and run in step.
-    if (ghost) startGhost(ghost.replay);
+    if (ghost) {
+      if (session.world.tick === 0) startGhost(ghost.replay);
+      else clearGhost();
+    }
   }
+
   function restart() {
-    playback = null;
-    startSession();
+    replaying = null;
+    link.request({ type: 'restart', birth: birthOf() });
   }
-  startSession();
+  hostMatch();
+  // Leaving the page leaves the match (and closes it for the tabs that joined it).
+  window.addEventListener('pagehide', leaveMatch);
+
+  // ---------- The match with other tabs (stage 1e) ----------
+  registry.declareCommand({
+    name: 'net',
+    description:
+      "The match, and where it lives. Even alone, this page plays through a server of its own. `net open` lets other tabs of this browser join it; `net join` joins a match opened in another tab (you get your own character, if the level has characters); `net leave` goes back to playing alone. Every second, each copy checks its world with the server's hash.",
+    args: [{ name: 'action', type: { kind: 'option', options: ['open', 'join', 'leave'] }, optional: true }],
+    run: ([action], out) => {
+      if (action === 'open') {
+        if (!server) return out.write("this page is in another tab's match: `net leave` first", 'warn');
+        if (!tabs) tabs = openToTabs(cartridge.id, server);
+        net = 'open';
+        out.write('the match is open: in another tab of this browser, `net join` joins it');
+      } else if (action === 'join') {
+        out.write('looking for a match open in another tab…');
+        void joinFromTabs(cartridge.id).then((channel) => {
+          if (!channel) return gameConsole?.write('no tab answered: open one there with `net open`', 'warn');
+          leaveMatch();
+          net = 'joined';
+          joining = true;
+          connect(channel);
+          channel.onClose = () => {
+            gameConsole?.write('the match was closed: playing alone again', 'warn');
+            hostMatch();
+          };
+        });
+      } else if (action === 'leave') {
+        if (net === 'joined') hostMatch();
+        else {
+          tabs?.close();
+          tabs = null;
+          net = 'alone';
+        }
+        out.write('playing alone');
+      } else {
+        const where =
+          net === 'joined'
+            ? "in another tab's match"
+            : net === 'open'
+              ? 'hosting a match open to other tabs'
+              : 'alone, through a server in this page';
+        const players = server ? ` · players ${server.players.join(', ')}` : '';
+        out.write(`${where} · you are player ${me}${players} · ${link.checks} hash checks, ${link.desyncs} desyncs`);
+      }
+    },
+  });
   // From now on, changing a startup value (from the console) makes the world start over.
   registry.onStartupChange = restart;
   // A replay or a ghost that came with the page (the game gathered them, from its link).
@@ -671,29 +751,35 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   let stepTime = 0;
   let stepsTimed = 0;
   let msPerStep = 0;
-  function advance() {
-    savePrevious();
-    playback?.feed(session);
-    if (ghost && !ghost.player.finished(ghost.session)) {
-      ghost.player.feed(ghost.session);
-      ghost.session.step();
-    }
-    const t0 = performance.now();
-    session.step();
-    stepTime += performance.now() - t0;
-    stepsTimed++;
-    if (playback?.finished(session)) {
-      const same = playback.same(session);
-      const hash = hex(stateHash(session.world));
-      container.dataset.replay = same ? 'same' : 'different';
-      gameConsole?.write(
-        same
-          ? `the replay ended at step ${session.world.tick}: the same hash (${hash}), the same world. The control is yours.`
-          : `the replay ended at step ${session.world.tick} with ANOTHER hash: ${hash} instead of ${hex(playback.replay.end.hash)}`,
-        same ? 'info' : 'error',
-      );
-      playback = null;
-    }
+  let stepStart = 0;
+  /** This page's copy takes the steps that came from the server, one by one. */
+  function drainMatch() {
+    link.drain({
+      before() {
+        savePrevious();
+        if (ghost && !ghost.player.finished(ghost.session)) {
+          ghost.player.feed(ghost.session);
+          ghost.session.step();
+        }
+        stepStart = performance.now();
+      },
+      after() {
+        stepTime += performance.now() - stepStart;
+        stepsTimed++;
+        if (replaying && session.world.tick === replaying.step) {
+          const hash = stateHash(session.world);
+          const same = hash === replaying.hash;
+          container.dataset.replay = same ? 'same' : 'different';
+          gameConsole?.write(
+            same
+              ? `the replay ended at step ${session.world.tick}: the same hash (${hex(hash)}), the same world. The control is yours.`
+              : `the replay ended at step ${session.world.tick} with ANOTHER hash: ${hex(hash)} instead of ${hex(replaying.hash)}`,
+            same ? 'info' : 'error',
+          );
+          replaying = null;
+        }
+      },
+    });
   }
 
   const qa = new THREE.Quaternion();
@@ -711,16 +797,17 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     last = now;
     // What player 1 asks for: it enters the world at the next step (the session keeps only the changes).
     const hero = player();
-    if (hero?.transform && !playback) {
+    if (hero?.transform && !replaying) {
       const look = camera.getWorldDirection(new THREE.Vector3());
       // (Aiming, the mouse turns it: the keys go by the camera, whatever the scheme.)
       const keys = cameraMode === 'aim' ? 'camera' : scheme;
       const asked = playerControls.read([look.x, look.y, look.z], upAt(session.world, hero.transform.position), keys);
       // Aiming, the character looks where the camera looks (the core keeps only its horizontal part).
-      session.setInput(1, cameraMode === 'aim' ? { ...asked, face: [look.x, look.y, look.z] } : asked);
+      link.sendInput(cameraMode === 'aim' ? { ...asked, face: [look.x, look.y, look.z] } : asked);
     }
-    const steps = paused ? 0 : clock.advance(dt * timescale);
-    for (let i = 0; i < steps; i++) advance();
+    // The match's clock is its host's: this page's server advances, and every copy takes those steps.
+    if (server && !paused) server.advance(dt * timescale);
+    drainMatch();
     const world = session.world;
     for (const ev of world.takeEvents()) {
       if (ev.type === 'entityCreated') {
@@ -729,7 +816,9 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       }
       if (ev.type === 'entityRemoved') removeMesh(ev.id);
     }
-    const alpha = paused ? 1 : clock.alpha;
+    // Drawn between the last two steps, by where the server's clock is (a page that joined another
+    // tab's match draws the last step: smoothing what comes with lag is for phase 6).
+    const alpha = server && !paused ? server.alpha : 1;
     for (const [id, mesh] of meshes) {
       const t = world.entities.get(id)?.transform;
       const before = previous.get(id) ?? t;
@@ -806,6 +895,13 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       container.dataset.step = String(world.tick);
       if (hero?.transform) container.dataset.player = hero.transform.position.map((n) => n.toFixed(2)).join(' ');
       if (hero?.character) container.dataset.facing = hero.character.facing.map((n) => n.toFixed(2)).join(' ');
+      container.dataset.net = net;
+      container.dataset.me = String(me);
+      container.dataset.checks = String(link.checks);
+      container.dataset.others = [...world.entities.values()]
+        .filter((e) => e.character && e.character.player !== me && e.transform)
+        .map((e) => `${e.character!.player}:${e.transform!.position.map((n) => n.toFixed(2)).join(' ')}`)
+        .join('|');
       const ghostBody = ghost && [...ghost.session.world.entities.values()].find((e) => e.character?.player === 1);
       if (ghostBody?.transform) container.dataset.ghost = ghostBody.transform.position.map((n) => n.toFixed(2)).join(' ');
       container.dataset.camera = camera.position
@@ -818,6 +914,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
           `hash ${hex(stateHash(world))}`,
           `${world.entities.size} entities · ${world.physics.bodyCount} bodies · ${perSecond} fps`,
           `physics ${msPerStep.toFixed(2)} ms per step`,
+          `${net === 'joined' ? "in another tab's match" : net === 'open' ? 'match open to other tabs' : 'alone'} · player ${me} · ${link.checks} hash checks${link.desyncs ? ` · ${link.desyncs} DESYNCS` : ''}`,
           timescale !== 1 ? `timescale ${timescale}×` : '',
         ]
           .filter(Boolean)
@@ -839,6 +936,8 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       gameConsole?.stop();
       playerControls.stop();
       clearGhost();
+      leaveMatch();
+      window.removeEventListener('pagehide', leaveMatch);
       document.removeEventListener('mousemove', onMouseMove);
       if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
       controls?.dispose();

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Like the core: no DOM and no Node types. The transport (a page, a tab, a socket) is plugged in from outside.
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"]
+}

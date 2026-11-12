@@ -11,6 +11,7 @@
     "@manifold/commands": "0.0.0",
     "@manifold/common": "0.0.0",
     "@manifold/core": "0.0.0",
+    "@manifold/net": "0.0.0",
     "three": "^0.187.0"
   },
   "devDependencies": {
