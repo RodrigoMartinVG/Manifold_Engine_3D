@@ -27,7 +27,7 @@ const altura = (r: number) => ESCALA_ALTURA * (potencial(r) - potencial(RADIO_LA
 
 const VERDIN = new THREE.Color(0x93d9c9);
 const VERDIN_OSCURO = new THREE.Color(0x10302b);
-const BRONCE = 0xb98146;
+const BRONCE = 0x9a7246; // bronce viejo, sin brillo
 
 /** El color y el tamaño de cada cuerpo, en el orden de ORBITAS_INICIALES. */
 const ASPECTO = [
@@ -102,7 +102,7 @@ export function arrancarVitrina(ventana: HTMLElement, opciones: OpcionesVitrina 
   // ---------- El cuerpo central, con un halo ----------
   const centro = new THREE.Mesh(
     new THREE.SphereGeometry(RADIO_CENTRO, 32, 20),
-    new THREE.MeshStandardMaterial({ color: 0xe9b86a, emissive: 0x6b3f12, metalness: 0.55, roughness: 0.35 }),
+    new THREE.MeshStandardMaterial({ color: 0xc0915a, emissive: 0x4a2a0c, metalness: 0.45, roughness: 0.6 }),
   );
   centro.position.y = altura(0) + RADIO_CENTRO;
   mundo.add(centro);

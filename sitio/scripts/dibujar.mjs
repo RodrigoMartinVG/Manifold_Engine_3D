@@ -11,6 +11,7 @@
  * - marca.svg y favicon.svg: un engranaje con una lemniscata (∞) adentro.
  * - engranaje-20.svg y engranaje-12.svg: dos engranajes que ENGRANAN de verdad (mismo módulo:
  *   el CSS los gira con velocidades en razón 12 : 20).
+ * - oxido.svg y patina.svg: texturas que se repiten, para el metal viejo de marcos y botones.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -273,6 +274,65 @@ function fondo() {
 `;
 }
 
+// ---------------------------------------------------------------- el metal oxidado
+/*
+ * El metal del sitio es bronce VIEJO: mate, con costras de pátina verde y manchas de óxido. El
+ * ruido sale de `feTurbulence` (ruido de Perlin, calculado por el navegador al dibujar el SVG) y
+ * `feColorMatrix` lo convierte en manchas: un canal del ruido se vuelve transparencia, con un
+ * umbral (solo donde el ruido supera cierto valor hay mancha). `stitchTiles` hace que la textura
+ * empalme con sí misma, para repetirla como un azulejo.
+ */
+
+/** Manchas de óxido rojizo y un picado oscuro y fino: va encima del degradado de bronce. */
+function texturaOxido() {
+  const lado = 220;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${lado}" height="${lado}" viewBox="0 0 ${lado} ${lado}">
+<!-- Generado por sitio/scripts/dibujar.mjs: óxido y picado, para repetir como textura. -->
+<filter id="f" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+<feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="3" seed="7" stitchTiles="stitch" result="manchas"/>
+<feColorMatrix in="manchas" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.17 0 0 0 0 0.08 3.2 0 0 0 -1.95" result="oxido"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="3" stitchTiles="stitch" result="grano"/>
+<feColorMatrix in="grano" type="matrix" values="0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0 0.02 0 2.4 0 0 -1.2" result="picado"/>
+<feMerge><feMergeNode in="oxido"/><feMergeNode in="picado"/></feMerge>
+</filter>
+<rect width="${lado}" height="${lado}" filter="url(#f)"/>
+</svg>
+`;
+}
+
+/** Costras de pátina (el verde del cobre viejo), en manchas grandes y algunas chicas. */
+function texturaPatina() {
+  const lado = 360;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${lado}" height="${lado}" viewBox="0 0 ${lado} ${lado}">
+<!-- Generado por sitio/scripts/dibujar.mjs: pátina, para repetir como textura. -->
+<filter id="f" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+<feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="5" seed="11" stitchTiles="stitch" result="costras"/>
+<feColorMatrix in="costras" type="matrix" values="0 0 0 0 0.27 0 0 0 0 0.5 0 0 0 0 0.43 0 5 0 0 -3.05" result="patina"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="2" seed="5" stitchTiles="stitch" result="motas"/>
+<feColorMatrix in="motas" type="matrix" values="0 0 0 0 0.42 0 0 0 0 0.62 0 0 0 0 0.54 0 0 7 0 -5.1" result="claras"/>
+<feMerge><feMergeNode in="patina"/><feMergeNode in="claras"/></feMerge>
+</filter>
+<rect width="${lado}" height="${lado}" filter="url(#f)"/>
+</svg>
+`;
+}
+
+/**
+ * El mismo óxido y la misma pátina, como filtro dentro de una figura (la marca, los engranajes):
+ * las manchas se recortan con la forma (`operator="in"`) y se apoyan encima.
+ */
+const filtroOxidado = (
+  escala,
+) => `<filter id="oxidado" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+<feTurbulence type="fractalNoise" baseFrequency="${f(0.09 * escala)}" numOctaves="3" seed="4" result="n1"/>
+<feColorMatrix in="n1" type="matrix" values="0 0 0 0 0.28 0 0 0 0 0.52 0 0 0 0 0.44 0 5.5 0 0 -3.1" result="p"/>
+<feComposite in="p" in2="SourceGraphic" operator="in" result="patina"/>
+<feTurbulence type="fractalNoise" baseFrequency="${f(0.5 * escala)}" numOctaves="2" seed="9" result="n2"/>
+<feColorMatrix in="n2" type="matrix" values="0 0 0 0 0.36 0 0 0 0 0.14 0 0 0 0 0.05 4 0 0 0 -2.2" result="o"/>
+<feComposite in="o" in2="SourceGraphic" operator="in" result="oxido"/>
+<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="oxido"/><feMergeNode in="patina"/></feMerge>
+</filter>`;
+
 // ---------------------------------------------------------------- la marca
 /** Un engranaje de bronce con una lemniscata de Bernoulli (∞) adentro, sobre un disco de pátina. */
 function marcaDelSitio() {
@@ -287,16 +347,17 @@ function marcaDelSitio() {
 <!-- Generado por sitio/scripts/dibujar.mjs -->
 <defs>
 <linearGradient id="bronce" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="#f3d39b"/><stop offset="0.35" stop-color="#c38a4a"/><stop offset="0.6" stop-color="#8a5a2b"/><stop offset="1" stop-color="#d7a564"/>
+<stop offset="0" stop-color="#a07a4c"/><stop offset="0.4" stop-color="#6e4f2e"/><stop offset="0.7" stop-color="#4a331d"/><stop offset="1" stop-color="#7a5a36"/>
 </linearGradient>
 <radialGradient id="patina" cx="0.4" cy="0.35" r="0.75">
-<stop offset="0" stop-color="#2f7c6e"/><stop offset="1" stop-color="#0f2925"/>
+<stop offset="0" stop-color="#2c6658"/><stop offset="1" stop-color="#0d2420"/>
 </radialGradient>
+${filtroOxidado(1)}
 </defs>
-<path fill="url(#bronce)" fill-rule="evenodd" stroke="#3a2410" stroke-width="1.2" d="${engranaje.d}${circuloComoCamino(0, 0, 34)}"/>
-<circle r="34" fill="url(#patina)" stroke="#3a2410" stroke-width="1.2"/>
-<circle r="29.5" fill="none" stroke="#e2b77a" stroke-opacity="0.45" stroke-width="0.8"/>
-${camino(lemniscata, true, ' fill="none" stroke="#f0d59a" stroke-width="5" stroke-linejoin="round"')}
+<path fill="url(#bronce)" fill-rule="evenodd" stroke="#24170a" stroke-width="1.2" filter="url(#oxidado)" d="${engranaje.d}${circuloComoCamino(0, 0, 34)}"/>
+<circle r="34" fill="url(#patina)" stroke="#24170a" stroke-width="1.2"/>
+<circle r="29.5" fill="none" stroke="#a88a5c" stroke-opacity="0.4" stroke-width="0.8"/>
+${camino(lemniscata, true, ' fill="none" stroke="#c9a46a" stroke-width="5" stroke-linejoin="round"')}
 </svg>
 `;
 }
@@ -326,11 +387,12 @@ function engranajeConRayos(dientes, m, rayos) {
 <!-- Generado por sitio/scripts/dibujar.mjs: ${dientes} dientes, módulo ${m} (radio primitivo ${e.primitivo}). -->
 <defs>
 <linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="#d9a964"/><stop offset="0.45" stop-color="#8f5e2e"/><stop offset="0.7" stop-color="#5e3c1d"/><stop offset="1" stop-color="#a9763f"/>
+<stop offset="0" stop-color="#8a6a42"/><stop offset="0.45" stop-color="#5a3f24"/><stop offset="0.7" stop-color="#3b2815"/><stop offset="1" stop-color="#6a4d2c"/>
 </linearGradient>
+${filtroOxidado(1)}
 </defs>
-<path fill="url(#b)" fill-rule="evenodd" stroke="#2a1909" stroke-width="0.8" d="${e.d}${huecos.join('')}${circuloComoCamino(0, 0, m * 0.9)}"/>
-<circle r="${f(aro)}" fill="none" stroke="#f0d59a" stroke-opacity="0.35" stroke-width="0.6"/>
+<path fill="url(#b)" fill-rule="evenodd" stroke="#1f1408" stroke-width="0.8" filter="url(#oxidado)" d="${e.d}${huecos.join('')}${circuloComoCamino(0, 0, m * 0.9)}"/>
+<circle r="${f(aro)}" fill="none" stroke="#a88a5c" stroke-opacity="0.25" stroke-width="0.6"/>
 <circle r="${f(cubo)}" fill="none" stroke="#2a1909" stroke-opacity="0.6" stroke-width="0.8"/>
 </svg>
 `;
@@ -349,4 +411,6 @@ escribir(`${dibujos}marca.svg`, marcaDelSitio());
 escribir(`${raiz}public/favicon.svg`, marcaDelSitio());
 // Mismo módulo (4): radios primitivos 40 y 24, así que engranan con los centros a 64 unidades.
 escribir(`${dibujos}engranaje-20.svg`, engranajeConRayos(20, 4, 5));
+escribir(`${dibujos}oxido.svg`, texturaOxido());
+escribir(`${dibujos}patina.svg`, texturaPatina());
 escribir(`${dibujos}engranaje-12.svg`, engranajeConRayos(12, 4, 4));

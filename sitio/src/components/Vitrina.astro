@@ -85,11 +85,10 @@ import engranaje12 from '../assets/dibujos/engranaje-12.svg';
     z-index: 1;
     padding: 12px;
     border-radius: 14px;
-    background: var(--mg-patina), var(--mg-bronce);
+    background: var(--mg-metal);
     box-shadow:
-      0 0 0 1px #2a1909,
-      inset 0 1px 0 rgb(255 240 210 / 0.55),
-      inset 0 -2px 0 rgb(0 0 0 / 0.35),
+      0 0 0 1px #1f1408,
+      var(--mg-bisel),
       0 34px 60px -30px rgb(0 0 0 / 0.95);
   }
   .vitrina-marco::before {
@@ -152,14 +151,14 @@ import engranaje12 from '../assets/dibujos/engranaje-12.svg';
     background:
       var(--mg-remache) 0.45rem 50% / 8px 8px no-repeat,
       var(--mg-remache) calc(100% - 0.45rem) 50% / 8px 8px no-repeat,
-      var(--mg-bronce);
+      var(--mg-metal);
     box-shadow:
-      0 0 0 1px #3a2410,
-      inset 0 1px 0 rgb(255 240 210 / 0.6),
+      0 0 0 1px #24170a,
+      var(--mg-bisel),
       0 8px 16px -8px rgb(0 0 0 / 0.8);
-    color: #2a1909;
-    /* Letras grabadas: una luz debajo de cada trazo. */
-    text-shadow: 0 1px 0 rgb(255 236 200 / 0.55);
+    color: var(--mg-texto-sobre-bronce);
+    /* Letras grabadas: la sombra arriba las hunde en el metal. */
+    text-shadow: var(--mg-grabado);
     font-family: var(--mg-letra-titulo);
     font-size: 0.74rem;
     font-weight: 700;
