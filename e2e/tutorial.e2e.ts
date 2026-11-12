@@ -74,6 +74,20 @@ for (const lesson of tutorialLessons()) {
   });
 }
 
+test('a lesson only fetches the libraries it imports: Rapier (4 MB) only where it is used', async ({ page }) => {
+  const fetched: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('/vendor/')) fetched.push(r.url().split('/vendor/')[1]!);
+  });
+  await page.goto('tutorial/etapa-0/03-paso-fijo/');
+  await runAndWait(page.locator('.live-code').first());
+  expect(fetched).toContain('three.js');
+  expect(fetched).not.toContain('rapier.js');
+  await page.goto('tutorial/etapa-1/00-motor-de-fisica/');
+  await runAndWait(page.locator('.live-code').first());
+  expect(fetched).toContain('rapier.js');
+});
+
 test('the glossary is not a lesson: it has no examples', async ({ page }) => {
   for (const p of NOT_LESSONS) {
     await page.goto(p);

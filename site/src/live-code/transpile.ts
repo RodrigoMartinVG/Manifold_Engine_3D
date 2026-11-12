@@ -27,6 +27,20 @@ export function rewriteImports(js: string): string {
   );
 }
 
+/**
+ * The libraries a lesson's code imports (stage 1f): `three`, `three/addons/…`, the physics engine…
+ * Not its own files (`lesson/…`). Only those are fetched: Rapier weighs 4 MB, and the lessons that do
+ * not use it should not wait for it.
+ */
+export function importedLibraries(js: string): string[] {
+  const found = new Set<string>();
+  for (const m of js.matchAll(/\b(?:from|import)\s*\(?\s*(['"])([^'"]+)\1/g)) {
+    const specifier = m[2]!;
+    if (!specifier.startsWith('.') && !specifier.startsWith('/') && !specifier.startsWith(LESSON_PREFIX)) found.add(specifier);
+  }
+  return [...found].sort();
+}
+
 export function transpile(code: string): string {
   const { code: js } = transform(code, { transforms: ['typescript'], disableESTransforms: true });
   return rewriteImports(js);

@@ -1,0 +1,67 @@
+---
+title: Un servidor y un cliente
+description: Dos copias del mismo mundo, una en el servidor y otra en el cliente, que dan lo mismo porque reciben lo mismo. La demora, y una desincronización hecha a propósito.
+sidebar:
+  order: 4
+---
+
+import LiveCode from '../../../../components/LiveCode.astro';
+
+En un juego en red, cada jugador tiene su computadora, y la partida tiene que ser la misma para todos. La manera de lograrlo usa todo lo de las lecciones anteriores:
+
+- **Un servidor guarda LA partida.** Recibe lo que pide cada jugador, decide en qué paso entra cada cosa, y en cada paso les dice a todos qué entró. Ese aviso se llama _tick_.
+- **Cada jugador simula su propia copia** del mundo con exactamente eso. Como el mundo es determinista, la copia es el mismo mundo: es una repetición, pero en vivo.
+- **Cada tanto, el servidor manda su huella**, y cada copia comprueba que tiene la misma. Si no, es una **desincronización** (_desync_): un error, que hay que encontrar.
+
+Lo que viaja es poco: lo que se pidió, solo cuando cambia, y un número de vez en cuando.
+
+<LiveCode lesson="stage-1/04-server-and-client" autorun />
+
+A la izquierda, el mundo del **servidor** (la pelota naranja). A la derecha, la **copia del cliente** (la celeste). Un piloto automático hace de jugador del lado del cliente (o **WASD**, después de hacer clic en el dibujo). Entre los dos hay un cable de mentira, con **demora** (_lag_).
+
+**Qué probar:**
+
+1. **Mirá _hash checks, the same_** (comprobaciones de huella, iguales): una por segundo, y _desyncs_ en 0. Las dos pelotas y sus cajas se mueven exactamente igual, pero la del cliente un poco después.
+2. **Subí _lag_ a 800 ms.** La copia del cliente se atrasa más (_client steps behind_, pasos de atraso), y una orden tarda en verse el doble de la demora: ida hasta el servidor, y vuelta en un tick. Pero sigue siendo el mismo mundo.
+3. **Tocá _the client loses an input_** (el cliente pierde una entrada): un error simulado, la copia se saltea una orden. En la comprobación siguiente aparece una desincronización, con su paso. Desde ahí, la copia va por otro lado.
+
+## El código, paso a paso
+
+- **`wire`** es el cable de mentira: entrega cada mensaje `lag` milisegundos después, y siempre en orden, como una conexión de red.
+- **El cliente pide** (`ask`) y manda su pedido al servidor solo cuando cambia (`toServer.send`).
+- **El servidor avanza con su propio reloj** (el paso fijo). En cada paso, `serverStepOnce` usa el último pedido que le llegó, y le manda al cliente un `Tick`: el número de paso, el pedido si cambió, y cada 60 pasos la huella de su mundo.
+- **El cliente avanza cuando le llegan los ticks** (`clientSteps`), con exactamente lo que dicen: su copia da el mismo paso que el servidor dio. Si el tick trae una huella, la compara con la de su copia.
+
+## Lo importante
+
+- **El servidor decide en qué paso entra cada cosa.** Eso es lo que hace que todas las copias den lo mismo: no la hora a la que llegó cada pedido, sino el paso que el servidor le asignó.
+- **Cada copia es una repetición en vivo.** El mismo comienzo y las mismas entradas en los mismos pasos: el mismo mundo, sin mandar el mundo.
+- **La demora no rompe la partida, la atrasa.** Una diferencia de huella no es demora: es un error.
+
+## Más a fondo
+
+<details>
+<summary>Cómo hacen los juegos para que no se note la demora</summary>
+
+Aquí, tu pelota espera la vuelta del servidor para moverse: con 150 ms de cada lado, cada orden tarda 300 ms en verse. En un juego de acción eso no se aguanta. La solución se llama **predicción** (_prediction_): el cliente mueve a su propio personaje **en el acto**, sin esperar, adivinando que el servidor va a decir lo mismo.
+
+Cuando llega lo que dijo el servidor, el cliente vuelve al último paso que el servidor confirmó y simula de nuevo hasta ahora, con lo que de verdad pasó: eso es la **corrección** (_reconciliation_). Si el mundo es determinista y no pasó nada inesperado, la corrección cae exactamente donde ya estaba, y no se nota. Si otro jugador hizo algo que no se podía adivinar, el personaje se corrige un poco.
+
+Eso no contradice el determinismo: la diferencia viene de haber simulado con datos que todavía no habían llegado, no de las cuentas. Y el determinismo es justo lo que hace que la corrección no se vea.
+
+</details>
+
+:::caution[Sutilezas]
+
+- **El cable entrega en orden.** Una conexión de red de las que usan los navegadores (como un WebSocket) también. Si los ticks llegaran desordenados, la copia daría los pasos en otro orden, y sería otro mundo.
+- **Aquí hay un solo jugador.** Con varios, cada tick lleva lo que pidió cada uno, con su número de jugador, y todas las copias reciben lo de todos.
+- **La huella cada 60 pasos es un equilibrio:** sumar todo el mundo cuesta, y una desincronización encontrada un segundo después alcanza para saber en qué paso empezó.
+  :::
+
+## En Manifold
+
+El motor tiene esto mismo en un paquete propio: [`packages/net`](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/stage-01/packages/net/src), con un servidor y un cliente que no saben por dónde viajan sus mensajes. Y **todos los juegos juegan a través de él, aunque se juegue solo**: el servidor vive en la misma página, y cada partida comprueba el determinismo mientras se juega. En el Dojo, `net open` en una pestaña y `net join` en otra del mismo navegador ponen a dos jugadores en la misma partida, cada uno con su personaje. Cómo se armó está en la [Bitácora de la etapa 1e](../../../bitacora/etapa-1e/).
+
+## Para saber más
+
+- [Fast-paced multiplayer](https://www.gabrielgambetta.com/client-server-game-architecture.html), de Gabriel Gambetta (en inglés): el servidor, la predicción y la corrección, con ejemplos que se mueven.

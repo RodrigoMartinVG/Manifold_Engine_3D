@@ -1,0 +1,60 @@
+---
+title: Instantáneas
+description: Guardar un mundo entero, física incluida, en unos bytes, y volver a él. Un gemelo nacido de esos bytes que sigue exactamente igual que el original.
+sidebar:
+  order: 3
+---
+
+import LiveCode from '../../../../components/LiveCode.astro';
+
+Una repetición rehace un mundo desde su nacimiento. Pero a veces hace falta otra cosa: **guardar un momento y volver a él**, como el "guardar estado" de un emulador. O mandarle a alguien que entra a una partida empezada el mundo tal como está, sin hacerle rehacer media hora de juego.
+
+Para eso, una **instantánea** (_snapshot_): el mundo entero, en unos bytes. No alcanza con anotar dónde está cada cuerpo. El motor de física guarda por dentro cosas que no se ven: qué está tocando a qué, y lo que su solver calculó en el paso anterior para empezar el siguiente desde ahí. Sin eso, un mundo "copiado" se iría por otro camino al poco tiempo. Rapier sabe sacar una instantánea de todo eso, y volver a armar el mundo con ella.
+
+<LiveCode lesson="stage-1/03-snapshots" autorun />
+
+A la izquierda caen las cajas. En el paso 90, sola, se toma una instantánea, y de esos bytes nace un **gemelo** (_twin_), transparente, a la derecha. Desde ahí, los dos reciben los mismos pasos, y en cada uno se comparan sus huellas.
+
+**Qué probar:**
+
+1. **Mirá _the twin is_** (el gemelo está): _the same_, el mismo mundo, paso tras paso, aunque las cajas choquen y se apilen.
+2. **Tocá _nudge the twin_** (empujá al gemelo): una diezmilésima de empujón a una sola caja. Poco después, _another world since step…_ (otro mundo desde el paso…), y al rato la pila del gemelo ya cae distinta.
+3. **Tocá _drop 5 more (here only)_** (tirá 5 más, solo aquí): el original recibe algo que el gemelo no, y también se separan.
+4. **Tocá _go back to the snapshot_** (volvé a la instantánea): el original vuelve al paso guardado, y las cajas que habías tirado después desaparecen.
+5. **Mirá _snapshot size_** (el tamaño de la instantánea) y _took_ (lo que tardó): unas decenas de KB, en menos de un milisegundo.
+
+## El código, paso a paso
+
+- **`world.takeSnapshot()`** devuelve el mundo como bytes (un `Uint8Array`): cuerpos, formas, contactos y el estado del solver.
+- **`RAPIER.World.restoreSnapshot(bytes)`** arma un mundo **nuevo** con esos bytes. El gemelo es eso; volver es eso mismo, cambiando el mundo viejo por el nuevo (y liberando el viejo con `free()`).
+- **Las mallas se buscan por el número de cada cuerpo** (`body.handle`), no por el cuerpo. Un mundo restaurado es otro mundo, con otros objetos, pero cada cuerpo conserva su número. Por eso `drawer` guarda un mapa de número a malla, y "empujar al gemelo" encuentra su primera caja con `getRigidBody(firstBox)`.
+- **Las huellas** de los dos mundos se comparan en cada paso, con el mismo `hashOf` de la lección anterior.
+
+## Lo importante
+
+- **Una instantánea guarda todo, también lo que no se ve.** Los contactos y lo que el solver arrastra de un paso al siguiente son parte del mundo.
+- **Restaurada, sigue exactamente igual.** No parecido: los mismos bits, paso tras paso, mientras los dos reciban lo mismo.
+- **Restaurar crea otro mundo.** Lo que guardaba una referencia a un cuerpo viejo queda apuntando a la nada; lo que guardaba su número, no.
+- **Una instantánea es para un momento, no para cada paso.** Unas decenas de KB está bien para volver atrás o para entrar a una partida; para mandarlo sesenta veces por segundo, no.
+
+## Más a fondo
+
+<details>
+<summary>Por qué un empujón tan chico cambia todo</summary>
+
+Una pila de cajas es un sistema **caótico**: una diferencia mínima en un choque cambia hacia dónde rebota una caja; esa caja choca con otra en otro lugar, y la diferencia crece en cada choque. Una diezmilésima, al rato, es una pila distinta.
+
+Por eso un mundo determinista tiene que ser exacto, y no "casi" exacto: con caos, casi igual al principio es muy distinto al final. Y por eso la huella compara los bits, no los números redondeados.
+
+</details>
+
+:::caution[Sutilezas]
+
+- **La instantánea pesa más cuanto más se tocan las cosas:** los contactos ocupan lugar. 200 cajas amontonadas pesan más que 200 sueltas.
+- **Una instantánea, como una repetición, es de la versión que la sacó.** Otra versión de Rapier no tiene por qué entenderla.
+- **Los números se copian como están.** Para copiar el resto del estado del juego, la forma rápida de JavaScript (pasar a JSON y volver) convierte −0 en 0 y NaN en `null`: otra huella. El motor de Manifold usa una copia propia por eso.
+  :::
+
+## En Manifold
+
+Una instantánea del motor es la de Rapier, más todo lo que el mundo guarda en sus entidades: el reloj, el contador de entidades, el estado del azar, la gravedad y lo que pidió cada jugador ([`packages/core/src/world.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-01/packages/core/src/world.ts)). En el Dojo, `snapshot` guarda el momento y `snapshot load` vuelve. Y la repetición sigue valiendo después de volver, porque la sesión también vuelve su historia. Cómo se midió que Rapier restaura exacto está en la [Bitácora de la etapa 1d](../../../bitacora/etapa-1d/).

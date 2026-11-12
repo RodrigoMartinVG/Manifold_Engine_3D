@@ -34,6 +34,15 @@ const LIBRARIES = [
     code: "export * from 'three/addons/libs/lil-gui.module.min.js';\nexport { default } from 'three/addons/libs/lil-gui.module.min.js';",
     external: [],
   },
+  {
+    // The physics engine (stage 1), the same build as the engine's: the deterministic one. It weighs
+    // about 4 MB, because its WebAssembly travels inside it (that is the "compat" build: it needs no
+    // other file); so a lesson only fetches it if it imports it.
+    specifier: '@dimforge/rapier3d-deterministic-compat',
+    file: 'rapier.js',
+    code: "export * from '@dimforge/rapier3d-deterministic-compat';\nexport { default } from '@dimforge/rapier3d-deterministic-compat';",
+    external: [],
+  },
 ];
 
 await rm(target, { recursive: true, force: true });

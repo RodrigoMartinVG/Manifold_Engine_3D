@@ -5,7 +5,7 @@ import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { iframeDocument } from './iframe';
 import { mountFullscreen } from './fullscreen';
-import { moduleName, transpile } from './transpile';
+import { importedLibraries, moduleName, transpile } from './transpile';
 
 /**
  * A LIVE EXAMPLE (decision 0007): an editor with one file per tab, and when run, the code runs in
@@ -53,23 +53,36 @@ interface Running {
 
 let active: Running | null = null;
 
-/** The libraries (Three.js...): fetched once per page, the first time something runs. */
-let libraries: Promise<Record<string, string>> | null = null;
+/**
+ * The libraries (Three.js, Rapier...): each one fetched once per page, the first time a lesson
+ * imports it (stage 1f: before, all of them, the first time anything ran; with Rapier, 4 MB more for
+ * lessons that do not use it).
+ */
+let manifest: Promise<Record<string, string>> | null = null;
+const fetched = new Map<string, Promise<string>>();
 
-function loadLibraries(base: string): Promise<Record<string, string>> {
-  libraries ??= (async () => {
-    const get = async (file: string) => {
-      const response = await fetch(`${base}/vendor/${file}`);
-      if (!response.ok) throw new Error(`No se pudo cargar ${file} (${response.status})`);
-      return response;
-    };
-    const manifest = (await (await get('manifest.json')).json()) as Record<string, string>;
-    const texts = await Promise.all(
-      Object.entries(manifest).map(async ([specifier, file]) => [specifier, await (await get(file)).text()] as const),
-    );
-    return Object.fromEntries(texts);
-  })();
-  return libraries;
+async function loadLibraries(base: string, wanted: readonly string[]): Promise<Record<string, string>> {
+  const get = async (file: string) => {
+    const response = await fetch(`${base}/vendor/${file}`);
+    if (!response.ok) throw new Error(`No se pudo cargar ${file} (${response.status})`);
+    return response;
+  };
+  manifest ??= get('manifest.json').then((r) => r.json() as Promise<Record<string, string>>);
+  const files = await manifest;
+  // What the libraries need themselves: an addon of Three.js imports Three.js.
+  const needed = new Set(wanted.filter((s) => s in files));
+  if ([...needed].some((s) => s.startsWith('three/'))) needed.add('three');
+  const texts = await Promise.all(
+    [...needed].map(async (specifier) => {
+      if (!fetched.has(specifier))
+        fetched.set(
+          specifier,
+          get(files[specifier]!).then((r) => r.text()),
+        );
+      return [specifier, await fetched.get(specifier)!] as const;
+    }),
+  );
+  return Object.fromEntries(texts);
 }
 
 export function mountLiveCode(root: HTMLElement) {
@@ -153,7 +166,8 @@ export function mountLiveCode(root: HTMLElement) {
     root.dataset.frames = '0';
     try {
       const own = Object.fromEntries(files.map((f, i) => [moduleName(f.name), transpile(states[i]!.doc.toString())]));
-      modules = { ...(await loadLibraries(base)), ...own };
+      const wanted = Object.values(own).flatMap(importedLibraries);
+      modules = { ...(await loadLibraries(base, wanted)), ...own };
     } catch (e) {
       // A syntax error shows up here, before anything runs.
       reportError((e as Error).message);

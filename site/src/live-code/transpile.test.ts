@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { moduleName, rewriteImports, transpile } from './transpile';
+import { importedLibraries, moduleName, rewriteImports, transpile } from './transpile';
 
 describe('transpile', () => {
   test('removes the types and leaves the rest, with the same lines', () => {
@@ -37,5 +37,25 @@ describe('transpile', () => {
   test("each file's name in the import map", () => {
     expect(moduleName('main.ts')).toBe('lesson/main');
     expect(moduleName('simulation.ts')).toBe('lesson/simulation');
+  });
+
+  test('the libraries a lesson imports: only those are fetched (not its own files)', () => {
+    const js = transpile(
+      [
+        "import * as THREE from 'three';",
+        "import GUI from 'three/addons/libs/lil-gui.module.min.js';",
+        "import RAPIER from '@dimforge/rapier3d-deterministic-compat';",
+        "import { createScene } from './scene';",
+        "const later = await import('three');",
+        // (Used: an import that is never used is removed with the types, as TypeScript does.)
+        'console.log(THREE, GUI, RAPIER, createScene, later);',
+      ].join('\n'),
+    );
+    expect(importedLibraries(js)).toEqual([
+      '@dimforge/rapier3d-deterministic-compat',
+      'three',
+      'three/addons/libs/lil-gui.module.min.js',
+    ]);
+    expect(importedLibraries(transpile("import { a } from './view';"))).toEqual([]);
   });
 });

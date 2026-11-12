@@ -1,0 +1,71 @@
+---
+title: Un motor de física
+description: Cuerpos que caen, chocan y se apilan, calculados por Rapier. Qué es un cuerpo, qué es su forma, y cómo se dibuja lo que la física calcula.
+sidebar:
+  order: 0
+---
+
+import LiveCode from '../../../../components/LiveCode.astro';
+
+En la etapa 0, la pelota que rebotaba era física hecha a mano: una velocidad, la gravedad y un "si se metió en el piso, que rebote". Alcanza para una pelota contra un piso. Para cuarenta cajas que chocan entre sí, se apilan y se empujan, ya no: hace falta un **motor de física** (_physics engine_). Es un programa que solo hace eso, calcular cómo se mueven y chocan los cuerpos sólidos, y lo hace bien y rápido.
+
+Aquí usamos **[Rapier](https://rapier.rs)**, el mismo que usa el motor de Manifold. Está escrito en Rust y llega al navegador como **WebAssembly**: código compilado que el navegador corre casi tan rápido como un programa instalado.
+
+<LiveCode lesson="stage-1/00-physics-engine" autorun />
+
+Las cajas y las pelotas caen, rebotan, chocan entre sí y se apilan. Arrastrá el dibujo para mirar desde otro lado.
+
+**Qué probar:**
+
+1. **Bajá la gravedad (_gravity_) a −1,6**, la de la Luna, y tocá _drop 10 more_ (tirar 10 más): caen despacio.
+2. **Subí el rebote (_bounciness_) a 0,9** y tocá _restart_ (reiniciar): rebotan mucho más.
+3. **Mirá _bodies awake_** (cuerpos despiertos). Cuando todo se queda quieto, baja a 0: la física **duerme** los cuerpos que no se mueven, y deja de calcularlos hasta que algo los toca. Tirá 10 más y mirá cómo se despiertan.
+
+## El código, paso a paso
+
+- **`await RAPIER.init()`** carga el WebAssembly. Tarda un poco y es asíncrono, así que va una sola vez, antes de crear cualquier mundo.
+- **Un mundo** (`new RAPIER.World(gravedad)`) es donde viven los cuerpos. Tiene su gravedad y el tamaño de su paso (`world.timestep`): el paso fijo de la etapa 0, ahora dentro del motor.
+- **Un cuerpo** (_rigid body_) tiene posición, orientación y velocidad. Hay de tres tipos:
+  - **dinámico** (`dynamic`): lo mueve la física, con la gravedad y los choques. Las cajas;
+  - **fijo** (`fixed`): no se mueve nunca, pero los demás chocan contra él. El piso;
+  - **cinemático** (`kinematic`): lo mueve el programa, y empuja lo que toca sin que nada lo empuje a él. Una plataforma que va y viene, o el personaje de la lección siguiente.
+- **Una forma** (_collider_) es con qué choca el cuerpo: una caja (`cuboid`, con la mitad de cada lado), una pelota (`ball`, con su radio), una cápsula… También tiene su rebote (`restitution`) y su rozamiento (`friction`).
+- **`world.step()`** avanza el mundo un paso: gravedad, choques, rebotes y pilas, todo junto.
+- **Después de cada cuadro**, cada malla se pone donde la física tiene su cuerpo (`translation()` y `rotation()`). La física no sabe nada del dibujo: es la separación de la última lección de la etapa 0.
+
+## Lo importante
+
+- **El cuerpo y su forma son dos cosas.** El cuerpo dice dónde está y cómo se mueve; la forma, con qué choca. La malla que se dibuja es una tercera, y no tiene por qué coincidir: un personaje puede dibujarse con mil triángulos y chocar como una cápsula.
+- **Dinámico, fijo o cinemático** dice quién mueve a cada cuerpo: la física, nadie, o el programa.
+- **La física avanza de a pasos fijos**, y el dibujo lee dónde quedó cada cosa. Nunca al revés.
+
+## Más a fondo
+
+<details>
+<summary>Cómo resuelve un choque</summary>
+
+En cada paso, el motor hace tres cosas.
+
+1. **Busca quién está cerca de quién** (la _broad phase_, la fase amplia). Comparar cada cuerpo con todos los demás costaría demasiado con muchos cuerpos, así que primero descarta rápido los que están lejos, con cajas simples que envuelven a cada forma.
+2. **Calcula los contactos** de los que quedaron (la _narrow phase_, la fase fina): en qué puntos se tocan, y en qué dirección. Esa dirección es la **normal** del contacto. En el Dojo, `show.contacts on` los dibuja.
+3. **Resuelve** (el _solver_): calcula los empujones que hacen falta para que nada se atraviese, respetando el rebote y el rozamiento, y los aplica.
+
+Una pila de cajas es difícil porque los empujones de cada caja dependen de los de las otras. El solver lo resuelve de a poco, con varias pasadas por paso, y guarda lo que calculó para empezar el paso siguiente desde ahí.
+
+</details>
+
+:::caution[Sutilezas]
+
+- **La memoria de Rapier no se libera sola.** Es memoria de WebAssembly, que el recolector de basura de JavaScript no ve. Un mundo que ya no se usa se libera con `world.free()`, como hace _restart_.
+- **Rapier cuenta con números de 32 bits.** JavaScript usa 64, así que una posición que entra a la física vuelve un poco redondeada: una milmillonésima de metro, para Rapier, no existe.
+- **Este ejemplo no interpola.** Dibuja cada cuerpo donde quedó en el último paso. A 60 pasos por segundo casi no se nota; el motor de Manifold dibuja entre los dos últimos pasos, como en la etapa 0.
+- **El azar de este ejemplo es `Math.random()`**, distinto cada vez. Para que un mundo se pueda repetir, haría falta la semilla de la etapa 0: eso viene en la lección de las repeticiones.
+  :::
+
+## En Manifold
+
+Rapier vive detrás de un solo archivo, la frontera con la física: [`packages/core/src/physics.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-01/packages/core/src/physics.ts). El resto del motor no importa Rapier: habla con esa frontera, en sus propios tipos. Cada entidad guarda solo el número de su cuerpo, nunca el cuerpo, así el estado del mundo sigue siendo datos simples. Y se usa la versión **determinista** de Rapier: hace sus cuentas igual en todas las máquinas. La [Bitácora de la etapa 1a](../../../bitacora/etapa-1a/) cuenta cómo se midió.
+
+## Para saber más
+
+- [La guía de Rapier para JavaScript](https://rapier.rs/docs/user_guides/javascript/getting_started_js) (en inglés): cuerpos, formas, uniones y consultas.

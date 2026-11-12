@@ -39,15 +39,15 @@ Saltearse los recuadros no te deja afuera de nada de lo que sigue. Cuando una le
 
 ## Qué vas a aprender
 
-El tutorial sigue las etapas del motor ([el plan completo](../proyecto/)). Cada etapa trae sus lecciones cuando el motor llega a ella. Hoy está la etapa 0.
+El tutorial sigue las etapas del motor ([el plan completo](../proyecto/)). Cada etapa trae sus lecciones cuando el motor llega a ella. Hoy están las etapas 0 y 1.
 
 El orden va de abajo hacia arriba: primero los cimientos (dibujar, el tiempo, el azar), después la física, y encima lo que se juega. Un personaje que se maneja aparece en la etapa 1, y los bots, en la 4. Los ejemplos son interactivos desde la primera lección; a partir de la etapa 1, además, se juegan.
 
 | Etapa                        | Las ideas                                                                                                                                                                                               | Estado         |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | **0. Cimientos**             | Cómo se dibuja en 3D. La escena, la cámara y el bucle. Orientar las cosas sin que se traben. Por qué la física avanza de a pasos fijos. Un azar que se puede repetir. Separar la simulación del dibujo. | **Disponible** |
-| **1. Física y un personaje** | Cuerpos que chocan, con un motor de física. **Un personaje que se maneja** con el teclado, el mouse o un joystick, y una cámara que lo sigue. Repetir una partida y comprobar que dio igual.            | La próxima     |
-| **2. Capacidades**           | Trepar, volar, agarrar: lo que un personaje sabe hacer, como piezas que se combinan.                                                                                                                    | Después        |
+| **1. Física y un personaje** | Cuerpos que chocan, con un motor de física. **Un personaje que se maneja** con el teclado, el mouse o un joystick, y una cámara que lo sigue. Repetir una partida y comprobar que dio igual.            | **Disponible** |
+| **2. Capacidades**           | Trepar, volar, agarrar: lo que un personaje sabe hacer, como piezas que se combinan.                                                                                                                    | La próxima     |
 | **3. Un mundo que responde** | Mecanismos (puertas, ascensores, botones), cosas que se rompen, luces que se apagan.                                                                                                                    | Más adelante   |
 | **4. Combate y bots**        | Armas, y **bots**: personajes que maneja la computadora. Patrullan, ven y oyen, persiguen, y usan el mundo; por ejemplo, un guardia que llama al ascensor.                                              | Más adelante   |
 | **5. Juegos**                | Tres juegos completos sobre el motor, con historia, niveles, gráficos y sonido: uno de plataformas, una aventura de acción y un shooter. Se juegan en este sitio.                                       | Más adelante   |
@@ -114,3 +114,11 @@ Este es el programa más chico posible: escribe en la consola con `console.log`,
 3. [El paso fijo](etapa-0/03-paso-fijo/): por qué la física no puede depender de la pantalla.
 4. [Azar con semilla](etapa-0/04-azar-con-semilla/): azar que se puede repetir.
 5. [Simulación y dibujo, separados](etapa-0/05-simulacion-y-dibujo/): lo que pasa y lo que se ve, en dos módulos que no se mezclan.
+
+## Etapa 1: física y un personaje
+
+0. [Un motor de física](etapa-1/00-motor-de-fisica/): cuerpos que caen, chocan y se apilan, calculados por Rapier.
+1. [Un personaje](etapa-1/01-un-personaje/): una cápsula que se maneja, sube escalones y salta. Por qué no es un cuerpo como los demás.
+2. [Repeticiones y fantasmas](etapa-1/02-repeticiones/): grabar una partida sin grabar el mundo, y comprobar con una huella que dio lo mismo.
+3. [Instantáneas](etapa-1/03-instantaneas/): guardar el mundo entero, física incluida, y volver a él.
+4. [Un servidor y un cliente](etapa-1/04-servidor-y-cliente/): dos copias del mismo mundo, la demora, y una desincronización a propósito.

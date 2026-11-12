@@ -112,7 +112,10 @@ test("the home page's doors lead to pages that exist, with what is new in each s
   const rooms = readdirSync(join(import.meta.dirname, '..', 'games', 'dojo', 'recipes')).filter((f) => f.endsWith('.txt'));
   await expect(page.locator('.mg-rooms a')).toHaveCount(rooms.length);
   // The number of lessons, and the latest report.
-  const lessons = readdirSync(join(DOCS, 'tutorial', 'etapa-0')).filter((f) => f.endsWith('.mdx'));
+  // (Every stage's: tutorial/etapa-0/, tutorial/etapa-1/…)
+  const lessons = readdirSync(join(DOCS, 'tutorial'))
+    .filter((d) => d.startsWith('etapa-'))
+    .flatMap((d) => readdirSync(join(DOCS, 'tutorial', d)).filter((f) => f.endsWith('.mdx')));
   await expect(doors.nth(1)).toContainText(`${lessons.length} lecciones`);
   await expect(doors.nth(2).locator('.mg-door-next a')).toHaveText(reports()[0]!.title);
 

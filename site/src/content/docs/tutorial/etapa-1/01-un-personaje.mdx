@@ -1,0 +1,65 @@
+---
+title: Un personaje
+description: Una cápsula que se maneja con el teclado, sube escalones y rampas, se desliza contra las paredes y salta. Por qué un personaje no es un cuerpo como los demás.
+sidebar:
+  order: 1
+---
+
+import LiveCode from '../../../../components/LiveCode.astro';
+
+En la lección anterior, la física movía todo. Pero un personaje no puede ser una caja más: si fuera un cuerpo **dinámico**, rodaría por las rampas, rebotaría al caer, se volcaría al chocar, y frenaría de a poco como una piedra que resbala. Un personaje tiene que **obedecer al jugador**: arrancar y frenar cuando se lo pide, y no caerse.
+
+La solución de casi todos los juegos: el personaje es un cuerpo **cinemático**, que el programa mueve, con un **controlador de personaje** (_character controller_). En cada paso, el programa dice cuánto _quiere_ moverse el personaje, y el controlador averigua cuánto _puede_: lo frena contra una pared, lo deja deslizar a lo largo de ella, lo sube a un escalón bajo y lo mantiene pegado al piso al bajar una rampa.
+
+<LiveCode lesson="stage-1/01-character" autorun />
+
+**Hacé clic en el dibujo** para darle el teclado. **WASD** o las flechas para caminar, **Espacio** para saltar. Hay escalones a la izquierda, una rampa al fondo y una pared a la derecha.
+
+**Qué probar:**
+
+1. **Caminá contra la pared en diagonal:** no se frena en seco, se desliza a lo largo de ella.
+2. **Subí los escalones caminando.** Después apagá _climbs steps_ (sube escalones): ahora se traba en el primero, y hay que saltar.
+3. **Bajá _steepest slope_** (la pendiente más empinada) **a 15°:** la rampa, de 18°, ya no se sube caminando.
+4. **Corré hasta el borde de un escalón y saltá justo después de caerte.** Con _coyote time_ (tiempo de coyote) en 6, el salto todavía vale. Ponelo en 0 y probá de nuevo: es mucho más difícil.
+
+## El código, paso a paso
+
+- **El cuerpo es cinemático y se mueve por posición** (`kinematicPositionBased`): en cada paso se le dice dónde estar al final (`setNextKinematicTranslation`), y la física lo lleva ahí, empujando lo que haya.
+- **Su forma es una cápsula** (`capsule(0.5, 0.3)`): un cilindro con las puntas redondas. Las puntas son la clave: una caja se trabaría en el borde de cada escalón, y una esfera no tendría altura.
+- **Lo que quiere moverse** (`desired`) se arma con las teclas y la velocidad vertical `vy`, a la que cada paso le resta la gravedad.
+- **`computeColliderMovement`** es el controlador: devuelve cuánto se puede mover de verdad (`computedMovement`), y si quedó parado sobre algo (`computedGrounded`). Si está en el piso, la velocidad vertical vuelve a cero.
+- **El salto se mira al apretar, no al mantener:** salta cuando Espacio está apretado ahora y no lo estaba en el paso anterior (`jumpWasHeld`). Si no, mantener Espacio lo haría saltar sin parar.
+- **Una tecla apretada y soltada entre dos pasos cuenta igual** (`pressed`): en una máquina lenta, un toque rápido se perdería.
+
+## Lo importante
+
+- **Un personaje es cinemático:** lo mueve el programa, con lo que pide el jugador. La física solo dice hasta dónde puede llegar.
+- **El controlador hace lo difícil:** deslizarse contra las paredes, subir escalones, respetar las pendientes y pegarse al piso.
+- **"Apretado" no es "mantenido".** Un salto, un disparo o una puerta pasan una vez por cada vez que se aprieta.
+- **Lo que se siente bien no es lo exacto.** El tiempo de coyote hace trampa a propósito: deja saltar un instante después de caerse, porque el jugador apretó "a tiempo" para su ojo.
+
+## Más a fondo
+
+<details>
+<summary>Cómo sabe el controlador hasta dónde llegar</summary>
+
+Hace un **barrido** (_shape cast_): mueve la cápsula, sin moverla de verdad, a lo largo del camino que se le pide, y busca lo primero que toca. Si toca algo, la deja justo antes, a 2 cm (el `offset` del controlador), y le resta al movimiento la parte que iba contra lo que tocó: lo que queda es un deslizamiento a lo largo de la superficie. Repite eso unas pocas veces por paso.
+
+Para un escalón, prueba otra cosa: subir la cápsula hasta la altura máxima de escalón (35 cm aquí), moverla hacia adelante, y bajarla. Si ahí hay piso, sube. Y para pegarse al piso al bajar, la empuja hacia abajo hasta 30 cm (`enableSnapToGround`) y, si encuentra piso, se queda ahí: sin eso, bajar una rampa sería ir dando saltitos.
+
+</details>
+
+:::caution[Sutilezas]
+
+- **El personaje no rota con la física.** Un cuerpo cinemático solo hace lo que se le dice, así que nunca se vuelca. Hacia dónde mira es cosa del programa.
+- **Las teclas son de la página que tiene el foco.** El ejemplo corre en un marco aparte (un _iframe_): hay que hacer clic en el dibujo para que reciba el teclado.
+- **Aquí "adelante" es siempre −Z.** En un juego en tercera persona, "adelante" es hacia donde mira la cámara: la cuenta es la misma, pero con las direcciones de la cámara aplastadas sobre el piso.
+  :::
+
+## En Manifold
+
+El personaje es un sistema del motor, con sus números como datos: [`packages/core/src/character.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-01/packages/core/src/character.ts). Además de esto, acelera y frena de a poco (rápido en el piso y lento en el aire), guarda el salto unos pasos si se apretó un poco antes de tocar el piso, toma su "arriba" de la gravedad y gira sin trigonometría. Se maneja con el teclado o con un mando, por la cámara o como un tanque, y la cámara lo sigue con correa. En la sala `course` del [Dojo](../../../jugar/dojo/course/) está todo junto. La Bitácora de las etapas [1b](../../../bitacora/etapa-1b/) y [1c2](../../../bitacora/etapa-1c2/) cuenta cómo se hizo.
+
+## Para saber más
+
+- [El controlador de personaje de Rapier](https://rapier.rs/docs/user_guides/javascript/character_controller) (en inglés).

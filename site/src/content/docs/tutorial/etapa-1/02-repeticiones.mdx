@@ -1,0 +1,66 @@
+---
+title: Repeticiones y fantasmas
+description: Grabar una partida sin grabar el mundo, volver a jugarla igual, y correr contra uno mismo. Y la huella que comprueba que dio exactamente lo mismo.
+sidebar:
+  order: 2
+---
+
+import LiveCode from '../../../../components/LiveCode.astro';
+
+¿Cómo se graba una partida para volver a verla? La primera idea es grabar dónde estaba cada cosa en cada instante, como un video. Funciona, pero pesa: cientos de números por paso, sesenta pasos por segundo.
+
+Hay una manera mucho más chica, si el mundo es **determinista**: si el mismo comienzo y las mismas órdenes dan siempre exactamente lo mismo. Entonces alcanza con anotar **cómo arrancó y qué pidió el jugador, y en qué paso**. Es como una partida de ajedrez: no se fotografía el tablero en cada jugada, se anotan las jugadas. Esa lista es una **repetición** (_replay_). Volver a jugarla en otro mundo, al lado del tuyo, es un **fantasma** (_ghost_): lo que hacen los juegos de carreras para correr contra tu mejor vuelta.
+
+<LiveCode lesson="stage-1/02-replays" autorun />
+
+La pelota celeste se mueve sola (un piloto automático) o con **WASD**, después de hacer clic en el dibujo. Empuja las cajas. Todo lo que pide queda grabado.
+
+**Qué probar:**
+
+1. **Dejala andar unos segundos y tocá _race your ghost_** (corré contra tu fantasma). El mundo empieza de nuevo, y una pelota transparente repite exactamente lo que hiciste, empujando sus propias cajas transparentes, también exactamente igual. Mirá _steps checked_ (pasos comprobados): sube, y _different hash_ (huella distinta) queda en 0.
+2. **Mirá _input changes_** (cambios de entrada): unas pocas decenas por cada mil pasos. Eso es todo lo que pesa la repetición.
+3. **Prendé _the ghost, one step late_** (el fantasma, un paso tarde) y volvé a correr contra él: con las mismas órdenes, cada una un solo paso más tarde, la huella cambia enseguida. A las pocas cajas empujadas, el fantasma ya va por otro lado.
+
+## El código, paso a paso
+
+- **`createWorld`** arma siempre el mismo mundo: las cajas salen del azar con semilla de la etapa 0 (`createRandom(7)`), así nacen en el mismo lugar cada vez.
+- **Lo que pide el jugador** (`Input`) es una dirección en el piso. Cada paso, `step(input)` empuja la pelota con eso y avanza la física.
+- **Se graba solo cuando cambia:** `recording.inputs` guarda `{ step, input }` cuando la dirección es distinta de la anterior. Mantener W apretada dos segundos es un solo cambio, no ciento veinte.
+- **La huella** (`hashOf`, en `hash.ts`) resume en un número dónde está cada cuerpo y cómo está girado. Se guarda una por paso (`recording.hashes`).
+- **El fantasma** es otro mundo, nacido igual. En su paso _k_ recibe lo que se pidió en el paso _k_, avanza, y su huella tiene que ser la grabada en el paso _k_. Si no, cuenta una diferencia, y anota el primer paso en que pasó.
+
+## Lo importante
+
+- **Una repetición no es el mundo:** es cómo nació, lo que se pidió, y en qué paso. Con un mundo determinista, eso alcanza para rehacerlo todo.
+- **El paso, no el tiempo.** "En el paso 96" es lo mismo en cualquier computadora; "a los 1,6 segundos", no. Por eso el paso fijo de la etapa 0 es la base de todo esto.
+- **La huella lo comprueba.** Comparar miles de números a mano no se puede; comparar un número por paso, sí. Y si dos simulaciones se separan, la huella dice en qué paso.
+- **Es frágil, y eso es lo bueno:** un solo paso de diferencia se nota enseguida. Si algo no es determinista, la huella lo encuentra.
+
+## Más a fondo
+
+<details>
+<summary>Lo que rompe el determinismo</summary>
+
+Cualquier cosa que no sea exactamente igual en las dos corridas:
+
+- **Un azar sin semilla.** `Math.random()` da otra cosa cada vez. Por eso las cajas salen de `createRandom(7)`, y el piloto automático tiene su propia semilla.
+- **El tiempo de la pantalla.** Si la física avanzara con el tiempo de cada cuadro, una máquina lenta daría otra partida.
+- **Las funciones aproximadas.** El estándar de JavaScript deja que cada navegador calcule `Math.sin`, `Math.cos` o `Math.atan2` a su manera, y el último bit puede cambiar. Dentro de un navegador da igual; entre dos, no. Rapier tiene una versión **determinista**, que hace sus cuentas igual en todos lados: es la que usan estos ejemplos y el motor.
+- **El −0.** Un número negativo muy chico, redondeado, da −0, que se escribe "0" y se lee como +0. Son bits distintos: si una repetición guardara −0 como texto, al volver daría otra huella. Al motor le pasó, y está en la [Bitácora de la etapa 1c2](../../../bitacora/etapa-1c2/).
+
+</details>
+
+:::caution[Sutilezas]
+
+- **El fantasma vive en otro mundo.** Lo que empuja no se mueve en el tuyo, y vos no lo podés tocar a él: por eso aquí cada uno tiene sus propias cajas.
+- **Una repetición es de la versión que la grabó.** Si el motor cambia lo que hace un paso, las mismas órdenes dan otra cosa. El motor de Manifold anota su versión en la primera línea de cada repetición, y una de otra versión avisa en vez de reproducirse mal.
+- **Esta huella es de las posiciones y los giros.** La del motor suma todo el estado del mundo: velocidades, el azar, lo que pide cada jugador. Dos mundos pueden estar en el mismo lugar y moverse distinto.
+  :::
+
+## En Manifold
+
+Las repeticiones del motor son texto que se puede leer, una cosa por línea: [`packages/core/src/replay.ts`](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/stage-01/packages/core/src/replay.ts). Entran en un enlace: en el Dojo, `replay export` arma uno, y quien lo abre ve la partida y comprueba la huella al final, en su navegador. `ghost` corre contra lo que acabás de hacer. Una prueba graba una corrida con el teclado en Chromium, Firefox y WebKit, y la reproduce en Node: la misma huella en los cuatro. Está en la [Bitácora de la etapa 1c](../../../bitacora/etapa-1c/).
+
+## Para saber más
+
+- [Deterministic lockstep](https://gafferongames.com/post/deterministic_lockstep/), de Glenn Fiedler (en inglés): repetir una simulación con sus entradas, y lo que hace falta para que dé igual.
