@@ -1,7 +1,16 @@
 export { World, STEP, type WorldOptions } from './world';
 export { Session, declareCore, registryFor, type InputChange, type SessionOptions, type WorldChange } from './session';
-export { COYOTE_STEPS, JUMP_BUFFER_STEPS, NO_INPUT, upAt } from './character';
-export { playReplay, replayFromText, replayOf, ReplayPlayer, replayToText, sessionFor, type Replay } from './replay';
+export { COYOTE_STEPS, JUMP_BUFFER_STEPS, NO_INPUT, turned, upAt } from './character';
+export {
+  playReplay,
+  REPLAY_VERSION,
+  replayFromText,
+  replayOf,
+  ReplayPlayer,
+  replayToText,
+  sessionFor,
+  type Replay,
+} from './replay';
 export { Clock } from './clock';
 export { stateHash } from './hash';
 export type { Cartridge } from './cartridge';

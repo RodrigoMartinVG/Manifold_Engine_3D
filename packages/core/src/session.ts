@@ -30,18 +30,31 @@ export interface InputChange {
 }
 
 /**
- * An input as it travels (in a replay, in a link, over the network): the movement rounded to
+ * An input as it travels (in a replay, in a link, over the network): its numbers rounded to
  * hundredths. Small, comparable, and without the noise of a camera that turns a little every frame.
  */
-const hundredths = (v: Vec3): Vec3 => [Math.round(v[0] * 100) / 100, Math.round(v[1] * 100) / 100, Math.round(v[2] * 100) / 100];
+const hundredth = (x: number) =>
+  // `|| 0`: a little negative number rounds to −0, which is written "0" and read back as +0; the two
+  // have different bits, so a replay of it gave another hash (stage 1c2). Here it is +0 from the start.
+  Math.round(x * 100) / 100 || 0;
+const hundredths = (v: Vec3): Vec3 => [hundredth(v[0]), hundredth(v[1]), hundredth(v[2])];
 const quantize = (i: PlayerInput): PlayerInput => ({
   move: hundredths(i.move),
+  ahead: hundredth(i.ahead),
+  side: hundredth(i.side),
+  turn: hundredth(i.turn),
   face: hundredths(i.face),
   jump: i.jump,
   run: i.run,
 });
 const sameInput = (a: PlayerInput, b: PlayerInput) =>
-  a.jump === b.jump && a.run === b.run && a.move.every((x, i) => x === b.move[i]) && a.face.every((x, i) => x === b.face[i]);
+  a.jump === b.jump &&
+  a.run === b.run &&
+  a.ahead === b.ahead &&
+  a.side === b.side &&
+  a.turn === b.turn &&
+  a.move.every((x, i) => x === b.move[i]) &&
+  a.face.every((x, i) => x === b.face[i]);
 
 /** A registry with what the engine and the cartridge declare (without the presentation or the console). */
 export function registryFor(cartridge: Cartridge): Registry<World> {

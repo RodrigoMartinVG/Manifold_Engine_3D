@@ -4,7 +4,7 @@ Where Manifold Gaming is going, how far it got, and what is left. It is updated 
 
 **Legend:** ✅ done · 🔨 in progress · ⬜ to do · 🔒 a decision is needed first
 
-**Now:** phase 1. Done: 1a, the friendlier console, 1b and 1c (the phase's demonstration works). Next: step 1d, the networking skeleton.
+**Now:** phase 1. Done: 1a, the friendlier console, 1b, 1c (the phase's demonstration works) and 1c2 (turning and the camera). Next: step 1d, the networking skeleton.
 
 ## The plan in one table
 
@@ -36,6 +36,7 @@ The games (decision [0012](docs/decisions/0012-the-games.md)): first three class
 - ✅ **Before 1b — The console and the camera, friendlier:** a free camera in the Dojo (drag to orbit, wheel to zoom, `camera.reset`); `help` with the game's examples; console output that can be clicked (examples, rooms, Tab options, suggestions with the whole line corrected); `inspect <id>` and a click on an object to inspect it; `reset [name]`; `vars` grouped by scope; clearer usage messages; `show.stats` with the physics step's time and the number of bodies.
 - ✅ **1b — The character and its camera:** a character as data (capsule, character controller: slides along walls, climbs 35 cm steps and 50° slopes, snaps to the ground, pushes cubes), coyote time and jump buffering, its "up" from the gravity (tested walking on a wall with gravity along −Z), player inputs through the session at concrete steps (kept only when they change, part of the hash), keyboard and gamepad turned into a world direction by where the camera looks, a follow camera (`view.camera`), and a classic level in the Dojo (`dojo.level course`).
 - ✅ **1c — Replays and ghosts:** a replay is the world's birth recipe, the inputs and console changes with their steps, and the last step's hash, as readable text; links (`#replay=…`, compressed) play it and check the hash at the end; `replay export|play|stop`; ghosts (`ghost`, `#ghost=…`) run another world in step, next to the player. The input gained "where to look" (`face`) before the format was fixed, for `view.camera aim`. A run driven with the keys in Chromium, Firefox and WebKit replays to the same hash in Node.
+- ✅ **1c2 — Turning and the camera:** a second key scheme, `controls.scheme tank`: W and S go where the character looks, A and D turn it on its own axis, Q and E (or Alt with A and D) go to its sides. The input gains `ahead`, `side` and `turn`, resolved in the simulation (where the character looks is the world's), turning without trigonometry. Cameras: `follow` on a leash (going to a side turns it), a new `chase` that comes back behind the character, the gamepad's right stick, and aim's vertical mouse the right way round. Replays carry a version (`# Manifold replay 2`) and write inputs as words; a little negative input rounded to −0 no longer gives another hash on replay.
 - ⬜ **1d — The networking skeleton:** a client and a server that run the same world, early, so it shapes everything else (decision 0000, rule 6).
 - ⬜ **The phase's lessons:** a physics engine (Rapier in the live examples: it has to be added to `site/scripts/vendor.mjs`), the character and its camera, replays.
 - ✅ **The demonstration:** a character runs and jumps in a classic level, and its replay gives the same hash — in Chromium, Firefox, WebKit and Node. The seed of the platformer.
@@ -89,3 +90,4 @@ The games (decision [0012](docs/decisions/0012-the-games.md)): first three class
 - ⬜ **Firefox and WebKit in continuous integration** — the physics determinism test runs in them locally; in GitHub, only Chromium until their WebGL is checked on Linux.
 - ⬜ **The hash on every step** — 1.8 ms with 200 bodies, three times a physics step; to revisit if replays need it on every step.
 - ⬜ **Rapier's usual build** — whether it would also be deterministic across browsers was not measured; the deterministic one was chosen so as not to depend on it.
+- ⬜ **Shorter replay links** — 30 s in the course with the camera turning is about 5,900 characters (every little turn changes the direction asked for); some chat apps cut links that long. The direction could be kept coarser, or in binary.

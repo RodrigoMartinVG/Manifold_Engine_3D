@@ -18,6 +18,19 @@ async function typeInConsole(page: Page, ...lines: string[]) {
   }
 }
 
+/** Pauses, exports the run as a replay link from the console, and gives the link and its text. */
+async function exportReplay(page: Page) {
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'pause', 'replay export');
+  const log = page.locator('.mg-console-log');
+  await expect(log).toContainText('#replay=', { timeout: 10_000 });
+  const link = (await log.innerText())
+    .split('\n')
+    .find((l) => l.includes('#replay='))!
+    .trim();
+  return { link, text: (await replayFromFragment(new URL(link).hash, 'replay='))! };
+}
+
 test('the same world in the browser and in Node gives the same hash after the same steps', async ({ page }) => {
   // Forty cubes falling on the floor and on the spinning cube: collisions, bounces, piles.
   await page.goto('jugar/dojo/#recipe=seed+7;dojo.cubes+40');
@@ -68,19 +81,11 @@ test('a run driven with the keys, as a replay link: Node plays it to the same ha
   await page.waitForTimeout(600);
   await page.keyboard.up('KeyD');
   await page.keyboard.up('KeyW');
-  await page.keyboard.press('Backquote');
-  await typeInConsole(page, 'pause', 'replay export');
-  const log = page.locator('.mg-console-log');
-  await expect(log).toContainText('#replay=', { timeout: 10_000 });
-  const link = (await log.innerText())
-    .split('\n')
-    .find((l) => l.includes('#replay='))!
-    .trim();
+  const { link, text } = await exportReplay(page);
 
   // In Node, outside any browser: the same world, the same inputs at the same steps, the same hash.
-  const text = (await replayFromFragment(new URL(link).hash, 'replay='))!;
   expect(text).toContain('birth dojo.level course');
-  expect(text).toMatch(/^input \d+ 1 /m);
+  expect(text).toMatch(/^input \d+ 1 move /m);
   await initPhysics();
   const { session, same } = playReplay(DojoCartridge, replayFromText(text));
   expect(same).toBe(true);
@@ -90,4 +95,33 @@ test('a run driven with the keys, as a replay link: Node plays it to the same ha
   await page.goto('about:blank');
   await page.goto(link);
   await expect(page.locator('#game')).toHaveAttribute('data-replay', 'same', { timeout: 90_000 });
+});
+
+test('tank controls turn without trigonometry: a run that turns, recorded in the browser, gives the same hash in Node', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const facing = async () => ((await page.locator('#game').getAttribute('data-facing')) ?? '').split(' ').map(Number);
+  await page.goto('jugar/dojo/course/#recipe=controls.scheme+tank');
+  await expect.poll(async () => (await facing()).length, { timeout: 20_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  // Forward while turning left (a curve), then to the right side with Alt held (as in the old shooters).
+  await page.keyboard.down('KeyW');
+  await page.keyboard.down('KeyA');
+  await expect.poll(async () => (await facing())[0], { timeout: 30_000 }).toBeLessThan(-0.5);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.down('Alt');
+  await page.keyboard.down('KeyD');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('Alt');
+  await page.keyboard.up('KeyW');
+  const { text } = await exportReplay(page);
+  expect(text).toMatch(/^input \d+ 1 ahead 1 turn -1$/m);
+  expect(text).toMatch(/^input \d+ 1 ahead 1 side 1$/m);
+
+  await initPhysics();
+  const { session, same } = playReplay(DojoCartridge, replayFromText(text));
+  expect(same).toBe(true);
+  session.world.dispose();
 });

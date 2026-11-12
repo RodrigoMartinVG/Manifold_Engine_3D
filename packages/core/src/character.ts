@@ -4,7 +4,15 @@ import type { Character, CharacterSpec, Entity, PlayerInput } from './types';
 import type { World } from './world';
 
 /** What a player who asks for nothing asks for. */
-export const NO_INPUT: Readonly<PlayerInput> = { move: [0, 0, 0], face: [0, 0, 0], jump: false, run: false };
+export const NO_INPUT: Readonly<PlayerInput> = {
+  move: [0, 0, 0],
+  ahead: 0,
+  side: 0,
+  turn: 0,
+  face: [0, 0, 0],
+  jump: false,
+  run: false,
+};
 
 /** A jump is still allowed this many steps after leaving an edge (0.1 s): "coyote time". */
 export const COYOTE_STEPS = 6;
@@ -27,6 +35,7 @@ export function newCharacter(spec: CharacterSpec): Character {
     jumpPending: 0,
     jumpHeld: false,
     facing: [...(spec.facing ?? [0, 0, -1])],
+    turnSpeed: spec.turnSpeed ?? 3,
   };
 }
 
@@ -38,12 +47,31 @@ export function upAt(world: World, position: Vec3): Vec3 {
 }
 
 /**
+ * Where it looks after turning `turn` (from −1 to 1, + to the right) during one step, WITHOUT
+ * TRIGONOMETRY (stage 1c2). Turning an angle takes a sine and a cosine, and the standard lets every
+ * JavaScript engine compute them its own way: the last bits can differ, and a replay would end
+ * somewhere else in another browser. Instead: a little of its right side is added to where it looks,
+ * and the result is brought back to length 1. Additions, multiplications and a square root, which give
+ * the same bits everywhere.
+ *
+ * It turns atan(k) instead of k radians (k = the speed × the step × `turn`): at 3 rad/s and 60 steps
+ * per second, k = 0.05, and the difference is less than a thousandth.
+ */
+export function turned(facing: Vec3, up: Vec3, turn: number, turnSpeed: number, dt: number): Vec3 {
+  const ahead = vec3.onPlane(facing, up);
+  if (vec3.length(ahead) < 1e-6) return facing; // looking straight up or down: there is no turning
+  const right = vec3.cross(ahead, up);
+  return vec3.normalize(vec3.add(ahead, vec3.scale(right, turnSpeed * dt * turn)));
+}
+
+/**
  * THE CHARACTER SYSTEM, one step of one character (stage 1b). All its math is additions,
  * multiplications and square roots (no trigonometry): the same bits in every browser.
  *
- *   1. its velocity splits into "up" (along its up) and "horizontal" (the rest);
- *   2. the horizontal part goes towards what the player asks for, by an acceleration (quick on the
- *      ground, slow in the air: it can still steer a jump, a little);
+ *   1. it turns on its own axis, if asked to (stage 1c2);
+ *   2. its velocity splits into "up" (along its up) and "horizontal" (the rest); the horizontal part
+ *      goes towards what the player asks for (in the world, or by where the character looks), by an
+ *      acceleration (quick on the ground, slow in the air: it can still steer a jump, a little);
  *   3. a jump: asked for (pressed, not held), kept a few steps if it was too early, allowed a few
  *      steps after leaving an edge;
  *   4. gravity;
@@ -60,10 +88,19 @@ export function moveCharacter(world: World, e: Entity, dt: number) {
   const gravity = vec3.length(gravityAt(world.gravity, e.transform!.position));
   const up = upAt(world, e.transform!.position);
 
-  // 1 and 2: the velocity, split; the horizontal part towards what is asked for.
+  // 1: turning on its own axis (where it looks may be told instead: that comes first).
+  const face = vec3.onPlane(input.face, up);
+  const told = vec3.length(face) > 0.1;
+  if (!told && input.turn !== 0) c.facing = turned(c.facing, up, input.turn, c.turnSpeed, dt);
+
+  // 2: the velocity, split; the horizontal part towards what is asked for: in the world, plus forward
+  // and to the side by where it looks now.
   let vUp = vec3.dot(c.velocity, up);
   let vH = vec3.onPlane(c.velocity, up);
-  let move = vec3.onPlane(input.move, up);
+  const inWorld = vec3.onPlane(input.move, up);
+  const ahead = vec3.normalize(vec3.onPlane(c.facing, up));
+  const right = vec3.cross(ahead, up);
+  let move = vec3.add(inWorld, vec3.add(vec3.scale(ahead, input.ahead), vec3.scale(right, input.side)));
   const asked = vec3.length(move);
   if (asked > 1) move = vec3.scale(move, 1 / asked);
   const target = vec3.scale(move, input.run ? c.runSpeed : c.walkSpeed);
@@ -95,10 +132,10 @@ export function moveCharacter(world: World, e: Entity, dt: number) {
   c.grounded = grounded;
   c.stepsInAir = grounded ? 0 : c.stepsInAir + 1;
   c.velocity = vec3.add(vH, vec3.scale(up, vUp));
-  // Where it looks: where it is told to, if it is told; if not, where it moves.
-  const face = vec3.onPlane(input.face, up);
-  if (vec3.length(face) > 0.1) c.facing = vec3.normalize(face);
-  else if (asked > 0.1) c.facing = vec3.normalize(move);
+  // Where it looks: where it is told to, if it is told; if not, where it moves in the world. (Moving
+  // by where it looks does not change it: walking back would turn it around, and back again.)
+  if (told) c.facing = vec3.normalize(face);
+  else if (vec3.length(inWorld) > 0.1) c.facing = vec3.normalize(inWorld);
   const position = vec3.add(world.physics.position(body.handle), movement);
   world.physics.setNextPose(body.handle, position, quat.look(c.facing, up));
 }

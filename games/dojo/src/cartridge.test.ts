@@ -2,6 +2,7 @@ import { beforeAll, expect, test } from 'vitest';
 import { quat } from '@manifold/common';
 import {
   initPhysics,
+  NO_INPUT,
   playReplay,
   registryFor,
   replayFromText,
@@ -153,7 +154,7 @@ test('dojo.level course builds a classic level with player 1 character, who land
   const start = hero.transform!.position[2];
   // Forward (−Z, towards the course) for half a second.
   for (let i = 0; i < 30; i++) {
-    session.setInput(1, { move: [0, 0, -1], face: [0, 0, 0], jump: false, run: false });
+    session.setInput(1, { ...NO_INPUT, move: [0, 0, -1] });
     session.step();
   }
   expect(hero.transform!.position[2]).toBeLessThan(start - 1.5);
@@ -164,7 +165,7 @@ test('a run through the course, recorded and played again, ends in the same worl
   const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course; dojo.cubes 6') });
   for (let step = 1; step <= 300; step++) {
     const move: [number, number, number] = step < 60 ? [0, 0, 0] : step < 200 ? [0.3, 0, -1] : [-1, 0, 0];
-    session.setInput(1, { move, face: [0, 0, 0], jump: step >= 150 && step < 155, run: step > 200 });
+    session.setInput(1, { ...NO_INPUT, move, jump: step >= 150 && step < 155, run: step > 200 });
     session.step();
   }
   const replay = replayFromText(replayToText(replayOf(session)));

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from 'vitest';
 import { quat, vec3, type Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
-import { COYOTE_STEPS } from './character';
+import { COYOTE_STEPS, NO_INPUT, turned } from './character';
 import { stateHash } from './hash';
 import { initPhysics } from './physics';
 import { Session } from './session';
@@ -12,6 +12,7 @@ beforeAll(initPhysics);
 
 const STAND = 0.8; // a capsule 1.6 m tall stands with its center 0.8 m above the floor
 const input = (move: Vec3 = [0, 0, 0], jump = false, run = false, face: Vec3 = [0, 0, 0]): PlayerInput => ({
+  ...NO_INPUT,
   move,
   face,
   jump,
@@ -246,6 +247,53 @@ describe('the character (stage 1b)', () => {
     world.dispose();
   });
 
+  test('it turns on its own axis without moving, and walks where it looks: forward, back and to the side (tank controls)', () => {
+    const { world, hero } = setUp();
+    run(world, 60);
+    const at: Vec3 = [...hero.transform!.position];
+    // Half a second turning right: 30 steps of atan(3 / 60), about 86°; it does not move.
+    run(world, 30, () => ({ ...NO_INPUT, turn: 1 }));
+    const facing = hero.character!.facing;
+    expect(Math.acos(vec3.dot(facing, [0, 0, -1]))).toBeCloseTo(30 * Math.atan(3 / 60), 9);
+    expect(vec3.length(facing)).toBeCloseTo(1, 12);
+    expect(facing[1]).toBe(0);
+    expect(vec3.length(vec3.sub(hero.transform!.position, at))).toBeLessThan(0.01);
+    // Forward: where it looks (+X, almost), and it keeps looking there.
+    run(world, 60, () => ({ ...NO_INPUT, ahead: 1 }));
+    expect(hero.transform!.position[0] - at[0]!).toBeGreaterThan(4);
+    expect(hero.character!.facing).toEqual(facing);
+    // Back: it does not turn around (it would, if it looked where it moves).
+    const front = hero.transform!.position[0];
+    run(world, 30, () => ({ ...NO_INPUT, ahead: -1 }));
+    expect(hero.transform!.position[0]).toBeLessThan(front - 1); // (it first stops: it was going forward)
+    expect(hero.character!.facing).toEqual(facing);
+    // To its right (+Z, looking at +X), without turning.
+    const z = hero.transform!.position[2];
+    run(world, 30, () => ({ ...NO_INPUT, side: 1 }));
+    expect(hero.transform!.position[2]).toBeGreaterThan(z + 1.5);
+    expect(hero.character!.facing).toEqual(facing);
+    world.dispose();
+  });
+
+  test('turning is additions, multiplications and a square root: atan(k) per step, on its ground, of length 1', () => {
+    const k = 3 / 60;
+    const once = turned([0, 0, -1], [0, 1, 0], 1, 3, 1 / 60);
+    expect(Math.acos(vec3.dot(once, [0, 0, -1]))).toBeCloseTo(Math.atan(k), 12);
+    expect(once[0]).toBeGreaterThan(0); // + is to the right: from −Z towards +X
+    // Looking a little up, it turns on its ground (perpendicular to its up).
+    const tilted = turned([0, 0.3, -1], [0, 1, 0], -1, 3, 1 / 60);
+    expect(tilted[1]).toBe(0);
+    expect(vec3.length(tilted)).toBeCloseTo(1, 12);
+    expect(tilted[0]).toBeLessThan(0);
+  });
+
+  test('told where to look, turning does nothing: where to look comes first', () => {
+    const { world, hero } = setUp();
+    run(world, 30, () => ({ ...NO_INPUT, turn: 1, face: [0, 0, -1] }));
+    expect(hero.character!.facing).toEqual([0, 0, -1]);
+    world.dispose();
+  });
+
   test('its "up" comes from the gravity: with gravity along −Z, it stands on a wall that is a floor', () => {
     // The same world turned: gravity towards −Z, and a "floor" whose top is at z = 0.
     const world = new World({ seed: 1, gravity: { kind: 'uniform', vector: [0, 0, -9.81] } });
@@ -319,6 +367,9 @@ describe('the players inputs, through the session', () => {
     a.session.setInput(1, input([0.123456, 0, 0]));
     a.session.step();
     expect(a.session.inputs.at(-1)!.input.move).toEqual([0.12, 0, 0]);
+    a.session.setInput(1, { ...NO_INPUT, ahead: 0.987, side: -0.333, turn: 0.4567 });
+    a.session.step();
+    expect(a.session.inputs.at(-1)!.input).toMatchObject({ ahead: 0.99, side: -0.33, turn: 0.46 });
     a.session.world.dispose();
     b.session.world.dispose();
   });

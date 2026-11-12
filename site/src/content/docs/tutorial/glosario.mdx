@@ -132,8 +132,11 @@ El texto del tutorial está en español y el código, en inglés ([por qué](../
 | pegarse al piso          | _snap to ground_       | al bajar un escalón o una rampa, seguir tocando el piso                               |
 | pendiente                | _slope_                | hasta qué inclinación se sube caminando                                               |
 | techo                    | _ceiling_              | lo que corta un salto: un choque arriba de la cabeza                                  |
-| cámara que sigue         | _follow camera_        | en la consola, `view.camera follow`                                                   |
-| mando                    | _gamepad_              | el joystick: stick izquierdo, A y B                                                   |
+| cámara que sigue         | _follow camera_        | en la consola, `view.camera follow`: va atada con una correa (_leash_)                |
+| cámara que persigue      | _chase camera_         | vuelve sola detrás del personaje: `view.camera chase`                                 |
+| controles de tanque      | _tank controls_        | A y D giran al personaje sobre su eje, W avanza hacia donde mira: `controls.scheme`   |
+| girar                    | _turn_                 | en lo que pide el jugador, `turn`: girar sobre su eje, sin trigonometría              |
+| mando                    | _gamepad_              | el joystick: stick izquierdo, stick derecho, A y B                                    |
 | apuntar                  | _aim_                  | en la consola, `view.camera aim`: el personaje mira hacia donde mira la cámara        |
 | moverse de costado       | _strafe_               | caminar hacia un lado sin girar                                                       |
 | tomar el mouse           | _pointer lock_         | el mouse deja de mover la flecha y gira la cámara; Esc lo suelta                      |
@@ -173,7 +176,8 @@ Y los nombres que hay hoy:
 | `reset`           | vuelve una variable (o todas, sin nombre) a su valor de siempre: `reset dojo.cubes`                                               |
 | `inspect`         | de qué está hecha una entidad, con sus números: `inspect 1` (_inspect_: inspeccionar); un clic sobre un objeto hace lo mismo      |
 | `camera.reset`    | la cámara vuelve a donde empezó, o detrás del personaje                                                                           |
-| `view.camera`     | con un personaje: `follow` lo sigue, `aim` apunta con el mouse, `free` deja la cámara donde está                                  |
+| `view.camera`     | con un personaje: `follow` lo sigue, `chase` vuelve detrás de él, `aim` apunta con el mouse, `free` deja la cámara donde está     |
+| `controls.scheme` | cómo manejan las teclas al personaje: `camera`, según la cámara, o `tank`, según hacia dónde mira él (_scheme_: esquema)          |
 | `replay`          | la repetición de este mundo: `replay export` arma un enlace, `replay play` la vuelve a mostrar, `replay stop` devuelve el control |
 | `ghost`           | vuelve a empezar con un fantasma que repite lo que hiciste; `ghost export` arma el enlace, `ghost clear` lo saca                  |
 | `seed`            | la semilla del azar del mundo                                                                                                     |

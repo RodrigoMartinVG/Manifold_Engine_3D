@@ -1,8 +1,10 @@
 import { splitLines } from '@manifold/commands';
 import type { Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
+import { NO_INPUT } from './character';
 import { stateHash } from './hash';
 import { registryFor, Session, type InputChange, type WorldChange } from './session';
+import type { PlayerInput } from './types';
 
 /**
  * A REPLAY (stage 1c): everything needed to play a session again, step by step, and to check that it
@@ -36,28 +38,48 @@ export function replayOf(session: Session): Replay {
   };
 }
 
+/**
+ * THE VERSION of the replays this engine plays. A replay is tied to the engine that recorded it, and
+ * not only to its text: if the simulation keeps one more number (stage 1c2: the input's `ahead`, `side`
+ * and `turn`, the character's `turnSpeed`), the same inputs give another hash. So it goes up whenever
+ * the simulation changes what a replay gives, and an older replay says so instead of "different".
+ */
+export const REPLAY_VERSION = 2;
 const HEADER = '# Manifold replay';
 const hex = (n: number) => n.toString(16).padStart(8, '0');
-const numbers = (v: Vec3) => v.join(' ');
+const zero = (v: Vec3) => v.every((x) => x === 0);
+
+/** What a player asked for, as words: only what is not zero (`input 41 1` is "nothing"). */
+function inputText(i: InputChange): string {
+  const { move, ahead, side, turn, face, jump, run } = i.input;
+  return [
+    `input ${i.step} ${i.player}`,
+    ...(zero(move) ? [] : [`move ${move.join(' ')}`]),
+    ...(ahead ? [`ahead ${ahead}`] : []),
+    ...(side ? [`side ${side}`] : []),
+    ...(turn ? [`turn ${turn}`] : []),
+    ...(zero(face) ? [] : [`face ${face.join(' ')}`]),
+    ...(jump ? ['jump'] : []),
+    ...(run ? ['run'] : []),
+  ].join(' ');
+}
 
 /**
  * As text, one thing per line, in step order: it can be read, and compared by eye.
  *
- *   # Manifold replay
+ *   # Manifold replay 2               the version (see REPLAY_VERSION)
  *   game dojo
  *   birth dojo.level course
- *   input 41 1 0 0 -1 0 0 0 -        step, player, move (x y z), face (x y z), j = jump, r = run
- *   change 120 dojo.spawn 0 5 0      step, and the line typed in the console
- *   end 600 1a2b3c4d                 the last step, and its hash
+ *   input 41 1 move 0 0 -1            step, player, and what is not zero: move (x y z), ahead,
+ *   input 96 1 ahead 1 turn -1 jump     side, turn, face (x y z), jump, run
+ *   change 120 dojo.spawn 0 5 0       step, and the line typed in the console
+ *   end 600 1a2b3c4d                  the last step, and its hash
  */
 export function replayToText(r: Replay): string {
-  const lines = [HEADER, `game ${r.game}`, ...splitLines(r.birth).map((l) => `birth ${l}`)];
+  const lines = [`${HEADER} ${REPLAY_VERSION}`, `game ${r.game}`, ...splitLines(r.birth).map((l) => `birth ${l}`)];
   const events: [step: number, line: string][] = [
     ...r.changes.map((c): [number, string] => [c.step, `change ${c.step} ${c.line}`]),
-    ...r.inputs.map((i): [number, string] => {
-      const flags = `${i.input.jump ? 'j' : ''}${i.input.run ? 'r' : ''}` || '-';
-      return [i.step, `input ${i.step} ${i.player} ${numbers(i.input.move)} ${numbers(i.input.face)} ${flags}`];
-    }),
+    ...r.inputs.map((i): [number, string] => [i.step, inputText(i)]),
   ];
   // By step; at the same step, the changes first (the session applies them first). Stable otherwise.
   events.sort((a, b) => a[0] - b[0] || Number(b[1].startsWith('change')) - Number(a[1].startsWith('change')));
@@ -73,7 +95,11 @@ export function replayFromText(text: string): Replay {
   const fail = (n: number, why: string): never => {
     throw new Error(`replay, line ${n + 1}: ${why}`);
   };
-  if (rows[0]?.trim() !== HEADER) fail(0, `it must start with "${HEADER}"`);
+  const header = /^# Manifold replay(?: (\d+))?$/.exec(rows[0]?.trim() ?? '');
+  if (!header) fail(0, `it must start with "${HEADER} ${REPLAY_VERSION}"`);
+  const version = header![1] ? Number(header![1]) : 1;
+  if (version !== REPLAY_VERSION)
+    fail(0, `a replay of version ${version}, and this engine plays version ${REPLAY_VERSION}: it was recorded by another engine`);
   rows.forEach((row, n) => {
     const line = row.trim();
     if (!line || line.startsWith('#')) return;
@@ -94,19 +120,18 @@ export function replayFromText(text: string): Replay {
         replay.changes.push({ step: integer(rest[0]), line: line.replace(/^change\s+\d+\s+/, '') });
         break;
       case 'input': {
-        if (rest.length !== 9) fail(n, 'an input has a step, a player, a move, a face and its flags');
-        const flags = rest[8]!;
-        if (!/^(-|j|r|jr)$/.test(flags)) fail(n, `"${flags}" are not flags (-, j, r or jr)`);
-        replay.inputs.push({
-          step: integer(rest[0]),
-          player: integer(rest[1]),
-          input: {
-            move: [number(rest[2]), number(rest[3]), number(rest[4])],
-            face: [number(rest[5]), number(rest[6]), number(rest[7])],
-            jump: flags.includes('j'),
-            run: flags.includes('r'),
-          },
-        });
+        const input: PlayerInput = { ...NO_INPUT, move: [0, 0, 0], face: [0, 0, 0] };
+        const vector = (at: number): Vec3 => [number(rest[at]), number(rest[at + 1]), number(rest[at + 2])];
+        for (let at = 2; at < rest.length; at++) {
+          const word = rest[at];
+          if (word === 'move' || word === 'face') {
+            input[word] = vector(at + 1);
+            at += 3;
+          } else if (word === 'ahead' || word === 'side' || word === 'turn') input[word] = number(rest[++at]);
+          else if (word === 'jump' || word === 'run') input[word] = true;
+          else fail(n, `"${word}" is not part of an input (move, ahead, side, turn, face, jump, run)`);
+        }
+        replay.inputs.push({ step: integer(rest[0]), player: integer(rest[1]), input });
         break;
       }
       case 'end':

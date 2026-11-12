@@ -21,7 +21,7 @@ import {
   type World,
 } from '@manifold/core';
 import { mountConsole, type ConsoleOptions, type GameConsole } from './console';
-import { mountPlayerControls } from './player';
+import { mountPlayerControls, type ControlScheme } from './player';
 import { GHOST_PREFIX, REPLAY_PREFIX, replayToFragment } from './replay-link';
 
 /** A recipe to start with, and where it comes from (for the warnings: "the link's recipe…"). */
@@ -183,7 +183,11 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   // ---------- What the view lets people change (decision 0010: scope "view") ----------
   let wireframe = false;
   // (Declared here, before the recipes run: a recipe may bring `view.camera free`.)
-  let cameraMode: 'follow' | 'aim' | 'free' = 'follow';
+  let cameraMode: 'follow' | 'chase' | 'aim' | 'free' = 'follow';
+  let scheme: ControlScheme = 'camera';
+  /** When the camera was last turned by hand (a drag, the right stick): `chase` waits a little before coming back. */
+  let turnedByHand = -Infinity;
+  let dragging = false;
   let timescale = 1;
   let paused = false;
   registry.declareVariable({
@@ -284,13 +288,22 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     args: [{ name: 'id', type: { kind: 'integer', min: 1 }, optional: true }],
     run: ([id], out) => out.write(typeof id === 'number' ? inspectEntity(session.world, id) : countEntities(session.world)),
   });
+  registry.declareVariable({
+    name: 'controls.scheme',
+    description:
+      "How the keys (and a gamepad's left stick) drive the character: `camera` goes by where the camera looks (W forward, A and D to its sides; the character looks where it walks); `tank` goes by where the character looks: W and S forward and back, A and D turn it on its own axis, Q and E (or A and D with Alt held) go to its sides. With `view.camera aim` the mouse turns it, and the keys go by the camera.",
+    scope: 'view',
+    type: { kind: 'option', options: ['camera', 'tank'] },
+    default: 'camera',
+    onChange: (v) => (scheme = v as ControlScheme),
+  });
   if (controls) {
     registry.declareVariable({
       name: 'view.camera',
       description:
-        "With a character to drive: `follow` keeps the camera behind it, and dragging turns it around (the character looks where it walks: a platformer's way); `aim` takes the mouse with a click, the mouse turns the camera and the character looks where the camera looks, walking sideways without turning (a shooter's way; Esc lets the mouse go); `free` leaves the camera where it is.",
+        "With a character to drive: `follow` follows it as if on a leash: it keeps its distance, and turns little by little when the character goes to a side (dragging turns it around); `chase` goes back behind the character by itself (dragging looks around, and it comes back when you let go: for `controls.scheme tank`); `aim` takes the mouse with a click, the mouse turns the camera and the character looks where the camera looks, walking sideways without turning (a shooter's way; Esc lets the mouse go); `free` leaves the camera where it is. A gamepad's right stick turns it too.",
       scope: 'view',
-      type: { kind: 'option', options: ['follow', 'aim', 'free'] },
+      type: { kind: 'option', options: ['follow', 'chase', 'aim', 'free'] },
       default: 'follow',
       onChange: (v) => {
         cameraMode = v as typeof cameraMode;
@@ -298,6 +311,11 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
         if (controls) controls.enableRotate = cameraMode !== 'aim';
         if (cameraMode !== 'aim' && document.pointerLockElement === renderer.domElement) document.exitPointerLock();
       },
+    });
+    controls.addEventListener('start', () => (dragging = true));
+    controls.addEventListener('end', () => {
+      dragging = false;
+      turnedByHand = performance.now();
     });
     registry.declareCommand({
       name: 'camera.reset',
@@ -384,18 +402,26 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     const offset = camera.position.clone().sub(controls.target).applyAxisAngle(axis, angle);
     camera.position.copy(controls.target).add(offset);
   };
-  const onMouseMove = (e: MouseEvent) => {
-    if (cameraMode !== 'aim' || !controls || document.pointerLockElement !== renderer.domElement) return;
+  /**
+   * Turns the camera around what it looks at, to look right (+dx) and down (+dy), in radians. To look
+   * down the camera goes up (stage 1c2: it was the other way round, unlike dragging and most games).
+   */
+  const orbit = (dx: number, dy: number) => {
+    if (!controls) return;
     const up = camera.up.clone().normalize();
-    turnAround(up, -e.movementX * 0.0025);
-    // Up and down, without going past the top or the bottom (it would turn upside down).
+    turnAround(up, -dx);
+    // Without going past the top or the bottom (it would turn upside down).
     const offset = camera.position.clone().sub(controls.target);
-    const tilt = offset.angleTo(up) + e.movementY * 0.0025;
+    const tilt = offset.angleTo(up) - dy;
     if (tilt > 0.15 && tilt < Math.PI - 0.15) {
       const right = new THREE.Vector3().crossVectors(up, offset).normalize();
-      turnAround(right, e.movementY * 0.0025);
+      turnAround(right, -dy);
     }
     camera.lookAt(controls.target);
+  };
+  const onMouseMove = (e: MouseEvent) => {
+    if (cameraMode !== 'aim' || !controls || document.pointerLockElement !== renderer.domElement) return;
+    orbit(e.movementX * 0.0025, e.movementY * 0.0025);
   };
   document.addEventListener('mousemove', onMouseMove);
 
@@ -627,7 +653,9 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     const hero = player();
     if (hero?.transform && !playback) {
       const look = camera.getWorldDirection(new THREE.Vector3());
-      const asked = playerControls.read([look.x, look.y, look.z], upAt(session.world, hero.transform.position));
+      // (Aiming, the mouse turns it: the keys go by the camera, whatever the scheme.)
+      const keys = cameraMode === 'aim' ? 'camera' : scheme;
+      const asked = playerControls.read([look.x, look.y, look.z], upAt(session.world, hero.transform.position), keys);
       // Aiming, the character looks where the camera looks (the core keeps only its horizontal part).
       session.setInput(1, cameraMode === 'aim' ? { ...asked, face: [look.x, look.y, look.z] } : asked);
     }
@@ -661,14 +689,43 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
         ghost.mesh.quaternion.set(...g.rotation);
       }
     }
-    // The camera follows the character: it moves as much as its head moved (the mouse still turns it).
+    // A gamepad's right stick turns the camera (2.5 radians per second, pushed all the way).
+    const [stickX, stickY] = playerControls.cameraStick();
+    if (controls && (stickX || stickY)) {
+      orbit(stickX * 2.5 * dt, stickY * 2.5 * dt);
+      turnedByHand = now;
+    }
     const heroMesh = hero && meshes.get(hero.id);
-    if (controls && cameraMode !== 'free' && heroMesh && hero?.transform) {
-      const up = upAt(world, hero.transform.position);
-      const head = heroMesh.position.clone().addScaledVector(new THREE.Vector3(...up), 0.6);
-      const moved = head.sub(controls.target);
-      controls.target.add(moved);
-      camera.position.add(moved);
+    if (controls && cameraMode !== 'free' && heroMesh && hero?.transform && hero.character) {
+      const up = new THREE.Vector3(...upAt(world, hero.transform.position));
+      const head = heroMesh.position.clone().addScaledVector(up, 0.6);
+      if (cameraMode === 'aim') {
+        // Aiming, it moves as much as the head moved (the mouse turns it).
+        const moved = head.sub(controls.target);
+        controls.target.add(moved);
+        camera.position.add(moved);
+      } else {
+        // ON A LEASH (stage 1c2): the camera keeps its height and its distance (along the ground) to
+        // the head, but it stays where it is as long as it can. Going away pulls it along, coming
+        // closer pushes it back, and going to a side turns it, little by little (before, it only moved
+        // as much as the head: it never turned by itself).
+        const offset = camera.position.clone().sub(controls.target);
+        const height = offset.dot(up);
+        const reach = offset.addScaledVector(up, -height).length();
+        const along = camera.position.clone().sub(head);
+        along.addScaledVector(up, -along.dot(up));
+        if (along.lengthSq() < 1e-6) along.copy(offset);
+        // Chasing: and it comes back behind the character, unless it was just turned by hand.
+        if (cameraMode === 'chase' && !dragging && now - turnedByHand > 600) {
+          const behind = new THREE.Vector3(...hero.character.facing).negate();
+          behind.addScaledVector(up, -behind.dot(up));
+          const angle = Math.atan2(new THREE.Vector3().crossVectors(along, behind).dot(up), along.dot(behind));
+          along.applyAxisAngle(up, angle * (1 - Math.exp(-4 * dt)));
+        }
+        along.setLength(reach);
+        controls.target.copy(head);
+        camera.position.copy(head).add(along).addScaledVector(up, height);
+      }
     }
     controls?.update();
     renderer.render(scene, camera);
@@ -688,6 +745,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       container.dataset.meshes = String(scene.children.filter((x) => x instanceof THREE.Mesh).length);
       container.dataset.step = String(world.tick);
       if (hero?.transform) container.dataset.player = hero.transform.position.map((n) => n.toFixed(2)).join(' ');
+      if (hero?.character) container.dataset.facing = hero.character.facing.map((n) => n.toFixed(2)).join(' ');
       const ghostBody = ghost && [...ghost.session.world.entities.values()].find((e) => e.character?.player === 1);
       if (ghostBody?.transform) container.dataset.ghost = ghostBody.transform.position.map((n) => n.toFixed(2)).join(' ');
       container.dataset.camera = camera.position

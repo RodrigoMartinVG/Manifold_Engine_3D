@@ -215,7 +215,7 @@ test('reset puts everything back to its default value, and vars shows it by scop
 
 // ---------------------------------------------------------------- the character (stage 1b)
 
-const position = async (page: Page, what: 'player' | 'camera' | 'ghost') =>
+const position = async (page: Page, what: 'player' | 'camera' | 'ghost' | 'facing') =>
   ((await page.locator('#game').getAttribute(`data-${what}`)) ?? '').split(' ').map(Number);
 
 test('in the course, the keys drive the character: it walks where the camera looks, jumps, and the camera follows', async ({
@@ -301,4 +301,70 @@ test('aim: the character looks where the camera looks, and walks sideways withou
   await page.keyboard.press('Backquote');
   await typeInConsole(page, 'inspect 11');
   await expect(consoleLog(page)).toContainText('facing 0 0 -1');
+});
+
+// ---------------------------------------------------------------- turning and the camera (stage 1c2)
+
+test('follow is a leash: going to a side turns the camera towards the character', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto('jugar/dojo/course/');
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  const [x0] = await position(page, 'player');
+  // D: to the camera's right (+X). Before, the camera moved as much as the character and never turned.
+  await page.keyboard.down('KeyD');
+  await expect.poll(async () => (await position(page, 'player'))[0], { timeout: 30_000 }).toBeGreaterThan(x0! + 3);
+  await page.keyboard.up('KeyD');
+  const [px, , pz] = await position(page, 'player');
+  const [cx, , cz] = await position(page, 'camera');
+  // Where the camera looks along the ground now has a good part of +X.
+  expect((px! - cx!) / Math.hypot(px! - cx!, pz! - cz!)).toBeGreaterThan(0.3);
+});
+
+test('tank controls: A and D turn the character on its own axis, W goes where it looks, and chase puts the camera behind', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const list = errors(page);
+  /**
+   * What the page says, once it stops changing. It writes it every 10 frames (with its step), and
+   * here there are few: two readings are compared only if the page wrote again in between.
+   */
+  const settled = async (what: 'player' | 'facing' | 'camera') => {
+    const step = () => page.locator('#game').getAttribute('data-step');
+    let [at, a] = [await step(), await position(page, what)];
+    for (;;) {
+      await page.waitForTimeout(200);
+      const now = await step();
+      if (now === at) continue;
+      const b = await position(page, what);
+      if (a.join() === b.join()) return b;
+      [at, a] = [now, b];
+    }
+  };
+  await page.goto('jugar/dojo/course/#recipe=controls.scheme+tank;view.camera+chase');
+  await expect.poll(async () => (await position(page, 'facing')).length, { timeout: 15_000 }).toBe(3);
+  const [x0, , z0] = await settled('player');
+  // D held: it turns right, from −Z towards +X, without going anywhere.
+  await page.keyboard.down('KeyD');
+  await expect.poll(async () => (await position(page, 'facing'))[0], { timeout: 30_000 }).toBeGreaterThan(0.5);
+  await page.keyboard.up('KeyD');
+  const [fx, , fz] = await settled('facing');
+  const [x1, , z1] = await position(page, 'player');
+  expect(Math.hypot(x1! - x0!, z1! - z0!)).toBeLessThan(0.1);
+  // W: forward, where it looks now.
+  await page.keyboard.down('KeyW');
+  await expect
+    .poll(async () => Math.hypot((await position(page, 'player'))[0]! - x1!, (await position(page, 'player'))[2]! - z1!), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(2);
+  await page.keyboard.up('KeyW');
+  const [x2, , z2] = await settled('player');
+  const along = ((x2! - x1!) * fx! + (z2! - z1!) * fz!) / Math.hypot(x2! - x1!, z2! - z1!);
+  expect(along).toBeGreaterThan(0.95);
+  // The chasing camera came back behind it: on the side opposite to where it looks.
+  const [cx, , cz] = await settled('camera');
+  expect(((cx! - x2!) * fx! + (cz! - z2!) * fz!) / Math.hypot(cx! - x2!, cz! - z2!)).toBeLessThan(-0.9);
+  expect(list).toEqual([]);
 });

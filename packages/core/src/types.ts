@@ -100,24 +100,38 @@ export interface Character {
   jumpHeld: boolean;
   /** Where it looks: a unit vector perpendicular to its "up". */
   facing: Vec3;
+  /** How fast it turns on its own axis when asked to (`turn` at 1), radians per second. */
+  turnSpeed: number;
 }
 
 /** A character as it is asked for: its player; the rest has defaults. */
 export type CharacterSpec = Pick<Character, 'player'> &
-  Partial<Pick<Character, 'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'facing'>>;
+  Partial<Pick<Character, 'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'facing' | 'turnSpeed'>>;
 
 /**
- * WHAT A PLAYER ASKS FOR at a step: where to move (a vector in the world, of length up to 1:
- * the presentation turns the keys into it, by where the camera looks), where to look, whether to
- * jump and whether to run. It enters the world through the session, at a concrete step, like any
- * world change.
+ * WHAT A PLAYER ASKS FOR at a step. It enters the world through the session, at a concrete step, like
+ * any world change. There are two ways to say where to go, and a client uses one or the other:
  *
- * `face` is where the character looks. Zero means "where it moves", the platformer's way. Given, it
- * looks there whatever way it moves (it walks sideways without turning): the shooter's way, when the
- * mouse aims (`view.camera aim`).
+ * - IN THE WORLD (`move`): a vector of length up to 1. The presentation turns "forward" into it by where
+ *   the camera looks (the camera is the view's, not the world's). The character looks where it walks:
+ *   a platformer's way.
+ * - BY THE CHARACTER (`ahead`, `side`, `turn`): forward or back where it looks, to its right or left
+ *   without turning, and turning on its own axis. Where it looks is the world's, so this is resolved
+ *   in the simulation: "tank" controls (stage 1c2), and how a vehicle is driven.
+ *
+ * `face` is where the character looks, given: whatever way it moves, it looks there (it walks sideways
+ * without turning). The shooter's way, when the mouse aims (`view.camera aim`). Zero means "not given".
  */
 export interface PlayerInput {
+  /** Where to go, in the world (length up to 1). */
   move: Vec3;
+  /** Forward (+) or back (−), where the character looks; from −1 to 1. */
+  ahead: number;
+  /** To its right (+) or left (−), without turning; from −1 to 1. */
+  side: number;
+  /** Turning on its own axis: to the right (+) or the left (−), as a part of its turn speed; from −1 to 1. */
+  turn: number;
+  /** Where to look (zero: not given). */
   face: Vec3;
   jump: boolean;
   run: boolean;

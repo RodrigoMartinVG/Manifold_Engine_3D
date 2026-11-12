@@ -2,7 +2,8 @@ import { beforeAll, describe, expect, test } from 'vitest';
 import { quat, type Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
 import { initPhysics } from './physics';
-import { playReplay, replayFromText, replayOf, replayToText } from './replay';
+import { NO_INPUT } from './character';
+import { playReplay, REPLAY_VERSION, replayFromText, replayOf, replayToText } from './replay';
 import { registryFor, Session } from './session';
 import type { PlayerInput } from './types';
 
@@ -30,7 +31,7 @@ const Level: Cartridge = {
   },
 };
 
-const input = (move: Vec3, jump = false, run = false): PlayerInput => ({ move, face: [0, 0, 0], jump, run });
+const input = (move: Vec3, jump = false, run = false): PlayerInput => ({ ...NO_INPUT, move, jump, run });
 const script = (step: number): PlayerInput =>
   step < 40
     ? input([0, 0, 0])
@@ -61,8 +62,10 @@ describe('replays (stage 1c)', () => {
     const text = replayToText(replay);
     expect(text).toContain('birth physics.gravity 0 -5 0');
     expect(text).toContain('change 90 physics.gravity 0 -9.81 0');
-    expect(text).toContain('input 40 1 0.6 0 -0.8 0 0 0 -');
-    expect(text).toContain('input 100 1 0.6 0 -0.8 0 0 0 j');
+    expect(text.split('\n')[0]).toBe(`# Manifold replay ${REPLAY_VERSION}`);
+    expect(text).toContain('input 40 1 move 0.6 0 -0.8\n');
+    expect(text).toContain('input 100 1 move 0.6 0 -0.8 jump\n');
+    expect(text).toContain('input 110 1 move 1 0 0 run\n');
     expect(text).toMatch(/^end 240 [0-9a-f]{8}$/m);
     expect(replayFromText(text)).toEqual(replay);
     session.world.dispose();
@@ -82,9 +85,31 @@ describe('replays (stage 1c)', () => {
   });
 
   test('a line that is not understood says which one; a replay without its start or its end is refused', () => {
-    expect(() => replayFromText('# Manifold replay\ngame level\nwhat 1\nend 1 00000000')).toThrow(/line 3/);
-    expect(() => replayFromText('# Manifold replay\ninput 4 1 0 0 1 0 0 0 x\nend 5 00000000')).toThrow(/line 2.*flags/);
+    const v = `# Manifold replay ${REPLAY_VERSION}`;
+    expect(() => replayFromText(`${v}\ngame level\nwhat 1\nend 1 00000000`)).toThrow(/line 3/);
+    expect(() => replayFromText(`${v}\ninput 4 1 move 0 0 1 fly\nend 5 00000000`)).toThrow(
+      /line 2.*"fly" is not part of an input/,
+    );
+    expect(() => replayFromText(`${v}\ninput 4 1 move 0 0\nend 5 00000000`)).toThrow(/line 2.*not a number/);
     expect(() => replayFromText('game level\nend 1 00000000')).toThrow(/must start/);
-    expect(() => replayFromText('# Manifold replay\ngame level')).toThrow(/no end/);
+    expect(() => replayFromText(`${v}\ngame level`)).toThrow(/no end/);
+  });
+
+  test('a replay of another version says so (the same inputs would give another hash)', () => {
+    // The first ones (stage 1c) had no version in their first line, and their inputs were only numbers.
+    const old = '# Manifold replay\ngame level\ninput 40 1 0.6 0 -0.8 0 0 0 -\nend 240 00000000';
+    expect(() => replayFromText(old)).toThrow(/line 1: a replay of version 1, and this engine plays version 2/);
+  });
+
+  test('a little negative number in an input (rounded to −0) plays again to the same hash', () => {
+    // −0.003 rounds to −0, which is written "0" and read back as +0: different bits, another hash.
+    const registry = registryFor(Level);
+    const session = new Session(Level, { registry });
+    for (let step = 1; step <= 120; step++) {
+      session.setInput(1, input(step < 20 ? [0, 0, 0] : [-0.003, 0, -1]));
+      session.step();
+    }
+    expect(playReplay(Level, replayFromText(replayToText(replayOf(session)))).same).toBe(true);
+    session.world.dispose();
   });
 });
