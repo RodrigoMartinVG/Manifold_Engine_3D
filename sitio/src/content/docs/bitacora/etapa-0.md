@@ -7,7 +7,7 @@ sidebar:
 
 ## Qué construimos y qué vas a entender
 
-> Este es el **informe** de la etapa 0: el detalle de lo que hicimos, con sus hallazgos y mediciones. Para aprender las ideas tocando código, está el [tutorial de la etapa 0](../../tutorial/etapa-0/01-primer-cubo/).
+> Este es el **informe** de la etapa 0: el detalle de lo que hicimos, con sus hallazgos y mediciones. Para aprender las ideas tocando código, está el [tutorial de la etapa 0](../../tutorial/).
 
 En la etapa 0 todavía no hay física ni personajes. Hay **cimientos**, que son lo que más cuesta cambiar después:
 
@@ -115,6 +115,10 @@ Todo el proyecto vive en un **repositorio git**, publicado en [GitHub](https://g
 - Cuando `main` pasa, **el sitio se publica solo** en GitHub Pages.
 - Al terminar cada paso se pone una **etiqueta** (`paso-00`, `paso-01`...). Los enlaces de los capítulos apuntan al código de su etiqueta: lo ves tal como estaba en ese paso, aunque el proyecto haya seguido creciendo.
 
+:::note[Después de la etapa 0]
+Desde la [etapa 0c](../etapa-0c/) ya no se usan ramas ni _pull requests_: se trabaja directo en `main`, verificando todo antes en la máquina, y GitHub sigue verificando cada cambio antes de publicar el sitio ([decisión 0009](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0009-directo-en-main.md)). Lo demás sigue igual: los commits, la integración continua y las etiquetas.
+:::
+
 ## 8. Las herramientas
 
 | Para qué                | Qué                                                         |
@@ -126,6 +130,10 @@ Todo el proyecto vive en un **repositorio git**, publicado en [GitHub](https://g
 | Pruebas sin pantalla    | **Vitest**: archivos `*.prueba.ts` junto al código          |
 | Pruebas en el navegador | **Playwright**: abre las páginas como una persona           |
 | Estilo                  | **ESLint** (que además vigila las fronteras) y **Prettier** |
+
+:::note[Después de la etapa 0]
+Desde la [etapa 0c](../etapa-0c/), el proyecto usa **Node 26**, que en octubre de 2026 pasó a ser la versión con soporte a largo plazo; la 24 quedó en mantenimiento ([decisión 0001](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisiones/0001-monorepo-y-herramientas.md)).
+:::
 
 ```bash
 npm run dev         # el sitio y el Dojo, con recarga en caliente
