@@ -12,6 +12,7 @@ import {
   sessionFor,
   stateHash,
   upAt,
+  gravityAt,
   type Appearance,
   type Replay,
   type Cartridge,
@@ -126,6 +127,42 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   physicsLines.renderOrder = 1;
   physicsLines.frustumCulled = false;
   scene.add(physicsLines);
+  /** Lines drawn on top of everything, rebuilt on every frame while they are shown (show.vectors, show.contacts). */
+  const overlay = (color: number) => {
+    const lines = new THREE.LineSegments(
+      new THREE.BufferGeometry(),
+      new THREE.LineBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.9 }),
+    );
+    lines.visible = false;
+    lines.renderOrder = 2;
+    lines.frustumCulled = false;
+    scene.add(lines);
+    return lines;
+  };
+  const setLines = (lines: THREE.LineSegments, xyz: number[]) =>
+    lines.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(xyz), 3));
+  // show.vectors (stage 1f): every moving body's velocity (a quarter of a second ahead), and where each character looks.
+  const velocityLines = overlay(0xd8e05a);
+  const facingLines = overlay(0x5aa8e0);
+  // show.contacts: where bodies touch, and the normal of each contact.
+  const contactLines = overlay(0xe0705a);
+  const contactPoints = new THREE.Points(
+    new THREE.BufferGeometry(),
+    new THREE.PointsMaterial({ color: 0xe0705a, size: 6, sizeAttenuation: false, depthTest: false }),
+  );
+  contactPoints.visible = false;
+  contactPoints.renderOrder = 2;
+  contactPoints.frustumCulled = false;
+  scene.add(contactPoints);
+  // show.gravity: the field, as arrows on a grid above the floor (in phase 7 they will point to a planet).
+  const gravityArrows = new THREE.Group();
+  gravityArrows.visible = false;
+  for (let x = -6; x <= 6; x += 3)
+    for (let z = -6; z <= 6; z += 3) {
+      const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(x, 4, z), 1, 0x8a7ae0, 0.3, 0.15);
+      gravityArrows.add(arrow);
+    }
+  scene.add(gravityArrows);
 
   const fitSize = () => {
     const width = Math.max(1, container.clientWidth);
@@ -239,6 +276,32 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     type: { kind: 'boolean' },
     default: false,
     onChange: (v) => (physicsLines.visible = v === true),
+  });
+  registry.declareVariable({
+    name: 'show.vectors',
+    description:
+      "Every moving body's velocity, as a line to where it would be in a quarter of a second (yellow), and where each character looks (blue).",
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => (velocityLines.visible = facingLines.visible = v === true),
+  });
+  registry.declareVariable({
+    name: 'show.contacts',
+    description:
+      'Where bodies touch now: each contact point the physics uses, and its normal (from the first body to the second).',
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => (contactLines.visible = contactPoints.visible = v === true),
+  });
+  registry.declareVariable({
+    name: 'show.gravity',
+    description: "The gravity field, as arrows: their length is the strength (1 m for every 6.5 m/s²; the Earth's, 1.5 m).",
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => (gravityArrows.visible = v === true),
   });
   registry.declareVariable({
     name: 'show.stats',
@@ -830,6 +893,49 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       const { vertices } = world.physics.debugLines();
       physicsLines.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     }
+    if (velocityLines.visible) {
+      const velocities: number[] = [];
+      const facings: number[] = [];
+      for (const e of world.entities.values()) {
+        const mesh = meshes.get(e.id);
+        if (!e.transform || !e.body || e.body.type === 'fixed') continue;
+        const at = mesh ? mesh.position.toArray() : e.transform.position;
+        const v = e.character ? e.character.velocity : e.body.linearVelocity;
+        velocities.push(...at, at[0]! + v[0] * 0.25, at[1]! + v[1] * 0.25, at[2]! + v[2] * 0.25);
+        if (e.character) {
+          const f = e.character.facing;
+          facings.push(at[0]!, at[1]! + 0.5, at[2]!, at[0]! + f[0], at[1]! + 0.5 + f[1], at[2]! + f[2]);
+        }
+      }
+      setLines(velocityLines, velocities);
+      setLines(facingLines, facings);
+    }
+    if (contactLines.visible) {
+      const { points, normals } = world.physics.contacts();
+      const lines: number[] = [];
+      for (let i = 0; i < points.length; i += 3)
+        lines.push(
+          points[i]!,
+          points[i + 1]!,
+          points[i + 2]!,
+          points[i]! + normals[i]! * 0.3,
+          points[i + 1]! + normals[i + 1]! * 0.3,
+          points[i + 2]! + normals[i + 2]! * 0.3,
+        );
+      setLines(contactLines, lines);
+      contactPoints.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(points), 3));
+      container.dataset.contacts = String(points.length / 3);
+    }
+    if (gravityArrows.visible)
+      for (const arrow of gravityArrows.children as THREE.ArrowHelper[]) {
+        const g = new THREE.Vector3(...gravityAt(world.gravity, arrow.position.toArray()));
+        const strength = g.length();
+        arrow.visible = strength > 0;
+        if (strength > 0) {
+          arrow.setDirection(g.divideScalar(strength));
+          arrow.setLength(strength / 6.5, 0.3, 0.15);
+        }
+      }
     // The ghost, where its world has it (its own world: what it pushes does not move here).
     if (ghost?.mesh) {
       const g = [...ghost.session.world.entities.values()].find((e) => e.character?.player === 1)?.transform;

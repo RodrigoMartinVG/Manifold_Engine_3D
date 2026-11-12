@@ -165,3 +165,22 @@ test('a snapshot restored in this browser goes on like the original: the replay 
   expect(same).toBe(true);
   session.world.dispose();
 });
+
+test('the physics lab (stage 1f): vectors, contacts and the gravity field are drawn without breaking anything', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('jugar/dojo/course/#recipe=dojo.cubes+8;show.vectors+on;show.contacts+on;show.gravity+on');
+  await expect
+    .poll(() => page.locator('#game').getAttribute('data-frames').then(Number), { timeout: 20_000 })
+    .toBeGreaterThan(30);
+  // The cubes fell and rest on the floor and on the steps: there are contacts to draw.
+  await expect
+    .poll(() => page.locator('#game').getAttribute('data-contacts').then(Number), { timeout: 20_000 })
+    .toBeGreaterThan(8);
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'physics.gravity 0 -1.62 0', 'show.gravity');
+  await expect(page.locator('.mg-console-log')).toContainText('show.gravity = on');
+  expect(errors).toEqual([]);
+});

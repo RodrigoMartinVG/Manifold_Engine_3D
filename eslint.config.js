@@ -28,6 +28,76 @@ const network = {
 };
 const headless = "A game's rules run without a screen (also on a server and in tests): decision 0003.";
 
+/**
+ * WHAT EACH JAVASCRIPT ENGINE COMPUTES ITS OWN WAY (stage 1f). The standard requires Math.sqrt,
+ * the arithmetic, Math.round, floor, abs, min, max… to give the exact same bits everywhere; but
+ * it lets Math.sin, cos, atan2, hypot, exp, pow (and `**`) be "approximated by the implementation".
+ * Two browsers can differ in the last bit, and a replay, a ghost or a networked match would end
+ * somewhere else. So the simulation (and a game's rules) does not use them; and not Math.random
+ * either: the world has its own randomness, with its seed. Tests can: they compare, they do not
+ * simulate.
+ */
+const approximated = [
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'atan2',
+  'sinh',
+  'cosh',
+  'tanh',
+  'asinh',
+  'acosh',
+  'atanh',
+  'exp',
+  'expm1',
+  'log',
+  'log1p',
+  'log2',
+  'log10',
+  'pow',
+  'cbrt',
+  'hypot',
+];
+const sameEverywhere = {
+  'no-restricted-properties': [
+    'error',
+    ...approximated.map((property) => ({
+      object: 'Math',
+      property,
+      message: `Math.${property} may give other bits in another browser: the simulation uses additions, multiplications and square roots (stage 1f).`,
+    })),
+    {
+      object: 'Math',
+      property: 'random',
+      message: "A different sequence on every run: the simulation uses the world's randomness (world.random).",
+    },
+    {
+      object: 'quat',
+      property: 'fromAxisAngle',
+      message: 'It uses sine and cosine: in the simulation, a literal quaternion, or quat.look (stage 1f).',
+    },
+    {
+      object: 'quat',
+      property: 'angleBetween',
+      message: 'It uses acos: for tests and views, not for the simulation (stage 1f).',
+    },
+  ],
+  'no-restricted-syntax': [
+    'error',
+    {
+      selector: "BinaryExpression[operator='**']",
+      message: '`**` is Math.pow: it may give other bits in another browser (stage 1f).',
+    },
+    {
+      selector: "AssignmentExpression[operator='**=']",
+      message: '`**=` is Math.pow: it may give other bits in another browser (stage 1f).',
+    },
+  ],
+};
+
 export default defineConfig(
   {
     ignores: [
@@ -74,6 +144,12 @@ export default defineConfig(
   {
     files: ['packages/core/src/**'],
     rules: { 'no-restricted-imports': ['error', { patterns: [drawing, presentation, games, network] }] },
+  },
+  {
+    // The simulation, the network and a game's rules give the same bits in every browser (stage 1f).
+    files: ['packages/core/src/**', 'packages/net/src/**', 'games/*/src/cartridge.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: sameEverywhere,
   },
   {
     // The networking skeleton (stage 1e): no screen, no games; it runs in a page, in a tab, in Node.

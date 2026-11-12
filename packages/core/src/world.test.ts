@@ -49,7 +49,7 @@ describe('World', () => {
     expect(stateHash(a)).not.toBe(before);
   });
 
-  test('spin: after t seconds, the angle turned is |ω|·t (and the rotation stays unit)', () => {
+  test('spin: after t seconds, the angle turned is |ω|·t, almost (and the rotation stays unit)', () => {
     const w = new World({ seed: 1 });
     const e = w.createEntity({
       transform: { position: [0, 0, 0], rotation: quat.identity() },
@@ -57,7 +57,9 @@ describe('World', () => {
     });
     for (let i = 0; i < 120; i++) w.step(); // 2 s
     const q = e.transform!.rotation;
-    expect(quat.angleBetween(quat.identity(), q)).toBeCloseTo(0.9 * 120 * STEP, 9);
+    // Without trigonometry (stage 1f), each step turns 2·atan(|ω|·dt/2): a hair less than |ω|·dt.
+    expect(quat.angleBetween(quat.identity(), q)).toBeCloseTo(120 * 2 * Math.atan((0.9 * STEP) / 2), 9);
+    expect(quat.angleBetween(quat.identity(), q)).toBeCloseTo(0.9 * 120 * STEP, 4);
     expect(Math.hypot(...q)).toBeCloseTo(1, 14);
   });
 

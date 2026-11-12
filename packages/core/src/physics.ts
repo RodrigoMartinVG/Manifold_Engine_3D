@@ -186,6 +186,32 @@ export class Physics {
     return { vertices, colors };
   }
 
+  /**
+   * Where bodies touch now (for `show.contacts`, stage 1f): each contact point Rapier's solver uses,
+   * and the normal of its contact (pointing from the first body to the second), as x y z after x y z.
+   * For looking, not for simulating: what it returns is not part of the state.
+   */
+  contacts(): { points: number[]; normals: number[] } {
+    const points: number[] = [];
+    const normals: number[] = [];
+    this.world.forEachCollider((a) => {
+      this.world.contactPairsWith(a, (b) => {
+        if (b.handle <= a.handle) return; // each pair once
+        this.world.contactPair(a, b, (manifold, flipped) => {
+          const n = manifold.normal();
+          const sign = flipped ? -1 : 1;
+          for (let i = 0; i < manifold.numSolverContacts(); i++) {
+            const p = manifold.solverContactPoint(i);
+            if (!p) continue;
+            points.push(p.x, p.y, p.z);
+            normals.push(n.x * sign, n.y * sign, n.z * sign);
+          }
+        });
+      });
+    });
+    return { points, normals };
+  }
+
   /** Frees the physics' memory (WebAssembly's, which the garbage collector does not see). */
   dispose() {
     if (this.controller) this.world.removeCharacterController(this.controller);

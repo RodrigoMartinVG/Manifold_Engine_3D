@@ -235,9 +235,12 @@ export class World {
   }
 
   /**
-   * SPIN system: the rotation advances this step's angle around the axis of its angular velocity.
-   * With a fixed axis this is exact (rotations around the same axis add up); it is renormalized
-   * so rounding does not accumulate.
+   * SPIN system: the rotation advances this step's angle around the axis of its angular velocity,
+   * WITHOUT TRIGONOMETRY (stage 1f: it used `hypot`, `sin` and `cos`, which each JavaScript engine
+   * computes its own way). The quaternion of a small turn is [ω·dt/2, 1], brought back to length 1:
+   * it turns 2·atan(|ω|·dt/2) instead of |ω|·dt, two parts in a hundred thousand less at 1 rad/s.
+   * Additions, multiplications and a square root, the same bits everywhere. It is renormalized, so
+   * rounding does not accumulate.
    */
   private spin() {
     for (const e of this.entities.values()) {
@@ -249,9 +252,9 @@ export class World {
         continue;
       }
       if (e.body) continue; // a dynamic or fixed body is moved by the physics, or not at all
-      const speed = Math.hypot(w[0], w[1], w[2]);
-      if (speed === 0) continue;
-      const delta = quat.fromAxisAngle(w, speed * STEP);
+      if (w[0] === 0 && w[1] === 0 && w[2] === 0) continue;
+      const h = STEP / 2;
+      const delta = quat.normalize([w[0] * h, w[1] * h, w[2] * h, 1]);
       e.transform.rotation = quat.normalize(quat.multiply(delta, e.transform.rotation));
     }
   }

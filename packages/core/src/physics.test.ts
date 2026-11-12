@@ -114,6 +114,23 @@ describe('the physics (Rapier, behind physics.ts)', () => {
     world.dispose();
   });
 
+  test('the contacts (for show.contacts): a box resting on the floor touches it, with its normal along the vertical', () => {
+    const world = new World({ seed: 1 });
+    floor(world);
+    world.createEntity({
+      transform: { position: [0, 0.3, 0], rotation: quat.identity() },
+      body: { type: 'dynamic', shape: { kind: 'box', halfExtents: [0.25, 0.25, 0.25] } },
+    });
+    for (let i = 0; i < 60; i++) world.step();
+    const { points, normals } = world.physics.contacts();
+    expect(points.length).toBeGreaterThanOrEqual(3 * 4); // a box flat on the floor: its four corners
+    for (let i = 0; i < points.length; i += 3) {
+      expect(points[i + 1]).toBeCloseTo(0, 1); // on the floor's top
+      expect(Math.abs(normals[i + 1]!)).toBeCloseTo(1, 3); // vertical
+    }
+    world.dispose();
+  });
+
   test('removing an entity removes its body from the physics', () => {
     const world = new World({ seed: 1 });
     floor(world);
