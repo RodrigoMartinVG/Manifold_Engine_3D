@@ -187,21 +187,78 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
   }
 
   /*
-   * PANTALLA COMPLETA. Nada se mueve de lugar en la página (si el iframe cambiara de padre, se
-   * recargaría y el ejemplo empezaría de nuevo): solo cambia la disposición, con una grilla. El
-   * código a la izquierda, lo que dibuja a la derecha, y la consola debajo; en una pantalla
-   * angosta, uno arriba del otro. Sirve igual para la pantalla completa del navegador
-   * (data-ampliado="pantalla") y para cuando no la hay, como en el iPhone ("ventana").
+   * A TODO EL ANCHO (src/codigo-vivo/ancho.ts). El ejemplo se sale de la columna del texto y
+   * ocupa el ancho del panel central: `--cv-ancho` es ese ancho y `--cv-correr`, cuánto correrse
+   * a la izquierda para empezar en su borde.
    */
-  .codigo-vivo[data-ampliado] {
-    --cv-codigo: 42%;
+  .codigo-vivo[data-ancho]:not([data-ampliado]) {
+    width: var(--cv-ancho);
+    max-width: none;
+    margin-inline-start: var(--cv-correr);
+  }
+
+  /*
+   * LADO A LADO: el código a la izquierda, lo que dibuja a la derecha, y la consola debajo. Lo usan
+   * la pantalla completa (data-ampliado) y el ejemplo en la página cuando hay ancho de sobra
+   * (data-lado-a-lado). Nada se mueve de lugar en la página (si el iframe cambiara de padre, se
+   * recargaría y el ejemplo empezaría de nuevo): solo cambia la disposición, con una grilla.
+   */
+  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) {
     display: grid;
-    grid-template-columns: minmax(14rem, var(--cv-codigo)) 6px minmax(0, 1fr);
+    grid-template-columns: minmax(16rem, var(--cv-codigo, 42%)) 6px minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
       'barra divisor resultado'
       'editor divisor resultado'
       'editor divisor consola';
+  }
+  .codigo-vivo[data-lado-a-lado]:not([data-ampliado]) {
+    height: clamp(28rem, 76vh, 46rem);
+  }
+  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-barra {
+    grid-area: barra;
+  }
+  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-editor {
+    grid-area: editor;
+    min-height: 0;
+  }
+  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-editor .cm-editor {
+    height: 100%;
+    max-height: none;
+  }
+  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-resultado {
+    grid-area: resultado;
+    aspect-ratio: auto;
+  }
+  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-consola {
+    grid-area: consola;
+    max-height: 30vh;
+  }
+  .codigo-vivo:is([data-ampliado], [data-lado-a-lado]) .cv-divisor {
+    grid-area: divisor;
+    display: block;
+    cursor: col-resize;
+    touch-action: none;
+    background: var(--mg-bronce, #b98146);
+    box-shadow:
+      inset 1px 0 0 rgb(255 240 210 / 0.35),
+      inset -1px 0 0 rgb(0 0 0 / 0.5);
+  }
+  .codigo-vivo[data-ampliado] .cv-divisor:focus-visible {
+    outline: 2px solid #93d9c9;
+    outline-offset: -2px;
+  }
+  /* Mientras se arrastra, el iframe no se queda con los movimientos del puntero. */
+  .codigo-vivo[data-arrastrando] iframe {
+    pointer-events: none;
+  }
+
+  /*
+   * PANTALLA COMPLETA: lo mismo, ocupando toda la pantalla. Sirve igual para la pantalla
+   * completa del navegador (data-ampliado="pantalla") y para cuando no la hay, como en el iPhone
+   * ("ventana"). En una pantalla angosta o vertical, uno arriba del otro.
+   */
+  .codigo-vivo[data-ampliado] {
     width: 100%;
     height: 100%;
     margin: 0;
@@ -220,43 +277,6 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
   }
   .codigo-vivo:fullscreen::backdrop {
     background: #000;
-  }
-  .codigo-vivo[data-ampliado] .cv-barra {
-    grid-area: barra;
-  }
-  .codigo-vivo[data-ampliado] .cv-editor {
-    grid-area: editor;
-    min-height: 0;
-  }
-  .codigo-vivo[data-ampliado] .cv-editor .cm-editor {
-    height: 100%;
-    max-height: none;
-  }
-  .codigo-vivo[data-ampliado] .cv-resultado {
-    grid-area: resultado;
-    aspect-ratio: auto;
-  }
-  .codigo-vivo[data-ampliado] .cv-consola {
-    grid-area: consola;
-    max-height: 30vh;
-  }
-  .codigo-vivo[data-ampliado] .cv-divisor {
-    grid-area: divisor;
-    display: block;
-    cursor: col-resize;
-    touch-action: none;
-    background: var(--mg-bronce, #b98146);
-    box-shadow:
-      inset 1px 0 0 rgb(255 240 210 / 0.35),
-      inset -1px 0 0 rgb(0 0 0 / 0.5);
-  }
-  .codigo-vivo[data-ampliado] .cv-divisor:focus-visible {
-    outline: 2px solid #93d9c9;
-    outline-offset: -2px;
-  }
-  /* Mientras se arrastra, el iframe no se queda con los movimientos del puntero. */
-  .codigo-vivo[data-arrastrando] iframe {
-    pointer-events: none;
   }
   @media (max-width: 50rem), (max-aspect-ratio: 1/1) {
     .codigo-vivo[data-ampliado] {
@@ -277,6 +297,9 @@ if (!archivos.some((a) => a.nombre === 'main.ts')) {
 </style>
 
 <script>
+  import { ensancharEjemplos } from '../codigo-vivo/ancho';
   import { montarCodigoVivo } from '../codigo-vivo/montar';
-  document.querySelectorAll<HTMLElement>('.codigo-vivo').forEach(montarCodigoVivo);
+  const ejemplos = [...document.querySelectorAll<HTMLElement>('.codigo-vivo')];
+  ejemplos.forEach(montarCodigoVivo);
+  ensancharEjemplos(ejemplos);
 </script>

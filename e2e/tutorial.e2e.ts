@@ -137,3 +137,34 @@ test('sin pantalla completa (como en el iPhone), el ejemplo ocupa la ventana, y 
   await page.keyboard.press('Escape');
   await expect(ejemplo).not.toHaveAttribute('data-ampliado');
 });
+
+test('los paneles de los costados se ocultan y se recuerdan, y el ejemplo usa el ancho que queda', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('tutorial/etapa-0/03-paso-fijo/');
+  const ejemplo = page.locator('.codigo-vivo').first();
+  const barra = page.locator('header .mg-panel[data-panel="barra"]');
+  const indice = page.locator('header .mg-panel[data-panel="indice"]');
+  const columna = (await page.locator('.sl-markdown-content').boundingBox())!.width;
+  expect((await ejemplo.boundingBox())!.width).toBeLessThan(columna + 40);
+
+  await barra.click();
+  await indice.click();
+  await expect(page.locator('.sidebar-pane')).toBeHidden();
+  await expect(page.locator('.right-sidebar-container')).toBeHidden();
+  // El ejemplo sale de la columna del texto, y pone el código y lo que dibuja lado a lado.
+  await expect(ejemplo).toHaveAttribute('data-lado-a-lado', '');
+  expect((await ejemplo.boundingBox())!.width).toBeGreaterThan(1300);
+  const editor = (await ejemplo.locator('.cv-editor').boundingBox())!;
+  const resultado = (await ejemplo.locator('.cv-resultado').boundingBox())!;
+  expect(editor.x + editor.width).toBeLessThanOrEqual(resultado.x);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(1440);
+
+  // En otra página siguen ocultos (se recuerda), hasta que se los vuelve a mostrar.
+  await page.goto('tutorial/etapa-0/01-primer-cubo/');
+  await expect(page.locator('.sidebar-pane')).toBeHidden();
+  await expect(barra).toHaveAttribute('aria-pressed', 'false');
+  await barra.click();
+  await indice.click();
+  await expect(page.locator('.sidebar-pane')).toBeVisible();
+  await expect(page.locator('.right-sidebar-container')).toBeVisible();
+});

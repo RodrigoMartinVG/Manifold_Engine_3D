@@ -1,0 +1,118 @@
+---
+/**
+ * El selector de tema de Starlight (reemplaza a "ThemeSelect" en astro.config.mjs), con dos
+ * botones al lado para ocultar o mostrar los PANELES DE LOS COSTADOS: el índice del sitio, a la
+ * izquierda, y "En esta página", a la derecha. Sin ellos, la lección y sus ejemplos usan ese ancho.
+ *
+ * Van aquí porque la cabecera es lo único que se ve siempre, también con los dos paneles ocultos.
+ * Lo elegido se recuerda en el navegador (localStorage) y se aplica ANTES de dibujar la página, con
+ * un script en el <head> (astro.config.mjs), para que no parpadee al cambiar de página.
+ *
+ * Este componente también aparece en el menú del celular: ahí los botones no se muestran, porque
+ * en una pantalla angosta los paneles ya no ocupan lugar al costado.
+ */
+import Default from '@astrojs/starlight/components/ThemeSelect.astro';
+---
+
+<div class="mg-paneles">
+  <button type="button" class="mg-panel" data-panel="barra" aria-pressed="true" aria-label="Índice del sitio">
+    <svg viewBox="0 0 20 16" aria-hidden="true">
+      <rect class="mg-lado" x="2" y="2" width="5" height="12" />
+      <rect x="1" y="1" width="18" height="14" rx="2" />
+      <path d="M7 1v14" />
+    </svg>
+  </button>
+  <button type="button" class="mg-panel" data-panel="indice" aria-pressed="true" aria-label="En esta página">
+    <svg viewBox="0 0 20 16" aria-hidden="true">
+      <rect class="mg-lado" x="13" y="2" width="5" height="12" />
+      <rect x="1" y="1" width="18" height="14" rx="2" />
+      <path d="M13 1v14" />
+    </svg>
+  </button>
+</div>
+<Default />
+
+<style>
+  .mg-paneles {
+    display: none;
+    gap: 0.15rem;
+    align-items: center;
+  }
+  @media (min-width: 50rem) {
+    :global(:root[data-has-sidebar]) .mg-paneles {
+      display: flex;
+    }
+  }
+  .mg-panel {
+    display: inline-flex;
+    padding: 0.3rem;
+    border: 1px solid transparent;
+    border-radius: 0.3rem;
+    background: transparent;
+    color: var(--sl-color-gray-3);
+    cursor: pointer;
+  }
+  .mg-panel:hover {
+    color: var(--sl-color-white);
+    border-color: var(--mg-linea-bronce);
+  }
+  .mg-panel svg {
+    width: 1.25rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+  }
+  /* El costado relleno = el panel está a la vista. */
+  .mg-lado {
+    stroke: none;
+    fill: transparent;
+  }
+  .mg-panel[aria-pressed='true'] .mg-lado {
+    fill: color-mix(in srgb, currentColor 55%, transparent);
+  }
+  /* "En esta página" solo existe al costado desde los 72rem, y solo si la página tiene secciones. */
+  .mg-panel[data-panel='indice'] {
+    display: none;
+  }
+  @media (min-width: 72rem) {
+    :global(:root[data-has-toc]) .mg-panel[data-panel='indice'] {
+      display: inline-flex;
+    }
+  }
+</style>
+
+<script>
+  /** Cada panel: dónde se recuerda y qué atributo de <html> lo oculta (el CSS está en taller.css). */
+  const PANELES = {
+    barra: { clave: 'mg-sin-barra', atributo: 'data-sin-barra', nombre: 'el índice del sitio' },
+    indice: { clave: 'mg-sin-indice', atributo: 'data-sin-indice', nombre: '«En esta página»' },
+  } as const;
+  type Panel = keyof typeof PANELES;
+  const raiz = document.documentElement;
+
+  function pintar() {
+    for (const boton of document.querySelectorAll<HTMLButtonElement>('.mg-panel')) {
+      const panel = PANELES[boton.dataset.panel as Panel];
+      const oculto = raiz.hasAttribute(panel.atributo);
+      boton.setAttribute('aria-pressed', String(!oculto));
+      boton.title = `${oculto ? 'Mostrar' : 'Ocultar'} ${panel.nombre}`;
+    }
+  }
+
+  for (const boton of document.querySelectorAll<HTMLButtonElement>('.mg-panel')) {
+    boton.addEventListener('click', () => {
+      const panel = PANELES[boton.dataset.panel as Panel];
+      const ocultar = !raiz.hasAttribute(panel.atributo);
+      raiz.toggleAttribute(panel.atributo, ocultar);
+      try {
+        if (ocultar) localStorage.setItem(panel.clave, '1');
+        else localStorage.removeItem(panel.clave);
+      } catch {
+        // Sin almacenamiento (una ventana privada, por ejemplo): vale solo para esta página.
+      }
+      pintar();
+    });
+  }
+  pintar();
+</script>

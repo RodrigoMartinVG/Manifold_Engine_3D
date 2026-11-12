@@ -209,6 +209,33 @@ body::before {
     0 2px 6px -2px rgb(0 0 0 / 0.6);
 }
 
+/* ------------------------------------------------------------------ los paneles que se ocultan */
+/*
+ * Los botones de la cabecera (SelectorDeTema.astro) ponen `data-sin-barra` o `data-sin-indice` en
+ * <html>. Sin el panel izquierdo, la columna central empieza en el borde; sin el derecho, ocupa
+ * todo el ancho y el texto se centra. (El texto en sí no se ensancha: más de unos 75 caracteres
+ * por renglón se leen peor. Los que sí se ensanchan son los ejemplos: ver CodigoVivo.astro.)
+ */
+@media (min-width: 50rem) {
+  :root[data-has-sidebar][data-sin-barra] {
+    --sl-content-inline-start: 0rem;
+  }
+  :root[data-sin-barra] .sidebar-pane {
+    display: none;
+  }
+}
+@media (min-width: 72rem) {
+  :root[data-sin-indice] .right-sidebar-container {
+    display: none;
+  }
+  :root[data-sin-indice] .main-pane {
+    width: 100%;
+  }
+  :root:is([data-sin-indice], [data-sin-barra]) .main-pane {
+    --sl-content-margin-inline: auto;
+  }
+}
+
 /* ------------------------------------------------------------------ los títulos */
 h1#_top {
   font-family: var(--mg-letra-titulo);

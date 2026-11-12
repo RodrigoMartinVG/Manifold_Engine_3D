@@ -22,8 +22,17 @@ export default defineConfig({
       logo: { src: './src/assets/dibujos/marca.svg', alt: '' },
       favicon: '/favicon.svg',
       customCss: ['@fontsource-variable/cinzel', './src/estilos/taller.css'],
-      // El inicio tiene su propia portada, con la vitrina 3D en vivo.
-      components: { Hero: './src/components/Heroe.astro' },
+      // El inicio tiene su propia portada, con la vitrina 3D en vivo. Junto al selector de tema,
+      // los botones que ocultan los paneles de los costados.
+      components: { Hero: './src/components/Heroe.astro', ThemeSelect: './src/components/SelectorDeTema.astro' },
+      // Los paneles que se ocultaron en otra página: se aplica antes de dibujar, para que no parpadee.
+      head: [
+        {
+          tag: 'script',
+          content:
+            "try{for(const[c,a]of[['mg-sin-barra','data-sin-barra'],['mg-sin-indice','data-sin-indice']])if(localStorage.getItem(c)==='1')document.documentElement.setAttribute(a,'')}catch{}",
+        },
+      ],
       sidebar: [
         { label: 'El proyecto', link: '/proyecto/' },
         { label: 'Jugar', link: '/jugar/' },
