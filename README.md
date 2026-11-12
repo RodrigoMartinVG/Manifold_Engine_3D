@@ -43,6 +43,8 @@ npm run dev           # the site and the Dojo, with hot reload
 | `npm run build`        | The site ready to publish, in `site/dist`                                                                                                               |
 | `npm run draw -w site` | Generates the site's drawings again (background, logo, gears) from their geometry                                                                       |
 
+Where it is going and how far it got: [ROADMAP.md](ROADMAP.md).
+
 How we work: straight on `main`, checking on the machine first ([decision 0009](docs/decisions/0009-straight-to-main.md)); commits and tags per stage in [decision 0005](docs/decisions/0005-way-of-working.md). All the decisions: [docs/decisions](docs/decisions/README.md).
 
 ## Where it comes from

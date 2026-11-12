@@ -129,9 +129,10 @@ describe('the registry', () => {
 
   it('a name that does not exist suggests the closest one', () => {
     const { r } = build();
-    expect(texts(r.run('physics.gravty 0 -3 0'))).toContain('Did you mean "physics.gravity"?');
-    expect(texts(r.run('cubes 3'))).toContain('"dojo.cubes"');
-    expect(texts(r.run('xyzzy'))).toContain('Try "find xyzzy"');
+    // The whole line, corrected, in `backticks`: the console shows it as clickable.
+    expect(texts(r.run('physics.gravty 0 -3 0'))).toContain('Did you mean `physics.gravity 0 -3 0`?');
+    expect(texts(r.run('cubes 3'))).toContain('`dojo.cubes 3`');
+    expect(texts(r.run('xyzzy'))).toContain('Try `find xyzzy`');
   });
 
   it('STARTUP values say so once per text run, and only if something changed', () => {
@@ -175,7 +176,7 @@ describe('the registry', () => {
     expect(done).toHaveBeenLastCalledWith([]);
     r.run('step 10');
     expect(done).toHaveBeenLastCalledWith([10]);
-    expect(texts(r.run('step 10 20'))).toContain('Usage: step [n]');
+    expect(texts(r.run('step 10 20'))).toContain('Usage: `step [n]`');
     expect(texts(r.run('spawn 1 2'))).toContain('three numbers');
     r.run('bind f "show.axes on; view.timescale 0.5"');
     expect(done).toHaveBeenLastCalledWith(['f', '"show.axes on; view.timescale 0.5"']);
@@ -240,5 +241,54 @@ describe('the help commands', () => {
     expect(texts(r.run('changed'))).not.toContain('dojo.cubes');
     expect(texts(r.run('help'))).toContain('Commands:');
     expect(texts(r.run('help spawn'))).toContain('spawn place');
+  });
+
+  it("help shows the game's examples as clickable, and no game's when it has none", () => {
+    const withExamples = build().r;
+    declareHelp(withExamples, { examples: ['dojo.cubes 20', 'show.axes on'] });
+    expect(texts(withExamples.run('help'))).toContain('Try: `dojo.cubes 20`   `show.axes on`');
+    const without = build().r;
+    declareHelp(without);
+    expect(texts(without.run('help'))).not.toContain('Try:');
+    expect(texts(without.run('help'))).not.toContain('dojo');
+  });
+
+  it('vars groups the variables by scope, and marks what changed with its default', () => {
+    const { r } = build();
+    declareHelp(r);
+    r.run('dojo.cubes 20');
+    const out = texts(r.run('vars'));
+    const at = (t: string) => out.indexOf(t);
+    expect(at('startup:')).toBeLessThan(at('world:'));
+    expect(at('world:')).toBeLessThan(at('view:'));
+    expect(at('`dojo.cubes`')).toBeLessThan(at('world:'));
+    expect(at('`physics.gravity`')).toBeGreaterThan(at('world:'));
+    expect(out).toMatch(/`dojo.cubes` +20 +\(changed; default 0\)/);
+    expect(out).not.toMatch(/`seed`.*changed/);
+    expect(texts(r.run('vars show.'))).not.toContain('startup:');
+  });
+
+  it('reset puts one variable or all of them back, each one entering as if it had been typed', () => {
+    const { r } = build();
+    declareHelp(r);
+    const restarts = vi.fn();
+    const scheduled: string[] = [];
+    r.onStartupChange = restarts;
+    r.scheduler = (line) => scheduled.push(line);
+    r.run('dojo.cubes 20; seed 5; physics.gravity 0 -3 0; show.axes on');
+    restarts.mockClear();
+    scheduled.length = 0;
+
+    r.run('reset show.axes');
+    expect(r.value('show.axes')).toBe(false);
+    expect(texts(r.run('reset show.axes'))).toContain('already at its default value');
+    expect(texts(r.run('reset nothing.here'))).toContain('no variable');
+
+    r.run('reset');
+    expect(r.changed()).toEqual([]);
+    // Two startup values went back, and the world restarts ONCE; the world one goes to the scheduler.
+    expect(restarts).toHaveBeenCalledTimes(1);
+    expect(scheduled).toEqual(['physics.gravity 0 -9.81 0']);
+    expect(texts(r.run('reset'))).toContain('nothing to reset');
   });
 });

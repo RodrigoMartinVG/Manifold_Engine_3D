@@ -183,11 +183,13 @@ export class Registry<W = unknown> {
       return false;
     }
 
+    // The suggestion is the whole line, corrected: in the console it can be clicked (text in `backticks`).
     const suggestion = closest(name, this.names());
+    const restOfLine = line.trim().slice(first.text.length);
     out.write(
       suggestion
-        ? `no such name "${name}". Did you mean "${suggestion}"?`
-        : `no such name "${name}". Try "find ${name}" or "help".`,
+        ? `no such name "${name}". Did you mean \`${suggestion}${restOfLine}\`?`
+        : `no such name "${name}". Try \`find ${name}\` or \`help\`.`,
       'error',
     );
     return false;
@@ -221,7 +223,7 @@ export class Registry<W = unknown> {
     for (const a of c.args ?? []) {
       if (i >= rest.length) {
         if (a.optional) break;
-        out.write(`${c.name}: missing ${a.name} (${describeType(a.type)}). Usage: ${this.usage(c)}`, 'error');
+        out.write(`${c.name}: missing ${a.name} (${describeType(a.type)}). Usage: \`${this.usage(c)}\``, 'error');
         return null;
       }
       if (a.type.kind === 'rest') {
@@ -242,7 +244,7 @@ export class Registry<W = unknown> {
       i += used;
     }
     if (i < rest.length) {
-      out.write(`${c.name}: extra "${rest[i]!.text}". Usage: ${this.usage(c)}`, 'error');
+      out.write(`${c.name}: extra "${rest[i]!.text}". Usage: \`${this.usage(c)}\``, 'error');
       return null;
     }
     return args;

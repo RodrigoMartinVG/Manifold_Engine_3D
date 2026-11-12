@@ -87,7 +87,8 @@ test("the Dojo's console opens with the º key and changes the world", async ({ 
   await expect.poll(() => meshes(page)).toBe(22);
   // A misspelled name suggests the similar one.
   await typeInConsole(page, 'dojo.cube 3');
-  await expect(consoleLog(page)).toContainText('Did you mean "dojo.cubes"?');
+  // The whole line, corrected, as a button: a click puts it in the line.
+  await expect(consoleLog(page)).toContainText('Did you mean dojo.cubes 3?');
   // Export builds the link with the recipe of what changed.
   await typeInConsole(page, 'export');
   await expect(consoleLog(page)).toContainText('/jugar/dojo/#recipe=dojo.cubes+20');
@@ -144,10 +145,69 @@ test('the startup recipe and the key bindings are saved, and hold the next time'
   await page.reload();
   // It is born with the startup recipe...
   await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(5);
-  // ...and the binding works with the console closed.
-  await page.locator('#game canvas').click();
+  // ...and the binding works with the console closed. (The click goes to an empty corner: a click on an
+  // object would inspect it, and open the console.)
+  await page.locator('#game canvas').click({ position: { x: 40, y: 40 } });
   await page.keyboard.press('t');
   await page.keyboard.press('Backquote');
   await expect(consoleLog(page)).toContainText('(bind t)');
   await expect(consoleLog(page)).toContainText('show.wireframe = on');
+});
+
+// ---------------------------------------------------------------- the console, friendlier (before stage 1b)
+
+test("help's examples are buttons: a click puts one in the line, and Enter runs it", async ({ page }) => {
+  await page.goto('jugar/dojo/');
+  await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(1);
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'help');
+  await consoleLog(page).getByRole('button', { name: 'dojo.spawn 0 5 0' }).click();
+  await expect(page.locator('.mg-console input')).toHaveValue('dojo.spawn 0 5 0 ');
+  await page.locator('.mg-console input').press('Enter');
+  await expect.poll(() => meshes(page)).toBe(2);
+  // A suggestion is a button too, with the whole line corrected.
+  await typeInConsole(page, 'show.phisics on');
+  // (The last one: help's examples have one with the same text.)
+  await consoleLog(page).getByRole('button', { name: 'show.physics on' }).last().click();
+  await expect(page.locator('.mg-console input')).toHaveValue('show.physics on ');
+});
+
+test('the free camera turns with a drag, camera.reset brings it back, and a click on an object inspects it', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('jugar/dojo/');
+  const game = page.locator('#game');
+  await expect.poll(() => game.getAttribute('data-camera'), { timeout: 15_000 }).toBe('3.20 2.40 4.20');
+  // Dragging turns the camera around the scene (the world does not change: only the view).
+  await page.mouse.move(900, 300);
+  await page.mouse.down();
+  await page.mouse.move(700, 320, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(() => game.getAttribute('data-camera')).not.toBe('3.20 2.40 4.20');
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'camera.reset');
+  await expect.poll(() => game.getAttribute('data-camera')).toBe('3.20 2.40 4.20');
+  await page.keyboard.press('Escape');
+  // The camera looks at the big cube: a click in the middle of the screen inspects it.
+  await page.mouse.click(640, 400);
+  await expect(page.locator('.mg-console')).toHaveAttribute('data-open', 'true');
+  await expect(consoleLog(page)).toContainText('entity 1, at step');
+  await expect(consoleLog(page)).toContainText('body');
+  await expect(consoleLog(page)).toContainText('type kinematic');
+  // inspect with no id counts the entities; the stats show the physics.
+  await typeInConsole(page, 'inspect', 'show.stats on');
+  await expect(consoleLog(page)).toContainText('2 entities: 1 kinematic, 1 fixed');
+  await expect(page.locator('.mg-stats')).toContainText('ms per step');
+});
+
+test('reset puts everything back to its default value, and vars shows it by scope', async ({ page }) => {
+  await page.goto('jugar/dojo/');
+  await expect.poll(() => meshes(page), { timeout: 15_000 }).toBe(1);
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'dojo.cubes 5', 'show.axes on', 'vars');
+  await expect(consoleLog(page)).toContainText('startup: changing them restarts the world');
+  await expect(consoleLog(page)).toContainText('(changed; default 0)');
+  await expect.poll(() => meshes(page)).toBe(6);
+  await typeInConsole(page, 'reset', 'changed');
+  await expect.poll(() => meshes(page)).toBe(1);
+  await expect(consoleLog(page)).toContainText('nothing changed: everything is at its default value');
 });

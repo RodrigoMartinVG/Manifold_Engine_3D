@@ -87,7 +87,7 @@ export function parseValue(t: Type, words: readonly string[]): Parsed {
       return { ok: false, error: `expected on or off, got "${words[0] ?? ''}"` };
     }
     case 'vector': {
-      if (words.length < 3) return { ok: false, error: 'expected a vector: three numbers (x y z)' };
+      if (words.length < 3) return { ok: false, error: 'expected three numbers (x y z)' };
       const v: number[] = [];
       for (const w of words.slice(0, 3)) {
         const n = number(w, false);
@@ -138,7 +138,7 @@ export function describeType(t: Type): string {
     case 'boolean':
       return 'on or off';
     case 'vector':
-      return 'three numbers (x y z)';
+      return 'three numbers';
     case 'text':
       return 'a text';
     case 'option':

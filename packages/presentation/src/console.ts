@@ -7,10 +7,14 @@ export interface ConsoleOptions {
   rooms?: Readonly<Record<string, { title: string; text: string }>>;
   /** A room's own address (if the site gives it one): when it is loaded, the address bar shows it. */
   roomUrl?(name: string): string;
+  /** A few lines worth trying first, for `help` (each game knows its own). */
+  examples?: readonly string[];
 }
 
 export interface GameConsole {
   write(text: string, level?: Level | 'echo'): void;
+  /** Runs a line as if it had been typed (it shows up in the console, but not in the history). */
+  run(text: string): void;
   open(): void;
   close(): void;
   readonly isOpen: boolean;
@@ -39,6 +43,10 @@ const MAX_LINES = 400;
  * (the recipe of what changed, as a link), `load` (a saved room), `startup` (one's own startup
  * recipe), `bind`/`unbind` (keys for commands) and `clear`. None of them can be used from a recipe:
  * someone else's link never touches the saved preferences.
+ *
+ * What it writes in `backticks` is something that can be typed: it is drawn as a button, and a click
+ * puts it in the line (Enter runs it). Examples, suggestions, rooms, names: they are discovered by
+ * clicking, and on a phone they save typing.
  */
 export function mountConsole(
   container: HTMLElement,
@@ -78,12 +86,22 @@ export function mountConsole(
     for (const line of text.split('\n')) {
       const div = document.createElement('div');
       div.className = `mg-console-${level}`;
-      div.textContent = line;
+      // What the person typed is shown as is; what the console answers may bring `clickable` text.
+      if (level === 'echo') div.textContent = line;
+      else appendWithButtons(div, line);
       log.append(div);
     }
     while (log.childElementCount > MAX_LINES) log.firstElementChild?.remove();
     log.scrollTop = log.scrollHeight;
   }
+  /** A click on a `button` of the text: it goes to the line, ready to be run (or changed). */
+  log.addEventListener('click', (e) => {
+    const chip = (e.target as HTMLElement).closest('.mg-console-cmd');
+    if (!chip) return;
+    open();
+    input.value = `${chip.textContent} `;
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
   const show = (messages: Message[]) => messages.forEach((m) => write(m.text, m.level));
 
   // ---------- Opening and closing ----------
@@ -104,8 +122,12 @@ export function mountConsole(
   const typed: string[] = saved.read('history') ?? [];
   let inHistory = typed.length;
 
-  function run(text: string) {
+  function run(text: string, remember = true) {
     write(`] ${text}`, 'echo');
+    if (!remember) {
+      show(r.run(text, 'console'));
+      return;
+    }
     if (text.trim() && typed[typed.length - 1] !== text) {
       typed.push(text);
       typed.splice(0, Math.max(0, typed.length - MAX_HISTORY));
@@ -127,7 +149,9 @@ export function mountConsole(
     } else if (e.key === 'Tab') {
       e.preventDefault();
       const { candidates, line } = r.complete(input.value);
-      if (candidates.length > 1) write(candidates.join('   '));
+      // The options, as whole lines that can be clicked ("show.axes on", not just "on").
+      const before = input.value.replace(/\S*$/, '');
+      if (candidates.length > 1) write(candidates.map((c) => `\`${before}${c}\``).join('   '));
       input.value = line;
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
@@ -184,14 +208,16 @@ export function mountConsole(
     run([name], out) {
       const rooms = o.rooms ?? {};
       if (typeof name !== 'string') {
-        const list = Object.entries(rooms).map(([n, room]) => `${n.padEnd(16)} ${room.title}`);
+        const list = Object.entries(rooms).map(
+          ([n, room]) => `\`load ${n}\`${' '.repeat(Math.max(1, 20 - n.length))}${room.title}`,
+        );
         out.write(list.length ? list.join('\n') : 'this game has no saved rooms');
         return;
       }
       const room = rooms[name.toLowerCase()];
       if (!room) {
         const suggestion = closest(name.toLowerCase(), Object.keys(rooms));
-        out.write(`no room "${name}"${suggestion ? `. Did you mean "${suggestion}"?` : ''}`, 'error');
+        out.write(`no room "${name}"${suggestion ? `. Did you mean \`load ${suggestion}\`?` : ''}`, 'error');
         return;
       }
       // From scratch: the defaults, the startup recipe and the room's. One single restart at the end.
@@ -211,7 +237,7 @@ export function mountConsole(
   r.declareCommand({
     name: 'startup',
     description:
-      'Your startup recipe for this game: "startup save" saves what you changed, and it is applied every time you open it; "startup clear" deletes it.',
+      'Your startup recipe for this game: `startup save` saves what you changed, and it is applied every time you open it; `startup clear` deletes it.',
     args: [{ name: 'action', type: { kind: 'option', options: ['save', 'clear'] }, optional: true }],
     run([action], out) {
       if (action === 'save') {
@@ -222,14 +248,14 @@ export function mountConsole(
         out.write('cleared');
       } else
         out.write(
-          saved.read<string>('startup')?.trimEnd() ?? 'you have no startup recipe ("startup save" saves what you changed)',
+          saved.read<string>('startup')?.trimEnd() ?? 'you have no startup recipe (`startup save` saves what you changed)',
         );
     },
   });
 
   r.declareCommand({
     name: 'bind',
-    description: 'A key for a command, with the console closed: "bind t toggle show.wireframe". With nothing: the list.',
+    description: 'A key for a command, with the console closed: `bind t toggle show.wireframe`. With nothing: the list.',
     args: [
       { name: 'key', type: { kind: 'text' }, optional: true },
       { name: 'command', type: { kind: 'rest' }, optional: true },
@@ -237,7 +263,7 @@ export function mountConsole(
     run([key, command], out) {
       if (typeof key !== 'string') {
         const list = Object.entries(binds).map(([k, c]) => `${k.padEnd(5)} ${c}`);
-        out.write(list.length ? list.join('\n') : 'no bindings (for example: bind t toggle show.wireframe)');
+        out.write(list.length ? list.join('\n') : 'no bindings (for example: `bind t toggle show.wireframe`)');
         return;
       }
       const k = key.toLowerCase();
@@ -257,7 +283,7 @@ export function mountConsole(
 
   r.declareCommand({
     name: 'unbind',
-    description: 'Removes a key binding: "unbind t".',
+    description: 'Removes a key binding: `unbind t`.',
     args: [{ name: 'key', type: { kind: 'text' } }],
     run([key], out) {
       const k = String(key).toLowerCase();
@@ -277,10 +303,11 @@ export function mountConsole(
     run: () => log.replaceChildren(),
   });
 
-  write(`${o.game} console. Type "help" to start; Tab completes, Esc closes.`);
+  write(`${o.game} console. Type \`help\` to start (or click it); Tab completes, Esc closes.`);
 
   return {
     write,
+    run: (text) => run(text, false),
     open,
     close,
     get isOpen() {
@@ -296,6 +323,30 @@ export function mountConsole(
 }
 
 const validKey = (k: string) => /^([a-z0-9]|f([1-9]|1[0-2]))$/.test(k);
+
+/**
+ * A line of text whose `backticks` become buttons. With an odd number of backticks the line is shown
+ * as is (it is not a clickable text: something else that uses them).
+ */
+function appendWithButtons(div: HTMLElement, line: string) {
+  const parts = line.split('`');
+  if (parts.length % 2 === 0) {
+    div.textContent = line;
+    return;
+  }
+  parts.forEach((part, i) => {
+    if (i % 2 === 0) {
+      if (part) div.append(part);
+      return;
+    }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mg-console-cmd';
+    button.textContent = part;
+    button.title = 'Put it in the line';
+    div.append(button);
+  });
+}
 
 /** Saving in the browser, separately for each game. If it cannot (a private window), nothing happens. */
 function storage(prefix: string) {
@@ -344,6 +395,11 @@ function addStyles() {
     .mg-console-echo { color: #93d9c9; }
     .mg-console-warn { color: #e5c07b; }
     .mg-console-error { color: #e88a7d; }
+    .mg-console-cmd {
+      font: inherit; color: #93d9c9; background: rgb(147 217 201 / 0.08); cursor: pointer;
+      border: 0; border-bottom: 1px dotted rgb(147 217 201 / 0.6); border-radius: 0.2rem; padding: 0 0.2rem;
+    }
+    .mg-console-cmd:hover, .mg-console-cmd:focus-visible { color: #f3e9d8; background: rgb(147 217 201 / 0.2); outline: 0; }
     .mg-console-line {
       display: flex; gap: 0.5rem; align-items: center; padding: 0.45rem 0.9rem;
       border-top: 1px solid rgb(158 116 70 / 0.35); color: #c4a06a;

@@ -81,7 +81,7 @@ export const DojoCartridge: Cartridge = {
     registry.declareCommand({
       name: 'dojo.spawn',
       description: "Drops a ball from (x, y, z), with its size and color taken from the world's randomness.",
-      args: [{ name: 'place', type: { kind: 'vector' } }],
+      args: [{ name: 'x y z', type: { kind: 'vector' } }],
       onWorld(world, [place]) {
         ball(world, place as Vec3);
       },

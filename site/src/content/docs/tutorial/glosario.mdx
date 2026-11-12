@@ -134,29 +134,32 @@ La consola está en inglés y no se traduce: sus nombres son como las palabras d
 
 Y los nombres que hay hoy:
 
-| Nombre            | Qué hace                                                                                   |
-| ----------------- | ------------------------------------------------------------------------------------------ |
-| `help`            | cómo se usa la consola, o la ayuda de un nombre: `help seed`                               |
-| `find`            | busca en los nombres y en sus descripciones: `find cube`                                   |
-| `vars`            | las variables y sus valores; `vars show.` muestra solo las que empiezan así                |
-| `changed`         | solo las variables que no tienen su valor de siempre                                       |
-| `toggle`          | da vuelta una variable de prendido y apagado (_on_ / _off_): `toggle show.axes`            |
-| `export`          | arma un enlace con la receta de lo que cambiaste (_export_: exportar)                      |
-| `load`            | carga una sala guardada (_load_: cargar); sin nombre, la lista                             |
-| `startup`         | la receta de inicio: `startup save` la guarda (_save_), `startup clear` la borra (_clear_) |
-| `bind`, `unbind`  | asigna o quita un atajo de teclado (_bind_: atar)                                          |
-| `clear`           | borra lo que está escrito en la consola                                                    |
-| `seed`            | la semilla del azar del mundo                                                              |
-| `physics.gravity` | la gravedad, en m/s² en cada eje: la de la Tierra es `0 -9.81 0`                           |
-| `restart`         | el mundo vuelve a empezar, con los valores actuales                                        |
-| `pause`, `step`   | detiene o sigue el mundo; `step 10` avanza diez pasos y lo deja en pausa                   |
-| `hash`            | el paso del mundo y su huella                                                              |
-| `show.wireframe`  | las mallas en alambre (_show_: mostrar)                                                    |
-| `show.axes`       | los ejes del mundo en el origen                                                            |
-| `show.physics`    | lo que ve el motor de física: los colisionadores de cada cuerpo, como líneas               |
-| `show.stats`      | el paso, la huella, las entidades y los cuadros por segundo (_stats_: estadísticas)        |
-| `view.timescale`  | la velocidad a la que se muestra el mundo (no cambia la simulación)                        |
-| `view.paused`     | el mundo detenido, como variable                                                           |
-| `dojo.cubes`      | cuántos cubos chicos caen al empezar (_cubes_: cubos)                                      |
-| `dojo.spin`       | cómo gira el cubo grande, en radianes por segundo alrededor de cada eje                    |
-| `dojo.spawn`      | tira una pelota desde un lugar: `dojo.spawn 2 5 0` (_spawn_: hacer aparecer)               |
+| Nombre            | Qué hace                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `help`            | cómo se usa la consola, o la ayuda de un nombre: `help seed`                                                                 |
+| `find`            | busca en los nombres y en sus descripciones: `find cube`                                                                     |
+| `vars`            | las variables y sus valores; `vars show.` muestra solo las que empiezan así                                                  |
+| `changed`         | solo las variables que no tienen su valor de siempre                                                                         |
+| `toggle`          | da vuelta una variable de prendido y apagado (_on_ / _off_): `toggle show.axes`                                              |
+| `export`          | arma un enlace con la receta de lo que cambiaste (_export_: exportar)                                                        |
+| `load`            | carga una sala guardada (_load_: cargar); sin nombre, la lista                                                               |
+| `startup`         | la receta de inicio: `startup save` la guarda (_save_), `startup clear` la borra (_clear_)                                   |
+| `bind`, `unbind`  | asigna o quita un atajo de teclado (_bind_: atar)                                                                            |
+| `clear`           | borra lo que está escrito en la consola                                                                                      |
+| `reset`           | vuelve una variable (o todas, sin nombre) a su valor de siempre: `reset dojo.cubes`                                          |
+| `inspect`         | de qué está hecha una entidad, con sus números: `inspect 1` (_inspect_: inspeccionar); un clic sobre un objeto hace lo mismo |
+| `camera.reset`    | la cámara vuelve a donde empezó                                                                                              |
+| `seed`            | la semilla del azar del mundo                                                                                                |
+| `physics.gravity` | la gravedad, en m/s² en cada eje: la de la Tierra es `0 -9.81 0`                                                             |
+| `restart`         | el mundo vuelve a empezar, con los valores actuales                                                                          |
+| `pause`, `step`   | detiene o sigue el mundo; `step 10` avanza diez pasos y lo deja en pausa                                                     |
+| `hash`            | el paso del mundo y su huella                                                                                                |
+| `show.wireframe`  | las mallas en alambre (_show_: mostrar)                                                                                      |
+| `show.axes`       | los ejes del mundo en el origen                                                                                              |
+| `show.physics`    | lo que ve el motor de física: los colisionadores de cada cuerpo, como líneas                                                 |
+| `show.stats`      | el paso, la huella, las entidades y los cuadros por segundo (_stats_: estadísticas)                                          |
+| `view.timescale`  | la velocidad a la que se muestra el mundo (no cambia la simulación)                                                          |
+| `view.paused`     | el mundo detenido, como variable                                                                                             |
+| `dojo.cubes`      | cuántos cubos chicos caen al empezar (_cubes_: cubos)                                                                        |
+| `dojo.spin`       | cómo gira el cubo grande, en radianes por segundo alrededor de cada eje                                                      |
+| `dojo.spawn`      | tira una pelota desde un lugar: `dojo.spawn 2 5 0` (_spawn_: hacer aparecer)                                                 |

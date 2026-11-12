@@ -1,5 +1,5 @@
 export { Registry, type Scheduler } from './registry';
-export { declareHelp } from './help';
+export { declareHelp, type HelpOptions } from './help';
 export { recipeFromLink, recipeToLink, recipeTitle, LINK_PREFIX } from './recipes';
 export { formatValue, splitLines } from './values';
 export { closest } from './closest';
