@@ -5,7 +5,9 @@ import {
   pressed,
   STEP,
   upAt,
+  type Capabilities,
   type Cartridge,
+  type Character,
   type Event,
   type Level,
   type Movement,
@@ -37,20 +39,31 @@ function randomCube(world: World) {
 }
 
 /** A copy of a movement's numbers. */
-const copyMovement = (m: Movement): Movement => ({ walk: { ...m.walk }, air: { ...m.air }, jump: { ...m.jump }, turn: m.turn });
+const copyMovement = (m: Movement): Movement => ({
+  walk: { ...m.walk },
+  air: { ...m.air },
+  jump: { ...m.jump },
+  glide: { ...m.glide },
+  climb: { ...m.climb },
+  turn: m.turn,
+});
 
 /** A character: a capsule 1.6 m tall, and its game data for the level's loop. */
-function character(world: World, player: number, at: Vec3, facing: Vec3, color: number, movement?: Movement) {
+function character(world: World, player: number, at: Vec3, facing: Vec3, color: number, like?: Character) {
   world.createEntity({
     transform: { position: [...at], rotation: quat.identity() },
     body: { type: 'character', shape: { kind: 'capsule', halfHeight: 0.5, radius: 0.3 } },
-    // (A copy of the numbers it moves with, if given: each character has its own.)
-    character: { player, facing: [...facing], ...(movement ? { movement: copyMovement(movement) } : {}) },
+    // (Like another one, if given: a copy of the numbers it moves with and of what it can do.)
+    character: { player, facing: [...facing], ...(like ? { movement: copyMovement(like.movement), can: { ...like.can } } : {}) },
     appearance: { shape: 'capsule', size: [0.6, 1.6, 0.6], color },
-    // Where it comes back after falling, when it started, when it reached the goal (−1: not yet), its falls.
-    game: { spawn: [...at], checkpoint: [...at], start: world.tick, finish: -1, falls: 0 },
+    // Where it comes back after falling, when it started, when it reached the goal (−1: not yet), its
+    // falls, its stars.
+    game: { spawn: [...at], checkpoint: [...at], start: world.tick, finish: -1, falls: 0, stars: 0 },
   });
 }
+
+/** The level's stars: zones of kind `star` (while nobody has taken them). */
+const stars = (world: World) => [...world.entities.values()].filter((e) => e.sensor?.kind === 'star');
 
 /**
  * A LEVEL (stage 2a: from its file, `dojo.level <name>`): its boxes and its zones, and player 1's
@@ -58,6 +71,12 @@ function character(world: World, player: number, at: Vec3, facing: Vec3, color: 
  */
 function buildDojoLevel(world: World, level: Level) {
   buildLevel(world, level);
+  // Its stars are seen (stage 2c): a small gold cube that spins, in each `star` zone. (A zone with a
+  // spin and no body: the world turns it, without trigonometry.)
+  for (const star of stars(world)) {
+    star.appearance = { shape: 'box', size: [0.4, 0.4, 0.4], color: 0xf0c040 };
+    star.spin = { angularVelocity: [0.4, 2, 0.3] };
+  }
   character(world, 1, level.spawn, level.facing, 0x93d9c9);
 }
 
@@ -66,7 +85,8 @@ function buildDojoLevel(world: World, level: Level) {
  * means is the Dojo's.
  * - `checkpoint`: a character comes back here from now on, if it falls;
  * - `fall` (the void under the floor): a character goes back to its checkpoint; a cube or a ball is gone;
- * - `goal`: the time it took (from when it started) and how many times it fell, once.
+ * - `star` (stage 2c): whoever gets there first takes it, and it is gone;
+ * - `goal`: the time it took (from when it started), how many times it fell and its stars, once.
  * What it keeps lives in the character's `game` data: it is the world's, so it is hashed, it travels in
  * snapshots, and a replay plays it the same.
  */
@@ -94,12 +114,23 @@ function levelLoop(world: World, events: readonly Event[]) {
           notice(player, 'checkpoint');
         }
         break;
+      case 'star':
+        if (game && player !== undefined) {
+          world.removeEntity(zone.id);
+          game.stars = (game.stars as number) + 1;
+          notice(player, `a star (${game.stars as number} taken, ${stars(world).length} left)`);
+        }
+        break;
       case 'goal':
         if (game && player !== undefined && (game.finish as number) < 0) {
           game.finish = world.tick;
           const seconds = (((game.finish as number) - (game.start as number)) * STEP).toFixed(2);
           const falls = game.falls as number;
-          notice(player, `the goal: ${seconds} s, ${falls === 1 ? '1 fall' : `${falls} falls`}`);
+          const taken = game.stars as number;
+          notice(
+            player,
+            `the goal: ${seconds} s, ${falls === 1 ? '1 fall' : `${falls} falls`}, ${taken === 1 ? '1 star' : `${taken} stars`}`,
+          );
         }
         break;
     }
@@ -146,8 +177,8 @@ function joinedPlayers(world: World) {
         [spawn[0] + 1.2 * (p - 1), spawn[1], spawn[2]],
         first.character!.facing,
         PLAYER_COLORS[(p - 2) % PLAYER_COLORS.length]!,
-        // It moves like the first one (whatever `dojo.air` and the rest made of it).
-        first.character!.movement,
+        // It moves like the first one, and can do what it can (whatever `dojo.air`, `dojo.climb`… made of it).
+        first.character!,
       );
   for (const e of characters) if (e.character!.player !== 1 && !world.players.has(e.character!.player)) world.removeEntity(e.id);
 }
@@ -194,6 +225,29 @@ export function createDojo(levels: Readonly<Record<string, Level>>): Cartridge {
         type: { kind: 'option', options: ['empty', ...Object.keys(levels)] },
         default: 'empty',
       });
+      // What the characters can do besides walking and jumping (stage 2c): on and off, live, for all.
+      const capability = (name: string, key: keyof Capabilities, description: string) =>
+        registry.declareVariable({
+          name,
+          description,
+          scope: 'world',
+          type: { kind: 'boolean' },
+          default: false,
+          onWorld(world, value) {
+            for (const e of world.entities.values()) if (e.character) e.character.can[key] = value === true;
+          },
+        });
+      capability(
+        'dojo.climb',
+        'climb',
+        'Pushing against a wall, the characters climb it; jumping from it, they leap off (stage 2c).',
+      );
+      capability(
+        'dojo.glide',
+        'glide',
+        'Holding the jump while falling, the characters glide: they fall slowly, and steer more (stage 2c).',
+      );
+      capability('dojo.doublejump', 'doubleJump', 'One more jump in the air, pressing jump again (stage 2c).');
       registry.declareVariable({
         name: 'dojo.air',
         description:
@@ -215,6 +269,16 @@ export function createDojo(levels: Readonly<Record<string, Level>>): Cartridge {
           // The big cube is the world's first entity (id 1): `onStart` creates it, before anything else.
           const cube = world.entities.get(1);
           if (cube?.spin) cube.spin.angularVelocity = [...(value as Vec3)];
+        },
+      });
+      registry.declareCommand({
+        name: 'dojo.goto',
+        description:
+          "Puts player 1's character at (x, y, z), stopped: to explore a level (stage 2c). A world action: it enters at a step, and the replay has it.",
+        args: [{ name: 'x y z', type: { kind: 'vector' } }],
+        onWorld(world, [place]) {
+          const hero = [...world.entities.values()].find((e) => e.character?.player === 1);
+          if (hero) world.place(hero, place as Vec3);
         },
       });
       registry.declareCommand({

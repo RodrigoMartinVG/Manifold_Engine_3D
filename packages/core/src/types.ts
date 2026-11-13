@@ -112,15 +112,36 @@ export interface Movement {
   /**
    * The jump: its speed up (m/s: it rises v² / 2g, 6.5 m/s on Earth is about 2.15 m); how many steps
    * after leaving an edge it still counts ("coyote time"); how many steps before landing it is kept
-   * ("jump buffering").
+   * ("jump buffering"); and how many more jumps it has in the air, if it can (`can.doubleJump`).
    */
-  jump: { speed: number; coyote: number; buffer: number };
+  jump: { speed: number; coyote: number; buffer: number; air: number };
+  /** Gliding (stage 2c): the fastest it falls (m/s), and how much it can steer (m/s²). */
+  glide: { fall: number; control: number };
+  /**
+   * Climbing a wall (stage 2c): how fast it climbs (m/s); the hop up when the wall ends at its top
+   * (m/s up), so it gets onto it; and how fast a jump from the wall takes it away from it (m/s).
+   */
+  climb: { speed: number; top: number; off: number };
   /** How fast it turns on its own axis when asked to (`turn` at 1), radians per second. */
   turn: number;
 }
 
-/** The ways of moving (stage 2b): exactly one at each step. Climbing, gliding… come in with stage 2c. */
-export type ModeName = 'walk' | 'air';
+/** The ways of moving (stage 2b): exactly one at each step. Gliding and climbing came with stage 2c. */
+export type ModeName = 'walk' | 'air' | 'glide' | 'climb';
+
+/**
+ * WHAT A CHARACTER CAN DO besides walking and jumping (stage 2c): each one, on or off, and it can
+ * change at a step (the Dojo's `dojo.climb on`). Data, like the rest: in the hash, in snapshots, in
+ * replays.
+ */
+export interface Capabilities {
+  /** One more jump in the air (as many as `movement.jump.air`). */
+  doubleJump: boolean;
+  /** Holding the jump while falling, it falls slowly and steers more. */
+  glide: boolean;
+  /** Pushing against a wall, it climbs it; jumping from it, it leaps off. */
+  climb: boolean;
+}
 
 /**
  * A CHARACTER (stage 1b): something a player drives. Its body is a `character` body, a capsule; this
@@ -138,6 +159,12 @@ export interface Character {
   /** The player who drives it (the inputs carry this number). */
   player: number;
   movement: Movement;
+  /** What it can do besides walking and jumping (stage 2c). */
+  can: Capabilities;
+  /** Jumps it still has in the air (stage 2c), until it touches the ground again. */
+  airJumps: number;
+  /** The wall it touched at the last step: the direction towards it, along the ground (zero: none). */
+  wall: Vec3;
   /** The mode it moved in at the last step. */
   mode: ModeName;
   velocity: Vec3;
@@ -164,8 +191,11 @@ export type CharacterSpec = Pick<Character, 'player'> & {
     walk?: Partial<Movement['walk']>;
     air?: Partial<Movement['air']>;
     jump?: Partial<Movement['jump']>;
+    glide?: Partial<Movement['glide']>;
+    climb?: Partial<Movement['climb']>;
     turn?: number;
   };
+  can?: Partial<Capabilities>;
 };
 
 /**

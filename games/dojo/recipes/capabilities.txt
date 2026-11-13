@@ -1,0 +1,11 @@
+# Capabilities: climbing, gliding, a second jump
+# The course, with what a character can do besides walking and jumping. Three stars: one on top of a
+# tower that can only be climbed (push against it), one on an island out in the void that can only be
+# reached gliding (hold Space while falling), and one high above the last platform, for a second jump
+# at the top of the first. Turn each one off in the console (dojo.climb off) and try again.
+seed 2
+dojo.level course
+dojo.cubes 6
+dojo.climb on
+dojo.glide on
+dojo.doublejump on

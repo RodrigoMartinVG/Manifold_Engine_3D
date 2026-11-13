@@ -353,6 +353,97 @@ describe('the character (stage 1b)', () => {
     world.dispose();
   });
 
+  test('double jump (stage 2c): a second press in the air jumps again, once; without it, nothing', () => {
+    const highest = (doubleJump: boolean) => {
+      const { world, hero } = setUp();
+      hero.character!.can.doubleJump = doubleJump;
+      run(world, 60);
+      let top = 0;
+      // Pressed on the ground, and pressed again (and again) in the air, at the top of the first jump.
+      run(world, 120, (step) => {
+        top = Math.max(top, hero.transform!.position[1]);
+        return input([0, 0, 0], step === 1 || step === 40 || step === 60);
+      });
+      world.dispose();
+      return top - STAND;
+    };
+    expect(highest(false)).toBeLessThan(2.3);
+    expect(highest(true)).toBeGreaterThan(3.5); // two jumps' worth (a third press does nothing)
+    expect(highest(true)).toBeLessThan(4.5);
+  });
+
+  test('glide (stage 2c): falling while holding the jump, it never falls faster than its limit', () => {
+    const fastestFall = (glide: boolean) => {
+      const { world, hero } = setUp({ at: [0, 12, 0] });
+      hero.character!.can.glide = glide;
+      let fastest = 0;
+      run(world, 60, () => {
+        fastest = Math.min(fastest, hero.character!.velocity[1]);
+        return input([0, 0, 0], true);
+      });
+      world.dispose();
+      return fastest;
+    };
+    expect(fastestFall(false)).toBeLessThan(-5);
+    expect(fastestFall(true)).toBeCloseTo(-DEFAULT_MOVEMENT.glide.fall, 6);
+  });
+
+  test('climb (stage 2c): pushing against a 3 m wall, it climbs it and stands on top; without it, it stays below', () => {
+    const climb = (can: boolean) => {
+      // A block 3 m high and 3 m deep: room on top to land after the hop.
+      const { world, hero } = setUp({
+        boxes: [
+          [
+            [3, 1.5, 0],
+            [1.5, 1.5, 3],
+          ],
+        ],
+      });
+      hero.character!.can.climb = can;
+      run(world, 60);
+      const modes = new Set<string>();
+      let onTop = false;
+      run(world, 300, () => {
+        modes.add(hero.character!.mode);
+        // Standing on the wall's top (it keeps pushing: later it walks across, and falls off the other side).
+        if (hero.character!.grounded && hero.transform!.position[1] > 3.5) onTop = true;
+        return input([1, 0, 0]);
+      });
+      world.dispose();
+      return { onTop, modes };
+    };
+    const without = climb(false);
+    expect(without.onTop).toBe(false);
+    expect(without.modes.has('climb')).toBe(false);
+    const withIt = climb(true);
+    expect(withIt.modes.has('climb')).toBe(true);
+    expect(withIt.onTop).toBe(true);
+  });
+
+  test('climb (stage 2c): a jump from the wall takes it up and away from it', () => {
+    const { world, hero } = setUp({
+      boxes: [
+        [
+          [2, 3, 0],
+          [0.5, 3, 3],
+        ],
+      ],
+    });
+    hero.character!.can.climb = true;
+    run(world, 60);
+    run(world, 60, () => input([1, 0, 0]));
+    expect(hero.character!.mode).toBe('climb');
+    const [x, y] = hero.transform!.position;
+    // The jump, still pushing against the wall: while it goes up it does not grab it again.
+    run(world, 10, (step) => input([1, 0, 0], step === 1));
+    expect(hero.character!.mode).toBe('air');
+    expect(hero.transform!.position[1]).toBeGreaterThan(y! + 0.4);
+    // And letting go, it goes away from it.
+    run(world, 10, () => input());
+    expect(hero.transform!.position[0]).toBeLessThan(x! - 0.2);
+    world.dispose();
+  });
+
   test('its "up" comes from the gravity: with gravity along −Z, it stands on a wall that is a floor', () => {
     // The same world turned: gravity towards −Z, and a "floor" whose top is at z = 0.
     const world = new World({ seed: 1, gravity: { kind: 'uniform', vector: [0, 0, -9.81] } });

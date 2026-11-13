@@ -160,9 +160,12 @@ test('a room with a character has its own hint, which says how to drive it', asy
 test('the play page: the rooms as cards with their lines, the one with a character first', async ({ page }) => {
   await page.goto('jugar/');
   const cards = page.locator('.mg-room-cards li');
-  await expect(cards.first()).toContainText('con personaje');
+  // The rooms with a character (the course's) go first, all of them before any other.
+  const tagged = await cards.evaluateAll((li) => li.map((x) => x.textContent!.includes('con personaje')));
+  expect(tagged[0]).toBe(true);
+  expect(tagged.indexOf(false)).toBeGreaterThan(tagged.lastIndexOf(true));
   await expect(cards.first()).toContainText('dojo.level course');
-  await expect(cards.first().locator('a')).toHaveAttribute('href', /jugar\/dojo\/course\/$/);
+  await expect(cards.filter({ hasText: 'load course' }).locator('a')).toHaveAttribute('href', /jugar\/dojo\/course\/$/);
 });
 
 test("the Dojo's hint can be closed by hand, too", async ({ page }) => {

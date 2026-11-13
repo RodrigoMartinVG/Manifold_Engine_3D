@@ -113,6 +113,10 @@ El texto del tutorial está en español y el código, en inglés ([por qué](../
 | modo de moverse              | _locomotion mode_  | caminar, en el aire, trepar…: uno solo por vez, cada uno con sus números                     |
 | aporte                       | _contribution_     | lo que se suma al movimiento sea cual sea el modo: la gravedad, lo que arrastra al personaje |
 | control en el aire           | _air control_      | cuánto se puede corregir un salto ya en el aire: `dojo.air`                                  |
+| capacidad                    | _capability_       | algo que un personaje sabe hacer además de caminar y saltar, y que se prende y apaga         |
+| trepar                       | _climb_            | subir por una pared empujando contra ella                                                    |
+| planear                      | _glide_            | caer despacio, manteniendo el salto                                                          |
+| doble salto                  | _double jump_      | un salto más, en el aire                                                                     |
 | dinámico                     | _dynamic_          | un cuerpo que mueve la física: cae, rebota, choca                                            |
 | cinemático                   | _kinematic_        | un cuerpo que mueve el juego, y que empuja lo que toca                                       |
 | fijo                         | _fixed_            | un cuerpo que no se mueve nunca, como el piso                                                |
@@ -177,45 +181,47 @@ La consola está en inglés y no se traduce: sus nombres son como las palabras d
 
 Y los nombres que hay hoy:
 
-| Nombre            | Qué hace                                                                                                                          |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `help`            | cómo se usa la consola, o la ayuda de un nombre: `help seed`                                                                      |
-| `find`            | busca en los nombres y en sus descripciones: `find cube`                                                                          |
-| `vars`            | las variables y sus valores; `vars show.` muestra solo las que empiezan así                                                       |
-| `changed`         | solo las variables que no tienen su valor de siempre                                                                              |
-| `toggle`          | da vuelta una variable de prendido y apagado (_on_ / _off_): `toggle show.axes`                                                   |
-| `export`          | arma un enlace con la receta de lo que cambiaste (_export_: exportar)                                                             |
-| `load`            | carga una sala guardada (_load_: cargar); sin nombre, la lista                                                                    |
-| `startup`         | la receta de inicio: `startup save` la guarda (_save_), `startup clear` la borra (_clear_)                                        |
-| `bind`, `unbind`  | asigna o quita un atajo de teclado (_bind_: atar)                                                                                 |
-| `clear`           | borra lo que está escrito en la consola                                                                                           |
-| `reset`           | vuelve una variable (o todas, sin nombre) a su valor de siempre: `reset dojo.cubes`                                               |
-| `inspect`         | de qué está hecha una entidad, con sus números: `inspect 1` (_inspect_: inspeccionar); un clic sobre un objeto hace lo mismo      |
-| `camera.reset`    | la cámara vuelve a donde empezó, o detrás del personaje                                                                           |
-| `view.camera`     | con un personaje: `follow` lo sigue, `chase` vuelve detrás de él, `aim` apunta con el mouse, `free` deja la cámara donde está     |
-| `controls.scheme` | cómo manejan las teclas al personaje: `camera`, según la cámara, o `tank`, según hacia dónde mira él (_scheme_: esquema)          |
-| `replay`          | la repetición de este mundo: `replay export` arma un enlace, `replay play` la vuelve a mostrar, `replay stop` devuelve el control |
-| `snapshot`        | guarda este momento del mundo; `snapshot load` vuelve a él                                                                        |
-| `net`             | la partida y dónde vive: `net open` la abre a otras pestañas, `net join` se une a una, `net leave` vuelve a jugar solo            |
-| `inputs`          | lo que un jugador puede pedir en este juego, y qué tecla lo pide                                                                  |
-| `ghost`           | vuelve a empezar con un fantasma que repite lo que hiciste; `ghost export` arma el enlace, `ghost clear` lo saca                  |
-| `seed`            | la semilla del azar del mundo                                                                                                     |
-| `physics.gravity` | la gravedad, en m/s² en cada eje: la de la Tierra es `0 -9.81 0`                                                                  |
-| `restart`         | el mundo vuelve a empezar, con los valores actuales                                                                               |
-| `pause`, `step`   | detiene o sigue el mundo; `step 10` avanza diez pasos y lo deja en pausa                                                          |
-| `hash`            | el paso del mundo y su huella                                                                                                     |
-| `show.wireframe`  | las mallas en alambre (_show_: mostrar)                                                                                           |
-| `show.axes`       | los ejes del mundo en el origen                                                                                                   |
-| `show.physics`    | lo que ve el motor de física: los colisionadores de cada cuerpo, como líneas                                                      |
-| `show.vectors`    | la velocidad de cada cuerpo que se mueve, y hacia dónde mira cada personaje                                                       |
-| `show.contacts`   | dónde se tocan los cuerpos, con la normal de cada contacto                                                                        |
-| `show.gravity`    | el campo de gravedad, como flechas                                                                                                |
-| `dojo.air`        | cuánto se puede corregir un salto en el aire, en m/s²: 14 el de siempre, 0 nada, como en la física real                           |
-| `show.sensors`    | las zonas del nivel, como cajas de alambre: puntos de control en verde, la meta en dorado, el vacío en rojo                       |
-| `show.stats`      | el paso, la huella, las entidades y los cuadros por segundo (_stats_: estadísticas)                                               |
-| `view.timescale`  | la velocidad a la que se muestra el mundo (no cambia la simulación)                                                               |
-| `view.paused`     | el mundo detenido, como variable                                                                                                  |
-| `dojo.cubes`      | cuántos cubos chicos caen al empezar (_cubes_: cubos)                                                                             |
-| `dojo.spin`       | cómo gira el cubo grande, en radianes por segundo alrededor de cada eje                                                           |
-| `dojo.spawn`      | tira una pelota desde un lugar: `dojo.spawn 2 5 0` (_spawn_: hacer aparecer)                                                      |
-| `dojo.level`      | lo que hay en el piso: `empty`, o un nivel de `games/dojo/levels/`, como `course`, con un personaje para manejar                  |
+| Nombre                                        | Qué hace                                                                                                                          |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `help`                                        | cómo se usa la consola, o la ayuda de un nombre: `help seed`                                                                      |
+| `find`                                        | busca en los nombres y en sus descripciones: `find cube`                                                                          |
+| `vars`                                        | las variables y sus valores; `vars show.` muestra solo las que empiezan así                                                       |
+| `changed`                                     | solo las variables que no tienen su valor de siempre                                                                              |
+| `toggle`                                      | da vuelta una variable de prendido y apagado (_on_ / _off_): `toggle show.axes`                                                   |
+| `export`                                      | arma un enlace con la receta de lo que cambiaste (_export_: exportar)                                                             |
+| `load`                                        | carga una sala guardada (_load_: cargar); sin nombre, la lista                                                                    |
+| `startup`                                     | la receta de inicio: `startup save` la guarda (_save_), `startup clear` la borra (_clear_)                                        |
+| `bind`, `unbind`                              | asigna o quita un atajo de teclado (_bind_: atar)                                                                                 |
+| `clear`                                       | borra lo que está escrito en la consola                                                                                           |
+| `reset`                                       | vuelve una variable (o todas, sin nombre) a su valor de siempre: `reset dojo.cubes`                                               |
+| `inspect`                                     | de qué está hecha una entidad, con sus números: `inspect 1` (_inspect_: inspeccionar); un clic sobre un objeto hace lo mismo      |
+| `camera.reset`                                | la cámara vuelve a donde empezó, o detrás del personaje                                                                           |
+| `view.camera`                                 | con un personaje: `follow` lo sigue, `chase` vuelve detrás de él, `aim` apunta con el mouse, `free` deja la cámara donde está     |
+| `controls.scheme`                             | cómo manejan las teclas al personaje: `camera`, según la cámara, o `tank`, según hacia dónde mira él (_scheme_: esquema)          |
+| `replay`                                      | la repetición de este mundo: `replay export` arma un enlace, `replay play` la vuelve a mostrar, `replay stop` devuelve el control |
+| `snapshot`                                    | guarda este momento del mundo; `snapshot load` vuelve a él                                                                        |
+| `net`                                         | la partida y dónde vive: `net open` la abre a otras pestañas, `net join` se une a una, `net leave` vuelve a jugar solo            |
+| `inputs`                                      | lo que un jugador puede pedir en este juego, y qué tecla lo pide                                                                  |
+| `ghost`                                       | vuelve a empezar con un fantasma que repite lo que hiciste; `ghost export` arma el enlace, `ghost clear` lo saca                  |
+| `seed`                                        | la semilla del azar del mundo                                                                                                     |
+| `physics.gravity`                             | la gravedad, en m/s² en cada eje: la de la Tierra es `0 -9.81 0`                                                                  |
+| `restart`                                     | el mundo vuelve a empezar, con los valores actuales                                                                               |
+| `pause`, `step`                               | detiene o sigue el mundo; `step 10` avanza diez pasos y lo deja en pausa                                                          |
+| `hash`                                        | el paso del mundo y su huella                                                                                                     |
+| `show.wireframe`                              | las mallas en alambre (_show_: mostrar)                                                                                           |
+| `show.axes`                                   | los ejes del mundo en el origen                                                                                                   |
+| `show.physics`                                | lo que ve el motor de física: los colisionadores de cada cuerpo, como líneas                                                      |
+| `show.vectors`                                | la velocidad de cada cuerpo que se mueve, y hacia dónde mira cada personaje                                                       |
+| `show.contacts`                               | dónde se tocan los cuerpos, con la normal de cada contacto                                                                        |
+| `show.gravity`                                | el campo de gravedad, como flechas                                                                                                |
+| `dojo.climb`, `dojo.glide`, `dojo.doublejump` | las capacidades de los personajes, prendidas o apagadas: trepar, planear, doble salto                                             |
+| `dojo.goto`                                   | pone al personaje del jugador 1 en un lugar (x y z): para explorar un nivel                                                       |
+| `dojo.air`                                    | cuánto se puede corregir un salto en el aire, en m/s²: 14 el de siempre, 0 nada, como en la física real                           |
+| `show.sensors`                                | las zonas del nivel, como cajas de alambre: puntos de control en verde, la meta en dorado, el vacío en rojo                       |
+| `show.stats`                                  | el paso, la huella, las entidades y los cuadros por segundo (_stats_: estadísticas)                                               |
+| `view.timescale`                              | la velocidad a la que se muestra el mundo (no cambia la simulación)                                                               |
+| `view.paused`                                 | el mundo detenido, como variable                                                                                                  |
+| `dojo.cubes`                                  | cuántos cubos chicos caen al empezar (_cubes_: cubos)                                                                             |
+| `dojo.spin`                                   | cómo gira el cubo grande, en radianes por segundo alrededor de cada eje                                                           |
+| `dojo.spawn`                                  | tira una pelota desde un lugar: `dojo.spawn 2 5 0` (_spawn_: hacer aparecer)                                                      |
+| `dojo.level`                                  | lo que hay en el piso: `empty`, o un nivel de `games/dojo/levels/`, como `course`, con un personaje para manejar                  |

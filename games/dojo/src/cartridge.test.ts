@@ -1,8 +1,10 @@
-import { beforeAll, expect, test } from 'vitest';
+import { beforeAll, describe, expect, test } from 'vitest';
+import type { Vec3 } from '@manifold/common';
 import { quat } from '@manifold/common';
 import {
   initPhysics,
   NO_INPUT,
+  type PlayerInput,
   playReplay,
   registryFor,
   replayFromText,
@@ -237,7 +239,7 @@ test("the course's loop: a checkpoint, a fall back to it, the goal with its time
   world().place(hero(), zone('goal').transform!.position);
   steps(30);
   expect(notices.filter((n) => n.startsWith('the goal'))).toEqual([
-    `the goal: ${((hero().game!.finish as number) * STEP).toFixed(2)} s, 1 fall`,
+    `the goal: ${((hero().game!.finish as number) * STEP).toFixed(2)} s, 1 fall, 0 stars`,
   ]);
   // A ball thrown off the floor is gone when it falls into the void.
   const before = world().entities.size;
@@ -276,6 +278,83 @@ test('dojo.air: no steering in the air for every character, from a step; a joine
     if (step === 30) expect(characters()[0]!.character!.velocity[0]).toBe(0);
   }
   expect(characters().map((e) => e.character!.movement.air.control)).toEqual([0, 0]);
+  expect(playReplay(DojoCartridge, replayFromText(replayToText(replayOf(session)))).same).toBe(true);
+  session.world.dispose();
+});
+
+describe('capabilities in the course (stage 2c): each star needs its own', () => {
+  /** The course with some capabilities on, the character put somewhere, driven for some steps. */
+  function attempt(recipe: string, at: Vec3, drive: (step: number) => PlayerInput, steps: number) {
+    const session = new Session(DojoCartridge, { registry: registryWith(`dojo.level course\n${recipe}`) });
+    const hero = () => [...session.world.entities.values()].find((e) => e.character?.player === 1)!;
+    for (let i = 0; i < 30; i++) session.step();
+    session.world.place(hero(), at);
+    for (let step = 1; step <= steps; step++) {
+      session.setInput(1, drive(step));
+      session.step();
+    }
+    const result = { stars: hero().game!.stars as number, falls: hero().game!.falls as number, session };
+    return result;
+  }
+  // Towards the tower, pushing against it.
+  const tower = (step: number): PlayerInput => (step < 200 ? { move: [1, 0, 0] } : NO_INPUT);
+  // From the highest platform's edge, walking towards the island, the jump held all the way (it glides
+  // when it falls). Walking: running, it glides past the island (a player would steer back; this does not).
+  const island = (step: number): PlayerInput => ({ move: [-1, 0, 0], jump: step > 1 });
+  // On the highest platform, a jump, and another one at the top of the first.
+  const high = (step: number): PlayerInput => ({ jump: step === 2 || step === 42 });
+
+  test('the course has three stars, seen (a small gold cube) and spinning', () => {
+    const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+    const stars = [...session.world.entities.values()].filter((e) => e.sensor?.kind === 'star');
+    expect(stars).toHaveLength(3);
+    expect(stars.every((e) => e.appearance?.color === 0xf0c040 && e.spin)).toBe(true);
+    session.world.dispose();
+  });
+
+  test('the tower: climbing reaches its star; a second jump does not', () => {
+    expect(attempt('dojo.climb on', [6, 1, 2], tower, 300).stars).toBe(1);
+    expect(attempt('dojo.doublejump on', [6, 1, 2], (s) => ({ ...tower(s), jump: s === 2 || s === 42 }), 300).stars).toBe(0);
+  });
+
+  test('the island: gliding reaches its star; a running jump falls into the void', () => {
+    expect(attempt('dojo.glide on', [-3.5, 4.5, -7], island, 300).stars).toBe(1);
+    const without = attempt('', [-3.5, 4.5, -7], island, 300);
+    expect(without.stars).toBe(0);
+    expect(without.falls).toBe(1);
+  });
+
+  test('high above the last platform: a second jump reaches its star; one jump does not', () => {
+    expect(attempt('dojo.doublejump on', [-3, 4.5, -7], high, 120).stars).toBe(1);
+    expect(attempt('', [-3, 4.5, -7], high, 120).stars).toBe(0);
+  });
+
+  test('a run with all of them on, driven only by its inputs (no character put anywhere), plays again the same', () => {
+    const session = new Session(DojoCartridge, {
+      registry: registryWith('dojo.level course\ndojo.climb on\ndojo.glide on\ndojo.doublejump on'),
+    });
+    const modes = new Set<string>();
+    for (let step = 1; step <= 300; step++) {
+      // Forward, a jump, another in the air, and the jump held while falling: it glides.
+      session.setInput(1, step < 40 ? NO_INPUT : { move: [0.3, 0, -1], jump: step === 50 || (step >= 80 && step < 200) });
+      session.step();
+      const hero = [...session.world.entities.values()].find((e) => e.character)!;
+      modes.add(hero.character!.mode);
+    }
+    expect([...modes].sort()).toEqual(['air', 'glide', 'walk']);
+    expect(playReplay(DojoCartridge, replayFromText(replayToText(replayOf(session)))).same).toBe(true);
+    session.world.dispose();
+  });
+});
+
+test('dojo.goto puts player 1 somewhere, at a step; the replay has it', () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+  for (let i = 0; i < 30; i++) session.step();
+  session.registry.run('dojo.goto 8 1 5');
+  session.step();
+  const hero = [...session.world.entities.values()].find((e) => e.character?.player === 1)!;
+  expect(hero.transform!.position[0]).toBeCloseTo(8, 1);
+  for (let i = 0; i < 30; i++) session.step();
   expect(playReplay(DojoCartridge, replayFromText(replayToText(replayOf(session)))).same).toBe(true);
   session.world.dispose();
 });

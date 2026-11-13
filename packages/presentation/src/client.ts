@@ -1068,14 +1068,21 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       stepsTimed = 0;
       secondStart = now;
     }
-    // For the browser tests (Playwright): how many frames were drawn and how many meshes are really
-    // in the scene (not in the map: the bug above did not show there).
+    // For the browser tests (Playwright). Where the character is, ON EVERY FRAME (stage 2c): every 10
+    // frames was too coarse without a GPU, where a frame can take 5 steps, and a whole jump (about 36
+    // steps above a meter) could happen between two readings.
+    container.dataset.step = String(world.tick);
+    if (hero?.transform) container.dataset.player = hero.transform.position.map((n) => n.toFixed(2)).join(' ');
+    if (hero?.character) container.dataset.facing = hero.character.facing.map((n) => n.toFixed(2)).join(' ');
+    container.dataset.camera = camera.position
+      .toArray()
+      .map((n) => n.toFixed(2))
+      .join(' ');
+    // The rest, every 10 frames: how many frames were drawn and how many meshes are really in the scene
+    // (not in the map: the bug above did not show there), and the match.
     if (++frames % 10 === 0) {
       container.dataset.frames = String(frames);
       container.dataset.meshes = String(scene.children.filter((x) => x instanceof THREE.Mesh).length);
-      container.dataset.step = String(world.tick);
-      if (hero?.transform) container.dataset.player = hero.transform.position.map((n) => n.toFixed(2)).join(' ');
-      if (hero?.character) container.dataset.facing = hero.character.facing.map((n) => n.toFixed(2)).join(' ');
       container.dataset.net = net;
       container.dataset.me = String(me);
       container.dataset.checks = String(link.checks);
@@ -1085,10 +1092,6 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
         .join('|');
       const ghostBody = ghost && [...ghost.session.world.entities.values()].find((e) => e.character?.player === 1);
       if (ghostBody?.transform) container.dataset.ghost = ghostBody.transform.position.map((n) => n.toFixed(2)).join(' ');
-      container.dataset.camera = camera.position
-        .toArray()
-        .map((n) => n.toFixed(2))
-        .join(' ');
       if (!stats.hidden)
         stats.textContent = [
           `step ${world.tick}${paused ? ' (paused)' : ''}`,

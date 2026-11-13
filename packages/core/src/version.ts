@@ -10,5 +10,6 @@
  *   4  stage 1e: who is in the match (`players`), in the hash and in snapshots
  *   5  stage 2a: zones (`sensor`) and a game's data on its entities (`game`)
  *   6  stage 2b: a character's movement as data, its mode, and what it carries
+ *   7  stage 2c: capabilities (double jump, glide, climb), the wall it touches, its jumps in the air
  */
-export const SIMULATION_VERSION = 6;
+export const SIMULATION_VERSION = 7;

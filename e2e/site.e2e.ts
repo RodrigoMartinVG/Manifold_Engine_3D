@@ -327,7 +327,7 @@ test('tank controls: A and D turn the character on its own axis, W goes where it
   test.setTimeout(90_000);
   const list = errors(page);
   /**
-   * What the page says, once it stops changing. It writes it every 10 frames (with its step), and
+   * What the page says, once it stops changing. It writes it on every frame (with its step), and
    * here there are few: two readings are compared only if the page wrote again in between.
    */
   const settled = async (what: 'player' | 'facing' | 'camera') => {
@@ -420,8 +420,45 @@ test("the course's loop: falling off the floor brings the character back, with a
     .toBe('you fell: back to the checkpoint');
   await page.keyboard.up('KeyS');
   await expect(page.locator('.mg-notice')).toBeVisible();
-  // Back where it started (its first checkpoint is where it was born).
-  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 10_000 }).toBeLessThan(z0! + 1);
-  expect(Math.abs((await position(page, 'player'))[0]! - x0!)).toBeLessThan(1);
+  // Back on the floor, where it started (its first checkpoint is where it was born). (It may have
+  // walked a little since: the page tells the position every few frames.)
+  await expect.poll(async () => (await position(page, 'player'))[1], { timeout: 10_000 }).toBeGreaterThan(0.5);
+  const [x1, y1, z1] = await position(page, 'player');
+  expect(y1).toBeLessThan(1.2);
+  expect(z1).toBeLessThan(10);
+  expect(Math.abs(x1! - x0!)).toBeLessThan(1);
+  expect(z0).toBeLessThan(z1! + 0.5);
+  expect(list).toEqual([]);
+});
+
+// ---------------------------------------------------------------- capabilities (stage 2c)
+
+test('capabilities, live: in front of the tower, a character stays below; with dojo.climb on, it climbs it and takes its star', async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+  const list = errors(page);
+  // (A still camera: with the one that follows, "forward" would turn with it.)
+  await page.goto('jugar/dojo/course/#recipe=view.camera+free');
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  // In front of the tower (dojo.goto, a lab's command: the page tells where the character is every
+  // few frames, too late to turn at an exact place).
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'dojo.goto 8 1 5');
+  await page.keyboard.press('Escape');
+  // Forward (−Z), against it: without climbing, it stays below.
+  await page.keyboard.down('KeyW');
+  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 30_000 }).toBeLessThan(4);
+  await page.waitForTimeout(1500);
+  expect((await position(page, 'player'))[1]).toBeLessThan(1);
+  await page.keyboard.up('KeyW');
+  // Climbing on, from the console: pushing on, it climbs, and over the top it takes the star.
+  await page.keyboard.press('Backquote');
+  await typeInConsole(page, 'dojo.climb on');
+  await page.keyboard.press('Escape');
+  await page.keyboard.down('KeyW');
+  await expect(consoleLog(page)).toContainText('a star (1 taken, 2 left)', { timeout: 90_000 });
+  await page.keyboard.up('KeyW');
   expect(list).toEqual([]);
 });

@@ -138,6 +138,35 @@ export class Physics {
     return { movement: toVec(c.computedMovement()), grounded: c.computedGrounded(), ceiling };
   }
 
+  /**
+   * A WALL in that direction (stage 2c): a ray from `from` along `direction` (of length 1), as far as
+   * `reach`; if it hits something fixed (or kinematic) that stands almost upright, the direction
+   * towards it, along the ground and of length 1; if not, zero. Not with the character controller's
+   * collisions: those only exist while it pushes against the wall, and pushing against a wall that
+   * is steeper than what it climbs, the controller does not let it rise along it.
+   */
+  wallAhead(handle: number, from: Vec3, direction: Vec3, reach: number, up: Vec3): Vec3 {
+    const rigid = this.world.getRigidBody(handle);
+    const ray = new RAPIER.Ray(v(from), v(direction));
+    const hit = this.world.castRayAndGetNormal(
+      ray,
+      reach,
+      true,
+      RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC,
+      undefined,
+      undefined,
+      rigid,
+    );
+    if (!hit) return [0, 0, 0];
+    const n = hit.normal;
+    const along = n.x * up[0] + n.y * up[1] + n.z * up[2];
+    if (along < -0.35 || along > 0.35) return [0, 0, 0]; // a floor, a ceiling, a slope: not a wall
+    // The surface's normal points out of it, towards the character: the wall is the other way.
+    const flat: Vec3 = [up[0] * along - n.x, up[1] * along - n.y, up[2] * along - n.z];
+    const length = Math.sqrt(flat[0] * flat[0] + flat[1] * flat[1] + flat[2] * flat[2]);
+    return length > 1e-6 ? [flat[0] / length, flat[1] / length, flat[2] / length] : [0, 0, 0];
+  }
+
   /** Puts a body somewhere at once, without moving through what is in between (stage 2a: back to a checkpoint). */
   place(handle: number, position: Vec3, rotation: Quat) {
     const rigid = this.world.getRigidBody(handle);

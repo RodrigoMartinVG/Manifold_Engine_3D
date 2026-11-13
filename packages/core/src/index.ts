@@ -53,6 +53,7 @@ export type {
   EntityId,
   GameData,
   GravityField,
+  Capabilities,
   InputValue,
   ModeName,
   Movement,

@@ -78,6 +78,16 @@ Se eligen en la consola, y se pueden combinar. **Las teclas** (`controls.scheme`
 
 **El control en el aire** (`dojo.air`): cuánto se puede corregir un salto ya en el aire, en m/s². Con 14, el de siempre, se corrige un poco, como en casi todos los juegos de plataformas. Con 0 no se corrige nada, como en la física real: una vez en el aire no hay contra qué empujar, y el arco del salto queda fijo. Con 50, tanto como en el piso.
 
+**Las capacidades**: lo que un personaje sabe hacer además de caminar y saltar. Cada una se prende y se apaga en vivo, para todos los personajes:
+
+| En la consola        | Qué hace                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `dojo.climb on`      | **trepar**: empujando contra una pared, el personaje la sube; saltando desde ella, se despega hacia afuera |
+| `dojo.glide on`      | **planear**: manteniendo el salto mientras cae, cae despacio y se dirige mejor                             |
+| `dojo.doublejump on` | **doble salto**: un salto más en el aire                                                                   |
+
+La sala **Capabilities** es el recorrido con las tres prendidas, y tres estrellas para buscar: una arriba de una torre a la que solo se llega trepando, una en una isla lejana a la que solo se llega planeando, y una muy alta sobre la última plataforma, para el doble salto. Apagá una (`dojo.climb off`) y probá de nuevo.
+
 **La cámara** (`view.camera`):
 
 | Opción                   | Qué hace                                                                                                                     |
@@ -116,6 +126,8 @@ Está **en inglés, y no se traduce**: sus nombres son como las palabras de un l
 ] dojo.spawn 2 5 0            una pelota que cae desde (2, 5, 0)
 ] physics.gravity 0 -1.62 0   la gravedad de la Luna
 ] dojo.air 0                  saltos sin corregir en el aire, como en la física real
+] dojo.climb on               trepar paredes (y dojo.glide, dojo.doublejump)
+] dojo.goto 8 1 5             el personaje, a ese lugar: para explorar un nivel
 ] show.physics on             lo que ve el motor de física
 ] show.contacts on            dónde se tocan los cuerpos
 ] show.sensors on             las zonas del nivel: control, meta, vacío
