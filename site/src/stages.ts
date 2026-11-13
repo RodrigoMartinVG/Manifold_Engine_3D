@@ -14,4 +14,4 @@ export const STAGES = [
 ] as const;
 
 /** The stage the engine is in now. */
-export const CURRENT_STAGE = 1;
+export const CURRENT_STAGE = 2;

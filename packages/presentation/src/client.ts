@@ -193,6 +193,41 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   });
   container.append(stats);
 
+  // ---------- The game's notices (stage 2a): "checkpoint", "the goal in 23.4 s"… ----------
+  const noticeBox = document.createElement('div');
+  noticeBox.className = 'mg-notice';
+  noticeBox.hidden = true;
+  Object.assign(noticeBox.style, {
+    position: 'absolute',
+    top: '18%',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    padding: '0.5rem 1.2rem',
+    borderRadius: '0.4rem',
+    background: 'rgb(18 16 13 / 0.78)',
+    color: '#f0d59a',
+    font: "600 18px/1.4 'Cinzel Variable', Georgia, serif",
+    letterSpacing: '0.04em',
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap',
+    transition: 'opacity 0.4s',
+  });
+  container.append(noticeBox);
+  let noticeTimer = 0;
+  /** A notice on screen for a few seconds (and in the console, if there is one). */
+  const showNotice = (text: string) => {
+    noticeBox.textContent = text;
+    noticeBox.hidden = false;
+    noticeBox.style.opacity = '1';
+    container.dataset.notice = text;
+    gameConsole?.write(text);
+    clearTimeout(noticeTimer);
+    noticeTimer = window.setTimeout(() => {
+      noticeBox.style.opacity = '0';
+      noticeTimer = window.setTimeout(() => (noticeBox.hidden = true), 400);
+    }, 2600);
+  };
+
   // The world and its meshes (before anything else: a recipe can ask for show.wireframe, which walks them).
   const meshes = new Map<EntityId, THREE.Mesh>();
   const previous = new Map<EntityId, Pose>();
@@ -242,6 +277,10 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   // (Declared here, before the recipes run: a recipe may bring `view.camera free`.)
   let cameraMode: 'follow' | 'chase' | 'aim' | 'free' = 'follow';
   let scheme: ControlScheme = 'camera';
+  // (Here too, before the recipes: a link may bring `show.sensors on`, and its onChange needs them.)
+  /** The zones, as wire boxes (show.sensors), by entity: they have no appearance, they are only shown on request. */
+  const zones = new Map<EntityId, THREE.LineSegments>();
+  let showZones = false;
   /** When the camera was last turned by hand (a drag, the right stick): `chase` waits a little before coming back. */
   let turnedByHand = -Infinity;
   let dragging = false;
@@ -294,6 +333,18 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     type: { kind: 'boolean' },
     default: false,
     onChange: (v) => (contactLines.visible = contactPoints.visible = v === true),
+  });
+  registry.declareVariable({
+    name: 'show.sensors',
+    description:
+      "The level's zones, as wire boxes: checkpoints in green, the goal in gold, the void that brings you back in red (stage 2a).",
+    scope: 'view',
+    type: { kind: 'boolean' },
+    default: false,
+    onChange: (v) => {
+      showZones = v === true;
+      for (const zone of zones.values()) zone.visible = showZones;
+    },
   });
   registry.declareVariable({
     name: 'show.gravity',
@@ -477,7 +528,22 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
   }
 
   // ---------- The world and its meshes ----------
+  const ZONE_COLORS: Record<string, number> = { checkpoint: 0x5ad87a, goal: 0xe0c05a, fall: 0xd85a5a };
+  const createZone = (e: Entity) => {
+    if (!e.sensor || !e.transform || zones.has(e.id)) return;
+    const [x, y, z] = e.sensor.half;
+    const box = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(x * 2, y * 2, z * 2)),
+      new THREE.LineBasicMaterial({ color: ZONE_COLORS[e.sensor.kind] ?? 0xb0a890 }),
+    );
+    box.position.set(...e.transform.position);
+    box.quaternion.set(...e.transform.rotation);
+    box.visible = showZones;
+    scene.add(box);
+    zones.set(e.id, box);
+  };
   const createMesh = (e: Entity) => {
+    createZone(e);
     // Only once per entity. (Bug found in step 0: the ones the cartridge put at the start arrived
     // TWICE, when walking the world and through their `entityCreated` event; the second mesh hid
     // the first one in the map, and the first stayed in the scene, forgotten at the origin.)
@@ -487,6 +553,13 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
     meshes.set(e.id, mesh);
   };
   const removeMesh = (id: EntityId) => {
+    const zone = zones.get(id);
+    if (zone) {
+      scene.remove(zone);
+      zone.geometry.dispose();
+      (zone.material as THREE.Material).dispose();
+      zones.delete(id);
+    }
     const mesh = meshes.get(id);
     if (mesh) {
       scene.remove(mesh);
@@ -725,7 +798,7 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       joining = false;
       gameConsole?.write(`you joined the match: you are player ${me}`);
     }
-    for (const id of [...meshes.keys()]) removeMesh(id);
+    for (const id of new Set([...meshes.keys(), ...zones.keys()])) removeMesh(id);
     session.world.takeEvents(); // the world is already there: its meshes are created by walking it
     for (const e of session.world.entities.values()) createMesh(e);
     savePrevious();
@@ -878,6 +951,8 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
         if (e) createMesh(e);
       }
       if (ev.type === 'entityRemoved') removeMesh(ev.id);
+      // The game's notices: for this page's player, or for everybody.
+      if (ev.type === 'notice' && (ev.player === undefined || ev.player === me)) showNotice(ev.text);
     }
     // Drawn between the last two steps, by where the server's clock is (a page that joined another
     // tab's match draws the last step: smoothing what comes with lag is for phase 6).
@@ -1051,6 +1126,8 @@ export function mount(cartridge: Cartridge, container: HTMLElement, o: MountOpti
       renderer.dispose();
       renderer.domElement.remove();
       stats.remove();
+      clearTimeout(noticeTimer);
+      noticeBox.remove();
     },
   };
 }

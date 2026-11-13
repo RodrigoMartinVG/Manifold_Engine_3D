@@ -2,7 +2,7 @@ import { formatValue, Registry, type Value } from '@manifold/commands';
 import type { Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
 import { EARTH } from './gravity';
-import { actionsFor, NO_INPUT, normalizeInput, sameInput, type InputAction } from './input';
+import { actionsFor, isDown, NO_INPUT, normalizeInput, sameInput, type InputAction } from './input';
 import type { PlayerInput } from './types';
 import { copyData, World, type WorldSnapshot } from './world';
 
@@ -42,7 +42,7 @@ export interface SessionSave {
   readonly inputs: readonly InputChange[];
   readonly values: ReadonlyMap<string, Value>;
   readonly scheduled: readonly { line: string; apply: (world: World) => void }[];
-  readonly pendingInputs: ReadonlyMap<number, PlayerInput>;
+  readonly pendingInputs: ReadonlyMap<number, readonly PlayerInput[]>;
 }
 
 /**
@@ -126,7 +126,8 @@ export class Session {
    */
   readonly birth: string;
   private scheduled: { line: string; apply: (world: World) => void }[] = [];
-  private pendingInputs = new Map<number, PlayerInput>();
+  /** What each player asked for that has not entered yet: usually one input; two when a press must not be lost. */
+  private pendingInputs = new Map<number, PlayerInput[]>();
 
   constructor(
     readonly cartridge: Cartridge,
@@ -161,9 +162,24 @@ export class Session {
    */
   setInput(player: number, input: PlayerInput) {
     const next = normalizeInput(input, this.actions);
-    const current = this.pendingInputs.get(player) ?? this.world.inputs.get(player) ?? NO_INPUT;
-    if (sameInput(next, current)) return;
-    this.pendingInputs.set(player, next);
+    const queue = this.pendingInputs.get(player) ?? [];
+    const now = this.world.inputs.get(player) ?? NO_INPUT;
+    const last = queue.at(-1);
+    if (sameInput(next, last ?? now)) return;
+    // What the world will have just before the last one that is waiting.
+    const before = queue.at(-2) ?? now;
+    // A PRESS MUST NOT BE LOST (stage 2a; a bug since 1b): a button pressed and released before a step
+    // happened (a quick tap, a fast frame without a step) used to be replaced by its release, and the
+    // jump never entered. If replacing the last one would drop a press that has not entered yet, the
+    // new one waits its turn: one step with the press, the next one without it.
+    const dropsAPress =
+      last !== undefined && Object.keys(last).some((k) => isDown(last, k) && !isDown(before, k) && !isDown(next, k));
+    if (last === undefined || dropsAPress) queue.push(next);
+    else if (sameInput(next, before))
+      queue.pop(); // back to what it was: nothing to change
+    else queue[queue.length - 1] = next;
+    if (queue.length) this.pendingInputs.set(player, queue);
+    else this.pendingInputs.delete(player);
   }
 
   step() {
@@ -174,10 +190,16 @@ export class Session {
       s.apply(this.world);
       this.history.push({ step, line: s.line });
     }
-    for (const [player, input] of this.pendingInputs) this.inputs.push({ step, player, input });
+    // One waiting input per player enters at each step.
+    const entering = new Map<number, PlayerInput>();
+    for (const [player, queue] of this.pendingInputs) {
+      const input = queue.shift()!;
+      entering.set(player, input);
+      this.inputs.push({ step, player, input });
+      if (!queue.length) this.pendingInputs.delete(player);
+    }
     // On EVERY step, even if nobody changed anything: the world remembers the previous step's inputs.
-    this.world.applyInputs(this.pendingInputs);
-    this.pendingInputs.clear();
+    this.world.applyInputs(entering);
     this.world.step();
     this.cartridge.onStep?.(this.world, this.world.stepEvents);
   }
@@ -213,7 +235,7 @@ export class Session {
       inputs: [...this.inputs],
       values: this.registry.worldValues(),
       scheduled: [...this.scheduled],
-      pendingInputs: new Map(this.pendingInputs),
+      pendingInputs: new Map([...this.pendingInputs].map(([p, q]) => [p, [...q]])),
     };
   }
 
@@ -230,6 +252,6 @@ export class Session {
     this.inputs.splice(0, this.inputs.length, ...save.inputs);
     this.registry.restoreWorldValues(save.values);
     this.scheduled = [...save.scheduled];
-    this.pendingInputs = new Map(save.pendingInputs);
+    this.pendingInputs = new Map([...save.pendingInputs].map(([p, q]) => [p, [...q]]));
   }
 }

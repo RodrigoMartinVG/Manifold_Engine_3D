@@ -1,7 +1,23 @@
 import { expect, test, type Page } from '@playwright/test';
-import { initPhysics, playReplay, registryFor, replayFromText, Session, stateHash } from '@manifold/core';
+import { initPhysics, levelFromText, playReplay, registryFor, replayFromText, Session, stateHash } from '@manifold/core';
 import { replayFromFragment } from '@manifold/presentation';
-import { DojoCartridge } from '@manifold/dojo/cartridge';
+import { createDojo } from '@manifold/dojo/rules';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+/**
+ * The Dojo, with its levels read from disk (here, in Node, there is no Vite to find them, as the site
+ * and the unit tests have): the same files, so the same cartridge as the page's.
+ */
+const LEVELS_DIR = join(import.meta.dirname, '..', 'games', 'dojo', 'levels');
+const DojoCartridge = createDojo(
+  Object.fromEntries(
+    readdirSync(LEVELS_DIR)
+      .filter((f) => f.endsWith('.level'))
+      .sort()
+      .map((f) => [f.replace(/\.level$/, ''), levelFromText(readFileSync(join(LEVELS_DIR, f), 'utf8'))]),
+  ),
+);
 
 /**
  * DETERMINISM ACROSS PROGRAMS (decision 0012): the same world, simulated in the browser and here (in

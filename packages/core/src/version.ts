@@ -8,5 +8,6 @@
  *   2  stage 1c2: turning (`ahead`, `side`, `turn`), the character's `turnSpeed`
  *   3  stage 1d: inputs as named values; the hash includes the id counter and the previous inputs
  *   4  stage 1e: who is in the match (`players`), in the hash and in snapshots
+ *   5  stage 2a: zones (`sensor`) and a game's data on its entities (`game`)
  */
-export const SIMULATION_VERSION = 4;
+export const SIMULATION_VERSION = 5;

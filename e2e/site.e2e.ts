@@ -299,9 +299,8 @@ test('aim: the character looks where the camera looks, and walks sideways withou
   await page.keyboard.down('KeyD');
   await expect.poll(async () => (await position(page, 'player'))[0], { timeout: 30_000 }).toBeGreaterThan(x0! + 1);
   await page.keyboard.up('KeyD');
-  await page.keyboard.press('Backquote');
-  await typeInConsole(page, 'inspect 11');
-  await expect(consoleLog(page)).toContainText('facing 0 0 -1');
+  // It kept looking ahead (−Z) while it walked to the side.
+  expect(await page.locator('#game').getAttribute('data-facing')).toBe('0.00 0.00 -1.00');
 });
 
 // ---------------------------------------------------------------- turning and the camera (stage 1c2)
@@ -400,5 +399,29 @@ test('snapshot: save, walk and throw, load: the character is back, the ball is g
   await expect(consoleLog(page)).toContainText(`back at step ${step} · hash ${hash}`);
   await expect.poll(() => position(page, 'player')).toEqual(saved);
   await expect.poll(() => meshes(page)).toBe(shown);
+  expect(list).toEqual([]);
+});
+
+// ---------------------------------------------------------------- a level's loop (stage 2a)
+
+test("the course's loop: falling off the floor brings the character back, with a notice; its zones can be seen", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const list = errors(page);
+  await page.goto('jugar/dojo/course/#recipe=show.sensors+on');
+  await expect.poll(async () => (await position(page, 'player')).length, { timeout: 15_000 }).toBe(3);
+  await page.waitForTimeout(1500);
+  const [x0, , z0] = await position(page, 'player');
+  // S: towards the camera, off the floor's edge (4 m behind), into the void.
+  await page.keyboard.down('KeyS');
+  await expect
+    .poll(() => page.locator('#game').getAttribute('data-notice'), { timeout: 30_000 })
+    .toBe('you fell: back to the checkpoint');
+  await page.keyboard.up('KeyS');
+  await expect(page.locator('.mg-notice')).toBeVisible();
+  // Back where it started (its first checkpoint is where it was born).
+  await expect.poll(async () => (await position(page, 'player'))[2], { timeout: 10_000 }).toBeLessThan(z0! + 1);
+  expect(Math.abs((await position(page, 'player'))[0]! - x0!)).toBeLessThan(1);
   expect(list).toEqual([]);
 });

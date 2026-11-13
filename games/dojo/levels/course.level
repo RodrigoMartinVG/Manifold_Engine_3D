@@ -1,0 +1,26 @@
+# Manifold level 1
+# The course: a small classic level, to drive the character. Steps climbed by walking, a ramp,
+# platforms at growing heights reached by jumping, and a wall too high to climb. Falling off the
+# floor brings the character back to its last checkpoint; the goal is on the highest platform.
+title The course
+spawn 0 1 6
+facing 0 0 -1
+
+# Three steps of 30 cm, climbed by walking.
+box 4 0.15 3   1 0.15 1   color #6f6a62
+box 4 0.3 1    1 0.3 1    color #6f6a62
+box 4 0.45 -1  1 0.45 1   color #6f6a62
+# A ramp of 18° (around x: its far end is the high one).
+box -4 0.62 1.5  1 0.1 2.2  rotate x 18  color #6f6a62
+# Platforms 1.2 m, 2.4 m and 3.6 m high, a meter apart: each one, one jump from the one before.
+box 0 0.6 -4   1 0.6 1  color #8a6a42
+box 0 1.2 -7   1 1.2 1  color #8a6a42
+box -3 1.8 -7  1 1.8 1  color #8a6a42
+# A wall of 2 m: too high to climb or to jump.
+box 6.5 1 -4   0.25 1 2  color #6f6a62
+
+# Zones. What happens in each is the game's: a checkpoint on the first platform, the goal on the
+# highest one, and the void under the floor (falling into it brings the character back).
+sensor checkpoint  0 2 -4     1 0.8 1
+sensor goal        -3 4.4 -7  1 0.8 1
+sensor fall        0 -6 0     60 3 60

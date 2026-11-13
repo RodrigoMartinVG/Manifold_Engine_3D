@@ -1,4 +1,4 @@
-import { Random, quat } from '@manifold/common';
+import { Random, quat, vec3, type Vec3 } from '@manifold/common';
 import { moveCharacter, newCharacter } from './character';
 import { EARTH, gravityAt } from './gravity';
 import { Physics } from './physics';
@@ -174,8 +174,12 @@ export class World {
   }
 
   createEntity(components: Components): Entity {
-    const { body, character, ...rest } = components;
+    const { body, character, sensor, ...rest } = components;
     const entity: Entity = { id: ++this.lastId, ...rest };
+    if (sensor) {
+      if (!entity.transform) throw new Error('A zone needs a transform: where is it?');
+      entity.sensor = { kind: sensor.kind, half: [...sensor.half], inside: [] };
+    }
     if (body) {
       if (!entity.transform) throw new Error('A body needs a transform: where is it?');
       entity.body = this.physics.addBody(body, entity.transform);
@@ -204,7 +208,8 @@ export class World {
    *   1. spin: what spins without a body turns here; a kinematic body gets its velocity;
    *   2. characters: each one decides where it can go, with what its player asks for (character.ts);
    *   3. physics: Rapier advances one step (gravity, collisions, bounces; the characters move);
-   *   4. read back: every moving body's pose and velocities go to its components.
+   *   4. read back: every moving body's pose and velocities go to its components;
+   *   5. zones (stage 2a): who came into each one, and who left.
    */
   step() {
     this.stepEvents = [];
@@ -214,6 +219,51 @@ export class World {
     this.physics.step();
     for (const e of this.entities.values())
       if (e.body && e.transform && e.body.type !== 'fixed') this.physics.read(e.body.handle, e.transform, e.body);
+    this.sense();
+  }
+
+  /**
+   * Puts an entity somewhere at once (stage 2a: a character back to its checkpoint), and stops it:
+   * its body, if it has one, goes there too, without moving through what is in between.
+   */
+  place(e: Entity, position: Vec3) {
+    if (!e.transform) return;
+    e.transform.position = [...position];
+    if (e.body) {
+      this.physics.place(e.body.handle, position, e.transform.rotation);
+      e.body.linearVelocity = [0, 0, 0];
+      e.body.angularVelocity = [0, 0, 0];
+    }
+    if (e.character) {
+      e.character.velocity = [0, 0, 0];
+      e.character.grounded = false;
+    }
+  }
+
+  /**
+   * ZONES SYSTEM (stage 2a): for each zone, which moving bodies have their center inside its box (in
+   * the box's own axes: the point is turned back by the zone's rotation). Additions, multiplications
+   * and comparisons: the same everywhere. Who came in and who left become events, in a fixed order.
+   */
+  private sense() {
+    const movers = [...this.entities.values()].filter((e) => e.transform && e.body && e.body.type !== 'fixed');
+    for (const zone of this.entities.values()) {
+      const sensor = zone.sensor;
+      const at = zone.transform;
+      if (!sensor || !at) continue;
+      const back = quat.conjugate(at.rotation);
+      const now: EntityId[] = [];
+      for (const e of movers) {
+        const local = quat.rotate(back, vec3.sub(e.transform!.position, at.position));
+        if (Math.abs(local[0]) <= sensor.half[0] && Math.abs(local[1]) <= sensor.half[1] && Math.abs(local[2]) <= sensor.half[2])
+          now.push(e.id);
+      }
+      for (const id of sensor.inside)
+        if (!now.includes(id) && this.entities.has(id)) this.emit({ type: 'sensorLeft', sensor: zone.id, entity: id });
+      for (const id of now) if (!sensor.inside.includes(id)) this.emit({ type: 'sensorEntered', sensor: zone.id, entity: id });
+      // Who was inside first stays first; who came now goes after.
+      sensor.inside = [...sensor.inside.filter((id) => now.includes(id)), ...now.filter((id) => !sensor.inside.includes(id))];
+    }
   }
 
   /** Frees its physics. A world that is no longer used must be disposed (WebAssembly's memory is not collected). */

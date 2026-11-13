@@ -320,6 +320,25 @@ describe('the character (stage 1b)', () => {
 });
 
 describe('the players inputs, through the session', () => {
+  test('a press and its release before any step: the press is not lost (it enters, and then the release)', () => {
+    const session = new Session(Course, { seed: 1 });
+    session.step();
+    // A quick tap of Space within one frame without a step: pressed, and released.
+    session.setInput(1, { jump: true });
+    session.setInput(1, NO_INPUT);
+    session.step();
+    expect(session.world.inputs.get(1)).toEqual({ jump: true });
+    session.step();
+    expect(session.world.inputs.get(1)).toEqual({});
+    // Changes without a press in between are not queued: only the last one enters.
+    session.setInput(1, { move: [1, 0, 0] });
+    session.setInput(1, { move: [0, 0, 1] });
+    session.step();
+    expect(session.world.inputs.get(1)).toEqual({ move: [0, 0, 1] });
+    expect(session.inputs.slice(-3).map((i) => i.input)).toEqual([{ jump: true }, {}, { move: [0, 0, 1] }]);
+    session.world.dispose();
+  });
+
   const Course: Cartridge = {
     id: 'test',
     title: 'Test',

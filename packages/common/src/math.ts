@@ -26,6 +26,8 @@ export const vec3 = {
   zero: (): Vec3 => [0, 0, 0],
   add: (a: Readonly<Vec3>, b: Readonly<Vec3>): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
   sub: (a: Readonly<Vec3>, b: Readonly<Vec3>): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  /** Whether two vectors are exactly the same (every number, every bit but the sign of a zero). */
+  equals: (a: Readonly<Vec3>, b: Readonly<Vec3>): boolean => a[0] === b[0] && a[1] === b[1] && a[2] === b[2],
   scale: (a: Readonly<Vec3>, k: number): Vec3 => [a[0] * k, a[1] * k, a[2] * k],
   dot: (a: Readonly<Vec3>, b: Readonly<Vec3>): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
   cross: (a: Readonly<Vec3>, b: Readonly<Vec3>): Vec3 => [
@@ -113,6 +115,9 @@ export const quat = {
     return quat.normalize([(m02 + m20) / s, (m12 + m21) / s, s / 4, (m10 - m01) / s]);
   },
 
+  /** The opposite turn (for a unit quaternion, its inverse): the axis reversed. */
+  conjugate: (q: Readonly<Quat>): Quat => [-q[0], -q[1], -q[2], q[3]],
+
   /** Rotates the vector `v` by `q` (q · v · q⁻¹, written without building intermediate quaternions). */
   rotate: (q: Readonly<Quat>, v: Readonly<Vec3>): Vec3 => {
     const [x, y, z, w] = q;
@@ -124,9 +129,51 @@ export const quat = {
     return [v[0] + w * tx + (y * tz - z * ty), v[1] + w * ty + (z * tx - x * tz), v[2] + w * tz + (x * ty - y * tx)];
   },
 
+  /**
+   * A turn of `degrees` around the unit `axis`, WITHOUT the browser's trigonometry (stage 2a): with
+   * `sinCosDegrees`, the same bits everywhere. For what is born into a world from data, like a level's
+   * ramp ("turned 18° around x"). Positive turns counterclockwise, looking from the tip of the axis.
+   */
+  fromDegrees: (axis: Readonly<Vec3>, degrees: number): Quat => {
+    const [s, c] = sinCosDegrees(degrees / 2);
+    return [axis[0] * s, axis[1] * s, axis[2] * s, c];
+  },
+
   /** The angle (radians, from 0 to π) of the rotation that takes `a` to `b`. */
   angleBetween: (a: Readonly<Quat>, b: Readonly<Quat>): number => {
     const d = Math.abs(a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]);
     return 2 * Math.acos(Math.min(1, d));
   },
 };
+
+/**
+ * SINE AND COSINE OF AN ANGLE IN DEGREES, our own (stage 2a), with additions, multiplications and
+ * divisions only: the standard makes those exact (the same bits in every browser), but not Math.sin
+ * and Math.cos, which each engine computes its own way (stage 1f).
+ *
+ * The angle goes to the nearest multiple of 90° plus a rest between −45° and 45°. The sine and the
+ * cosine of the rest come from their Taylor series, written as nested products (Horner's way): with
+ * the rest that small, seven terms are already as exact as a double can be. Then the quarter turns
+ * swap and change their signs (sin(90° + r) = cos r…). Multiples of 90° come out exact: 0, 1, −1.
+ */
+export function sinCosDegrees(degrees: number): [sin: number, cos: number] {
+  const k = Math.round(degrees / 90);
+  const r = (degrees - k * 90) * (Math.PI / 180);
+  const r2 = r * r;
+  const s =
+    r *
+    (1 - (r2 / 6) * (1 - (r2 / 20) * (1 - (r2 / 42) * (1 - (r2 / 72) * (1 - (r2 / 110) * (1 - (r2 / 156) * (1 - r2 / 210)))))));
+  const c =
+    1 - (r2 / 2) * (1 - (r2 / 12) * (1 - (r2 / 30) * (1 - (r2 / 56) * (1 - (r2 / 90) * (1 - (r2 / 132) * (1 - r2 / 182))))));
+  // (`0 - x`, not `-x`: so that a 0 stays +0, and does not become −0, which has other bits.)
+  switch (((k % 4) + 4) % 4) {
+    case 0:
+      return [s, c];
+    case 1:
+      return [c, 0 - s];
+    case 2:
+      return [0 - s, 0 - c];
+    default:
+      return [0 - c, s];
+  }
+}

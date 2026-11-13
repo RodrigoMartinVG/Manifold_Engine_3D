@@ -101,20 +101,24 @@ El texto del tutorial está en español y el código, en inglés ([por qué](../
 
 ## La física
 
-| En español                   | En inglés          | Dónde aparece                                                      |
-| ---------------------------- | ------------------ | ------------------------------------------------------------------ |
-| motor de física              | _physics engine_   | Rapier, dentro del motor (`packages/core/src/physics.ts`)          |
-| cuerpo                       | _body_             | el componente `body` de una entidad                                |
-| colisionador                 | _collider_         | la forma con la que un cuerpo choca; en la consola, `show.physics` |
-| dinámico                     | _dynamic_          | un cuerpo que mueve la física: cae, rebota, choca                  |
-| cinemático                   | _kinematic_        | un cuerpo que mueve el juego, y que empuja lo que toca             |
-| fijo                         | _fixed_            | un cuerpo que no se mueve nunca, como el piso                      |
-| rebote                       | _restitution_      | cuánta velocidad conserva un cuerpo al chocar (de 0 a 1)           |
-| rozamiento                   | _friction_         | `friction`                                                         |
-| amortiguación                | _damping_          | cuánta velocidad pierde un cuerpo por sí solo                      |
-| gravedad                     | _gravity_          | en la consola, `physics.gravity`                                   |
-| identificador (de un cuerpo) | _handle_           | lo que guarda la entidad, nunca el cuerpo (decisión 0004)          |
-| números de 32 bits           | _single precision_ | cómo cuenta Rapier: unos 7 dígitos significativos                  |
+| En español                   | En inglés          | Dónde aparece                                                                      |
+| ---------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
+| motor de física              | _physics engine_   | Rapier, dentro del motor (`packages/core/src/physics.ts`)                          |
+| cuerpo                       | _body_             | el componente `body` de una entidad                                                |
+| colisionador                 | _collider_         | la forma con la que un cuerpo choca; en la consola, `show.physics`                 |
+| nivel                        | _level_            | un lugar para jugar, guardado como texto: sus piezas, sus zonas y dónde se empieza |
+| zona                         | _sensor_           | una caja que no empuja, solo nota quién entra y quién sale                         |
+| punto de control             | _checkpoint_       | donde volvés si te caés                                                            |
+| meta                         | _goal_             | donde termina el nivel                                                             |
+| dinámico                     | _dynamic_          | un cuerpo que mueve la física: cae, rebota, choca                                  |
+| cinemático                   | _kinematic_        | un cuerpo que mueve el juego, y que empuja lo que toca                             |
+| fijo                         | _fixed_            | un cuerpo que no se mueve nunca, como el piso                                      |
+| rebote                       | _restitution_      | cuánta velocidad conserva un cuerpo al chocar (de 0 a 1)                           |
+| rozamiento                   | _friction_         | `friction`                                                                         |
+| amortiguación                | _damping_          | cuánta velocidad pierde un cuerpo por sí solo                                      |
+| gravedad                     | _gravity_          | en la consola, `physics.gravity`                                                   |
+| identificador (de un cuerpo) | _handle_           | lo que guarda la entidad, nunca el cuerpo (decisión 0004)                          |
+| números de 32 bits           | _single precision_ | cómo cuenta Rapier: unos 7 dígitos significativos                                  |
 
 ## El personaje
 
@@ -200,10 +204,14 @@ Y los nombres que hay hoy:
 | `show.wireframe`  | las mallas en alambre (_show_: mostrar)                                                                                           |
 | `show.axes`       | los ejes del mundo en el origen                                                                                                   |
 | `show.physics`    | lo que ve el motor de física: los colisionadores de cada cuerpo, como líneas                                                      |
+| `show.vectors`    | la velocidad de cada cuerpo que se mueve, y hacia dónde mira cada personaje                                                       |
+| `show.contacts`   | dónde se tocan los cuerpos, con la normal de cada contacto                                                                        |
+| `show.gravity`    | el campo de gravedad, como flechas                                                                                                |
+| `show.sensors`    | las zonas del nivel, como cajas de alambre: puntos de control en verde, la meta en dorado, el vacío en rojo                       |
 | `show.stats`      | el paso, la huella, las entidades y los cuadros por segundo (_stats_: estadísticas)                                               |
 | `view.timescale`  | la velocidad a la que se muestra el mundo (no cambia la simulación)                                                               |
 | `view.paused`     | el mundo detenido, como variable                                                                                                  |
 | `dojo.cubes`      | cuántos cubos chicos caen al empezar (_cubes_: cubos)                                                                             |
 | `dojo.spin`       | cómo gira el cubo grande, en radianes por segundo alrededor de cada eje                                                           |
 | `dojo.spawn`      | tira una pelota desde un lugar: `dojo.spawn 2 5 0` (_spawn_: hacer aparecer)                                                      |
-| `dojo.level`      | lo que hay en el piso: `empty`, o `course`, un nivel chico con un personaje para manejar                                          |
+| `dojo.level`      | lo que hay en el piso: `empty`, o un nivel de `games/dojo/levels/`, como `course`, con un personaje para manejar                  |

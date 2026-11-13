@@ -207,3 +207,58 @@ test('in the course, every player who comes into the match gets a character, and
   expect(characters()).toEqual([1]);
   session.world.dispose();
 });
+
+test("the course's loop: a checkpoint, a fall back to it, the goal with its time; a ball in the void is gone", () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+  const world = () => session.world;
+  const hero = () => [...world().entities.values()].find((e) => e.character?.player === 1)!;
+  const zone = (kind: string) => [...world().entities.values()].find((e) => e.sensor?.kind === kind)!;
+  const notices: string[] = [];
+  const steps = (n: number) => {
+    for (let i = 0; i < n; i++) {
+      session.step();
+      for (const ev of world().stepEvents) if (ev.type === 'notice') notices.push(ev.text);
+    }
+  };
+  steps(60);
+  // The character gets to the checkpoint (put there, as if it had jumped: the test is the loop, not the jumps).
+  world().place(hero(), zone('checkpoint').transform!.position);
+  steps(2);
+  expect(notices).toEqual(['checkpoint']);
+  // It falls off the floor's edge: back to the checkpoint.
+  world().place(hero(), [12, 1, 0]);
+  steps(120);
+  expect(notices).toEqual(['checkpoint', 'you fell: back to the checkpoint']);
+  expect(hero().game!.falls).toBe(1);
+  expect(hero().transform!.position[2]).toBeCloseTo(-4, 1);
+  // The goal: once, with the time since it started.
+  world().place(hero(), zone('goal').transform!.position);
+  steps(30);
+  world().place(hero(), zone('goal').transform!.position);
+  steps(30);
+  expect(notices.filter((n) => n.startsWith('the goal'))).toEqual([
+    `the goal: ${((hero().game!.finish as number) * STEP).toFixed(2)} s, 1 fall`,
+  ]);
+  // A ball thrown off the floor is gone when it falls into the void.
+  const before = world().entities.size;
+  session.registry.run('dojo.spawn 15 2 0');
+  steps(5);
+  expect(world().entities.size).toBe(before + 1);
+  steps(120);
+  expect(world().entities.size).toBe(before);
+  session.world.dispose();
+});
+
+test('a run that falls off the floor and comes back, driven by its inputs, plays again to the same world', () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+  const hero = () => [...session.world.entities.values()].find((e) => e.character?.player === 1)!;
+  // Back (+Z) from the start, 4 m to the floor's edge, and on into the void; then still.
+  for (let step = 1; step <= 360; step++) {
+    session.setInput(1, step > 30 && step < 150 ? { move: [0, 0, 1] } : NO_INPUT);
+    session.step();
+  }
+  expect(hero().game!.falls).toBe(1);
+  expect(hero().transform!.position[2]).toBeLessThan(7);
+  expect(playReplay(DojoCartridge, replayFromText(replayToText(replayOf(session)))).same).toBe(true);
+  session.world.dispose();
+});

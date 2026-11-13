@@ -24,6 +24,17 @@ export {
   type InputAction,
 } from './input';
 export { SIMULATION_VERSION } from './version';
+export {
+  buildLevel,
+  LEVEL_FORMAT,
+  levelFromText,
+  levelToText,
+  turnOf,
+  type Level,
+  type LevelBox,
+  type LevelSensor,
+  type Turn,
+} from './level';
 export { playReplay, replayFromText, replayOf, ReplayPlayer, replayToText, sessionFor, type Replay } from './replay';
 export { Clock } from './clock';
 export { stateHash } from './hash';
@@ -40,9 +51,11 @@ export type {
   Entity,
   Event,
   EntityId,
+  GameData,
   GravityField,
   InputValue,
   PlayerInput,
+  Sensor,
   Shape,
   Spin,
   Transform,

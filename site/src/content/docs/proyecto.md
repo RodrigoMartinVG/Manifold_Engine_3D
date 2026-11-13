@@ -32,16 +32,16 @@ Y unas reglas que no se negocian:
 
 ## En qué etapa está
 
-| Fase                                  | Qué trae                                                                                     | Cómo se demuestra                                                    |
-| ------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| 0. Cimientos                          | El repositorio, las herramientas, este sitio, las decisiones y un núcleo mínimo              | Un cubo que gira en el Dojo, calculado por la simulación             |
-| **1. Física y un personaje** ← _aquí_ | Física, un personaje con su cámara, repeticiones, el estado que viaja, la red desde temprano | Un personaje que corre y salta en un nivel, y su repetición da igual |
-| 2. Capacidades                        | Niveles como datos; trepar, agarrar, componer capacidades; modelos y animaciones             | Prender y apagar capacidades en vivo, en un nivel de verdad          |
-| 3. Un mundo que responde              | Mecanismos, señales, cosas que se rompen, luz, sonido; la interfaz del juego y guardar       | Romper una lámpara cambia lo que ve un guardia                       |
-| 4. Combate e inteligencia             | Armas, bots y navegación que usan el mundo; la historia                                      | Un guardia que llama al ascensor                                     |
-| 5. Juegos                             | Tres juegos clásicos completos, con historia, niveles, gráficos y sonido                     | Un juego de plataformas, una aventura y un shooter, en este sitio    |
-| 6. Red y autoría                      | Partidas en red, editor de niveles                                                           | El shooter, en red                                                   |
-| 7. Mundos extraños                    | Gravedades que cambian de lugar en lugar, caminar por paredes, espacios pegados              | Dos juegos de la segunda tanda                                       |
+| Fase                        | Qué trae                                                                                     | Cómo se demuestra                                                    |
+| --------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 0. Cimientos                | El repositorio, las herramientas, este sitio, las decisiones y un núcleo mínimo              | Un cubo que gira en el Dojo, calculado por la simulación             |
+| 1. Física y un personaje    | Física, un personaje con su cámara, repeticiones, el estado que viaja, la red desde temprano | Un personaje que corre y salta en un nivel, y su repetición da igual |
+| **2. Capacidades** ← _aquí_ | Niveles como datos; trepar, agarrar, componer capacidades; modelos y animaciones             | Prender y apagar capacidades en vivo, en un nivel de verdad          |
+| 3. Un mundo que responde    | Mecanismos, señales, cosas que se rompen, luz, sonido; la interfaz del juego y guardar       | Romper una lámpara cambia lo que ve un guardia                       |
+| 4. Combate e inteligencia   | Armas, bots y navegación que usan el mundo; la historia                                      | Un guardia que llama al ascensor                                     |
+| 5. Juegos                   | Tres juegos clásicos completos, con historia, niveles, gráficos y sonido                     | Un juego de plataformas, una aventura y un shooter, en este sitio    |
+| 6. Red y autoría            | Partidas en red, editor de niveles                                                           | El shooter, en red                                                   |
+| 7. Mundos extraños          | Gravedades que cambian de lugar en lugar, caminar por paredes, espacios pegados              | Dos juegos de la segunda tanda                                       |
 
 El código está en [GitHub](https://github.com/RodrigoMartinVG/Manifold_Gaming). Las decisiones importantes, con su porqué, están en [`docs/decisions`](https://github.com/RodrigoMartinVG/Manifold_Gaming/tree/main/docs/decisions).
 

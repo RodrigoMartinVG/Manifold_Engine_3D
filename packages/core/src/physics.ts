@@ -138,6 +138,20 @@ export class Physics {
     return { movement: toVec(c.computedMovement()), grounded: c.computedGrounded(), ceiling };
   }
 
+  /** Puts a body somewhere at once, without moving through what is in between (stage 2a: back to a checkpoint). */
+  place(handle: number, position: Vec3, rotation: Quat) {
+    const rigid = this.world.getRigidBody(handle);
+    if (!rigid) return;
+    rigid.setTranslation(v(position), true);
+    rigid.setRotation(q(rotation), true);
+    rigid.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    rigid.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    if (rigid.isKinematic()) {
+      rigid.setNextKinematicTranslation(v(position));
+      rigid.setNextKinematicRotation(q(rotation));
+    }
+  }
+
   /** Where a character's body will be at the end of the next step (it moves there during the step). */
   setNextPose(handle: number, position: Vec3, rotation: Quat) {
     const rigid = this.world.getRigidBody(handle);

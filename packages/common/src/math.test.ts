@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { quat, vec3, type Vec3 } from './math';
+import { quat, sinCosDegrees, vec3, type Vec3 } from './math';
 
 const close = (a: readonly number[], b: readonly number[], tolerance = 1e-12) =>
   a.forEach((x, i) => expect(Math.abs(x - b[i]!)).toBeLessThan(tolerance));
@@ -93,5 +93,41 @@ describe('looking somewhere (for characters)', () => {
       close(quat.rotate(q, [0, 0, -1]), forward, 1e-12);
       close(quat.rotate(q, [0, 1, 0]), up, 1e-12);
     }
+  });
+});
+
+describe('our own sine and cosine, in degrees (stage 2a)', () => {
+  test("as exact as the browser's, from −720° to 720°", () => {
+    let worst = 0;
+    for (let d = -720; d <= 720; d += 0.37) {
+      const [s, c] = sinCosDegrees(d);
+      const r = (d * Math.PI) / 180;
+      worst = Math.max(worst, Math.abs(s - Math.sin(r)), Math.abs(c - Math.cos(r)));
+    }
+    // (The reference loses a little itself: d·π/180 with a big d is already off by about 1e-15 before
+    // Math.sin sees it. Ours takes out the quarter turns first, in degrees, where that is exact.)
+    expect(worst).toBeLessThan(4e-15);
+  });
+
+  test('the quarter turns come out exact, and without −0', () => {
+    const exact = (d: number, sin: number, cos: number) => {
+      const [s, c] = sinCosDegrees(d);
+      expect(Object.is(s, sin), `sin ${d}`).toBe(true);
+      expect(Object.is(c, cos), `cos ${d}`).toBe(true);
+    };
+    exact(0, 0, 1);
+    exact(90, 1, 0);
+    exact(180, 0, -1);
+    exact(270, -1, 0);
+    exact(-90, -1, 0);
+    exact(360, 0, 1);
+  });
+
+  test('a turn from degrees: the ramp of the course, 18° around x', () => {
+    const q = quat.fromDegrees([1, 0, 0], 18);
+    // The numbers the course used to have written by hand: sin 9° and cos 9°.
+    expect(q[0]).toBeCloseTo(0.15643446504023087, 15);
+    expect(q[3]).toBeCloseTo(0.9876883405951378, 15);
+    expect(q[0] * q[0] + q[3] * q[3]).toBeCloseTo(1, 15);
   });
 });

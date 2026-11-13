@@ -18,7 +18,30 @@ export interface Entity {
   body?: Body;
   character?: Character;
   appearance?: Appearance;
+  sensor?: Sensor;
+  game?: GameData;
 }
+
+/**
+ * A ZONE THAT NOTICES WHO ENTERS (stage 2a): a box, turned with its transform. On every step the
+ * world checks which moving bodies have their center inside it, and says who came in and who left
+ * (`sensorEntered`, `sensorLeft`). It does not push: it only notices. What it means (a checkpoint, a
+ * goal, the void under a level) is the game's: the engine does not read `kind`.
+ */
+export interface Sensor {
+  kind: string;
+  /** Half its size along each of its axes. */
+  half: Vec3;
+  /** Who is inside now, by id, in the order they came in. */
+  inside: EntityId[];
+}
+
+/**
+ * A GAME'S OWN DATA on an entity (stage 2a): the last checkpoint, the time, the falls… Plain values,
+ * like every component: copied, compared and hashed with the rest of the world, so it travels in
+ * snapshots and replays play it the same. The engine never reads it.
+ */
+export type GameData = Record<string, number | string | boolean | Vec3>;
 
 export interface Transform {
   position: Vec3;
@@ -140,7 +163,12 @@ export interface Appearance {
 }
 
 /** The components an entity is created with (everything but the id, which the world gives; a body and a character as they are asked for). */
-export type Components = Omit<Entity, 'id' | 'body' | 'character'> & { body?: BodySpec; character?: CharacterSpec };
+export type Components = Omit<Entity, 'id' | 'body' | 'character' | 'sensor'> & {
+  body?: BodySpec;
+  character?: CharacterSpec;
+  /** A zone: what it is for, and half its size (who is inside starts empty). */
+  sensor?: Pick<Sensor, 'kind' | 'half'>;
+};
 
 /**
  * GRAVITY, as data (decision 0012): a field that says, at every point, where "down" is and how
@@ -150,4 +178,14 @@ export type Components = Omit<Entity, 'id' | 'body' | 'character'> & { body?: Bo
 export type GravityField = { kind: 'uniform'; vector: Vec3 };
 
 /** What HAPPENED in a step, as data (for the presentation, the game, the network). */
-export type Event = { type: 'entityCreated'; id: EntityId } | { type: 'entityRemoved'; id: EntityId };
+export type Event =
+  | { type: 'entityCreated'; id: EntityId }
+  | { type: 'entityRemoved'; id: EntityId }
+  /** A moving body's center came into a zone (stage 2a), or left it. */
+  | { type: 'sensorEntered'; sensor: EntityId; entity: EntityId }
+  | { type: 'sensorLeft'; sensor: EntityId; entity: EntityId }
+  /**
+   * Something the game wants the players to know ("checkpoint", "the goal in 23.4 s"): the
+   * presentation shows it. For one player, or (without `player`) for everybody.
+   */
+  | { type: 'notice'; text: string; player?: number };

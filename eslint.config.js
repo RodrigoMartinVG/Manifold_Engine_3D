@@ -147,7 +147,13 @@ export default defineConfig(
   },
   {
     // The simulation, the network and a game's rules give the same bits in every browser (stage 1f).
-    files: ['packages/core/src/**', 'packages/net/src/**', 'games/*/src/cartridge.ts'],
+    files: [
+      'packages/core/src/**',
+      'packages/net/src/**',
+      'games/*/src/cartridge.ts',
+      'games/*/src/rules.ts',
+      'games/*/src/levels.ts',
+    ],
     ignores: ['**/*.test.ts'],
     rules: sameEverywhere,
   },
@@ -179,7 +185,7 @@ export default defineConfig(
   },
   {
     // A game's RULES (its cartridge) run without a screen: also on a server and in tests.
-    files: ['games/*/src/cartridge*.ts'],
+    files: ['games/*/src/cartridge*.ts', 'games/*/src/rules.ts', 'games/*/src/levels.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
