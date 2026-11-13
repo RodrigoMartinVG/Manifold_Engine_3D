@@ -9,7 +9,7 @@ export {
   type SessionState,
   type WorldChange,
 } from './session';
-export { COYOTE_STEPS, JUMP_BUFFER_STEPS, turned, upAt } from './character';
+export { DEFAULT_MOVEMENT, turned, upAt } from './character';
 export {
   actionsFor,
   axisOf,
@@ -54,6 +54,8 @@ export type {
   GameData,
   GravityField,
   InputValue,
+  ModeName,
+  Movement,
   PlayerInput,
   Sensor,
   Shape,

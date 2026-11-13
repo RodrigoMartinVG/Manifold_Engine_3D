@@ -1,33 +1,73 @@
 import { quat, vec3, type Vec3 } from '@manifold/common';
 import { gravityAt } from './gravity';
 import { axisOf, isDown, NO_INPUT, vectorOf } from './input';
-import type { Character, CharacterSpec, Entity } from './types';
+import type { Character, CharacterSpec, Entity, ModeName, Movement } from './types';
 import type { World } from './world';
 
-/** A jump is still allowed this many steps after leaving an edge (0.1 s): "coyote time". */
-export const COYOTE_STEPS = 6;
-/** A jump asked for this many steps before landing is kept, and happens on landing (0.1 s). */
-export const JUMP_BUFFER_STEPS = 6;
-/** How fast it reaches the speed it is asked for, m/s²: quickly on the ground, slowly in the air. */
-const GROUND_ACCELERATION = 50;
-const AIR_ACCELERATION = 14;
+/**
+ * A platformer's feel (the one the Dojo had until stage 2b): quick on the ground, a little steering
+ * in the air, a jump of about 2 m, 0.1 s of coyote time and of jump buffering.
+ */
+export const DEFAULT_MOVEMENT: Readonly<Movement> = Object.freeze({
+  walk: { speed: 4.5, run: 7.5, acceleration: 50 },
+  air: { control: 14 },
+  jump: { speed: 6.5, coyote: 6, buffer: 6 },
+  turn: 3,
+});
 
 export function newCharacter(spec: CharacterSpec): Character {
+  const m = spec.movement ?? {};
+  const movement: Movement = {
+    walk: { ...DEFAULT_MOVEMENT.walk, ...m.walk },
+    air: { ...DEFAULT_MOVEMENT.air, ...m.air },
+    jump: { ...DEFAULT_MOVEMENT.jump, ...m.jump },
+    turn: m.turn ?? DEFAULT_MOVEMENT.turn,
+  };
   return {
     player: spec.player,
-    walkSpeed: spec.walkSpeed ?? 4.5,
-    runSpeed: spec.runSpeed ?? 7.5,
-    jumpSpeed: spec.jumpSpeed ?? 6.5,
+    movement,
+    mode: 'air',
     velocity: [0, 0, 0],
     grounded: false,
     // Born in the air: no coyote time until it has stood on something.
-    stepsInAir: COYOTE_STEPS + 1,
+    stepsInAir: movement.jump.coyote + 1,
     jumpPending: 0,
     jumpHeld: false,
     facing: [...(spec.facing ?? [0, 0, -1])],
-    turnSpeed: spec.turnSpeed ?? 3,
+    carry: [0, 0, 0],
   };
 }
+
+/**
+ * A WAY OF MOVING (stage 2b; decision 0000: "one exclusive locomotion mode plus contributions that
+ * add up, resolved in one place"). Exactly one is active at each step, and it decides how the
+ * velocity along the ground goes towards what the player asks for. What adds up whatever the mode
+ * (gravity, what carries the character) is not a mode's business: see `moveCharacter`.
+ */
+interface Mode {
+  /** The velocity along the ground at the end of this step, from the one it has and the one asked for. */
+  steer(c: Character, now: Vec3, wanted: Vec3, dt: number): Vec3;
+}
+
+/** Goes from `now` towards `wanted`, changing at most `most` (m/s) in this step. */
+const approach = (now: Vec3, wanted: Vec3, most: number): Vec3 => {
+  const diff = vec3.sub(wanted, now);
+  const away = vec3.length(diff);
+  return away <= most ? wanted : vec3.add(now, vec3.scale(diff, most / away));
+};
+
+const MODES: Record<ModeName, Mode> = {
+  // On the ground: towards what is asked, quickly (its feet push against the floor).
+  walk: { steer: (c, now, wanted, dt) => approach(now, wanted, c.movement.walk.acceleration * dt) },
+  // In the air: the same, but with what the game allows to steer (0: the jump's arc cannot change).
+  air: { steer: (c, now, wanted, dt) => approach(now, wanted, c.movement.air.control * dt) },
+};
+
+/**
+ * WHICH MODE, decided here and only here: standing on something, it walks; if not, it is in the air.
+ * (Stage 2c adds its capabilities here: climbing when it holds a wall, gliding when it opens its wings…)
+ */
+const modeFor = (c: Character): ModeName => (c.grounded ? 'walk' : 'air');
 
 /** "Up" at a point: the opposite of the gravity there (if there is no gravity, +Y). */
 export function upAt(world: World, position: Vec3): Vec3 {
@@ -55,16 +95,17 @@ export function turned(facing: Vec3, up: Vec3, turn: number, turnSpeed: number, 
 }
 
 /**
- * THE CHARACTER SYSTEM, one step of one character (stage 1b). All its math is additions,
- * multiplications and square roots (no trigonometry): the same bits in every browser.
+ * THE CHARACTER SYSTEM, one step of one character (stage 1b; in modes since 2b). All its math is
+ * additions, multiplications and square roots (no trigonometry): the same bits in every browser.
+ * Everything is resolved here, in this order:
  *
  *   1. it turns on its own axis, if asked to (stage 1c2);
- *   2. its velocity splits into "up" (along its up) and "horizontal" (the rest); the horizontal part
- *      goes towards what the player asks for (in the world, or by where the character looks), by an
- *      acceleration (quick on the ground, slow in the air: it can still steer a jump, a little);
+ *   2. THE MODE (only one): its velocity splits into "up" (along its up) and "along the ground" (the
+ *      rest), and the mode steers the part along the ground towards what the player asks for;
  *   3. a jump: asked for (pressed, not held), kept a few steps if it was too early, allowed a few
- *      steps after leaving an edge;
- *   4. gravity;
+ *      steps after leaving an edge; it sends it into the air;
+ *   4. THE CONTRIBUTIONS, whatever the mode: gravity (it changes the velocity) and what the game makes
+ *      it carry (it moves it, this step only);
  *   5. the character controller says how much of the desired movement it can really do: it slides
  *      along walls, climbs steps, stays on slopes and on the ground, and pushes what can be pushed;
  *   6. what it learned: whether it stands on something, whether it hit a ceiling, where it looks.
@@ -82,10 +123,11 @@ export function moveCharacter(world: World, e: Entity, dt: number) {
   const face = vec3.onPlane(vectorOf(input, 'face'), up);
   const told = vec3.length(face) > 0.1;
   const turn = axisOf(input, 'turn');
-  if (!told && turn !== 0) c.facing = turned(c.facing, up, turn, c.turnSpeed, dt);
+  if (!told && turn !== 0) c.facing = turned(c.facing, up, turn, c.movement.turn, dt);
 
-  // 2: the velocity, split; the horizontal part towards what is asked for: in the world, plus forward
-  // and to the side by where it looks now.
+  // 2: the mode, and the velocity along the ground towards what is asked for: in the world, plus
+  // forward and to the side by where it looks now.
+  c.mode = modeFor(c);
   let vUp = vec3.dot(c.velocity, up);
   let vH = vec3.onPlane(c.velocity, up);
   const inWorld = vec3.onPlane(vectorOf(input, 'move'), up);
@@ -94,27 +136,27 @@ export function moveCharacter(world: World, e: Entity, dt: number) {
   let move = vec3.add(inWorld, vec3.add(vec3.scale(ahead, axisOf(input, 'ahead')), vec3.scale(right, axisOf(input, 'side'))));
   const asked = vec3.length(move);
   if (asked > 1) move = vec3.scale(move, 1 / asked);
-  const target = vec3.scale(move, isDown(input, 'run') ? c.runSpeed : c.walkSpeed);
-  const maxChange = (c.grounded ? GROUND_ACCELERATION : AIR_ACCELERATION) * dt;
-  const diff = vec3.sub(target, vH);
-  const away = vec3.length(diff);
-  vH = away <= maxChange ? target : vec3.add(vH, vec3.scale(diff, maxChange / away));
+  const wanted = vec3.scale(move, isDown(input, 'run') ? c.movement.walk.run : c.movement.walk.speed);
+  vH = MODES[c.mode].steer(c, vH, wanted, dt);
 
   // 3: the jump.
-  const jump = isDown(input, 'jump');
-  if (jump && !c.jumpHeld) c.jumpPending = JUMP_BUFFER_STEPS;
-  c.jumpHeld = jump;
-  if (c.jumpPending > 0 && (c.grounded || c.stepsInAir <= COYOTE_STEPS)) {
-    vUp = c.jumpSpeed;
+  const { jump } = c.movement;
+  const jumping = isDown(input, 'jump');
+  if (jumping && !c.jumpHeld) c.jumpPending = jump.buffer;
+  c.jumpHeld = jumping;
+  if (c.jumpPending > 0 && (c.grounded || c.stepsInAir <= jump.coyote)) {
+    vUp = jump.speed;
     c.jumpPending = 0;
-    c.stepsInAir = COYOTE_STEPS + 1; // no second jump in the air
+    c.stepsInAir = jump.coyote + 1; // no second jump in the air
   } else if (c.jumpPending > 0) c.jumpPending--;
 
-  // 4: gravity.
+  // 4: the contributions. Gravity changes the velocity; what carries it only moves it, this step.
   vUp -= gravity * dt;
+  const carried: Vec3 = [...c.carry];
+  c.carry = [0, 0, 0];
 
   // 5: what it can really do.
-  const desired = vec3.scale(vec3.add(vH, vec3.scale(up, vUp)), dt);
+  const desired = vec3.scale(vec3.add(vec3.add(vH, vec3.scale(up, vUp)), carried), dt);
   const { movement, grounded, ceiling } = world.physics.moveCharacter(body.handle, desired, up);
 
   // 6: what it learned. (A ceiling is what the controller says hit its head: rising a little less

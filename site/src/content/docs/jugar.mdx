@@ -76,6 +76,8 @@ Se eligen en la consola, y se pueden combinar. **Las teclas** (`controls.scheme`
 | `camera` (la de siempre)    | hacia donde mira la cámara    | van a sus costados; el personaje mira hacia donde camina, como en un juego de plataformas |
 | `tank`, controles de tanque | hacia donde mira el personaje | lo giran sobre su eje; **Q** y **E** (o A y D con **Alt**) lo llevan de costado sin girar |
 
+**El control en el aire** (`dojo.air`): cuánto se puede corregir un salto ya en el aire, en m/s². Con 14, el de siempre, se corrige un poco, como en casi todos los juegos de plataformas. Con 0 no se corrige nada, como en la física real: una vez en el aire no hay contra qué empujar, y el arco del salto queda fijo. Con 50, tanto como en el piso.
+
 **La cámara** (`view.camera`):
 
 | Opción                   | Qué hace                                                                                                                     |
@@ -113,6 +115,7 @@ Está **en inglés, y no se traduce**: sus nombres son como las palabras de un l
 ] dojo.cubes 20               veinte cubos chicos (el mundo vuelve a empezar)
 ] dojo.spawn 2 5 0            una pelota que cae desde (2, 5, 0)
 ] physics.gravity 0 -1.62 0   la gravedad de la Luna
+] dojo.air 0                  saltos sin corregir en el aire, como en la física real
 ] show.physics on             lo que ve el motor de física
 ] show.contacts on            dónde se tocan los cuerpos
 ] show.sensors on             las zonas del nivel: control, meta, vacío

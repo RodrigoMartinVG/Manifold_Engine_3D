@@ -262,3 +262,20 @@ test('a run that falls off the floor and comes back, driven by its inputs, plays
   expect(playReplay(DojoCartridge, replayFromText(replayToText(replayOf(session)))).same).toBe(true);
   session.world.dispose();
 });
+
+test('dojo.air: no steering in the air for every character, from a step; a joiner moves the same; the replay holds', () => {
+  const session = new Session(DojoCartridge, { registry: registryWith('dojo.level course') });
+  const characters = () => [...session.world.entities.values()].filter((e) => e.character);
+  for (let step = 1; step <= 60; step++) session.step();
+  session.registry.run('dojo.air 0');
+  session.registry.run('players.join 2');
+  for (let step = 1; step <= 120; step++) {
+    // A jump, and in the air, asking to go to the side: with dojo.air 0, it keeps its arc.
+    session.setInput(1, step === 10 ? { jump: true } : step > 12 && step < 40 ? { move: [1, 0, 0] } : NO_INPUT);
+    session.step();
+    if (step === 30) expect(characters()[0]!.character!.velocity[0]).toBe(0);
+  }
+  expect(characters().map((e) => e.character!.movement.air.control)).toEqual([0, 0]);
+  expect(playReplay(DojoCartridge, replayFromText(replayToText(replayOf(session)))).same).toBe(true);
+  session.world.dispose();
+});

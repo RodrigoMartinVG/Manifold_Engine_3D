@@ -4,20 +4,20 @@ Where Manifold Gaming is going, how far it got, and what is left. It is updated 
 
 **Legend:** ✅ done · 🔨 in progress · ⬜ to do · 🔒 a decision is needed first
 
-**Now:** phase 2. Done: 2a (levels as data, zones, a level's loop). Next: step 2b, the composition protocol — the ways of moving as modes, each with its numbers (air control becomes a game's data).
+**Now:** phase 2. Done: 2a (levels as data, zones, a level's loop) and 2b (the ways of moving, as modes with their numbers as data). Next: step 2c, the capabilities — climbing, grabbing an edge, gliding — turned on and off live.
 
 ## The plan in one table
 
-| Phase                      | What it brings                                                                                             | How it is shown                                                                   | Status       |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------ |
-| 0. Foundations             | The repository and its tools, the site, the executable tutorial, the console, a minimal core               | A cube spinning in the Dojo, computed by the simulation                           | ✅           |
-| 1. Physics and a character | Physics, a character and its camera, replays, the world's state that travels, an early networking skeleton | A character runs and jumps in a classic level, and its replay gives the same hash | ✅           |
-| 2. Capabilities            | Levels as data; climbing, grabbing…, composed; models and animations                                       | Turning capabilities on and off live, in a real level                             | 🔨 (2a done) |
-| 3. A world that responds   | Mechanisms, signals, breakables, light, sound; the game's interface; saving                                | Breaking a lamp changes what a guard sees                                         | ⬜           |
-| 4. Combat and bots         | Weapons, enemies that use the world, navigation, the story                                                 | A guard who calls the elevator                                                    | ⬜           |
-| 5. Games                   | Three classic games, complete: story, levels, graphics, sound                                              | A platformer, an action adventure and a shooter, on the site                      | ⬜           |
-| 6. Networking and levels   | Networked matches, a level editor                                                                          | The shooter, online                                                               | ⬜           |
-| 7. Strange worlds          | Gravity that changes from place to place, walking on walls, spaces glued to themselves                     | Two games of the second wave                                                      | ⬜           |
+| Phase                      | What it brings                                                                                             | How it is shown                                                                   | Status          |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------- |
+| 0. Foundations             | The repository and its tools, the site, the executable tutorial, the console, a minimal core               | A cube spinning in the Dojo, computed by the simulation                           | ✅              |
+| 1. Physics and a character | Physics, a character and its camera, replays, the world's state that travels, an early networking skeleton | A character runs and jumps in a classic level, and its replay gives the same hash | ✅              |
+| 2. Capabilities            | Levels as data; climbing, grabbing…, composed; models and animations                                       | Turning capabilities on and off live, in a real level                             | 🔨 (2a–2b done) |
+| 3. A world that responds   | Mechanisms, signals, breakables, light, sound; the game's interface; saving                                | Breaking a lamp changes what a guard sees                                         | ⬜              |
+| 4. Combat and bots         | Weapons, enemies that use the world, navigation, the story                                                 | A guard who calls the elevator                                                    | ⬜              |
+| 5. Games                   | Three classic games, complete: story, levels, graphics, sound                                              | A platformer, an action adventure and a shooter, on the site                      | ⬜              |
+| 6. Networking and levels   | Networked matches, a level editor                                                                          | The shooter, online                                                               | ⬜              |
+| 7. Strange worlds          | Gravity that changes from place to place, walking on walls, spaces glued to themselves                     | Two games of the second wave                                                      | ⬜              |
 
 The games (decision [0012](docs/decisions/0012-the-games.md)): first three classics that share one character, growing with the phases — the platformer with phases 1–2, the action adventure with 3–4, the shooter with 4–6 — and complete in phase 5. The strange ones come after, in phase 7.
 
@@ -63,11 +63,11 @@ The question for the start of every step: does it have what it needs, and does i
 ## Phase 2 — Capabilities 🔨
 
 - ✅ **2a — Levels as data, zones, a level's loop:** a level format of our own (text, versioned, errors with their line; an importer from Blender or an editor will write this same text later), the course moved out of the code into `games/dojo/levels/course.level`; zones that notice who comes in and leaves (in their own axes, without Rapier); the Dojo's loop: a checkpoint, the void that brings you back, the goal with its time and falls, kept as the character's `game` data; notices on screen; `show.sensors`; and our own sine and cosine in degrees, the same bits everywhere.
-- ⬜ **2b — The composition protocol:** one exclusive locomotion mode (walking, in the air, climbing…) plus contributions that add up, resolved in one place (decision 0000); each mode with its numbers, so air control becomes a game's data (generous in the platformer, scarce in the shooter).
+- ✅ **2b — The composition protocol:** one mode of moving at each step (walking, in the air), chosen in one place (where 2c's capabilities will come in), each one steering the velocity along the ground its own way; contributions that add up whatever the mode (gravity, and what the game makes the character carry: a wind, a belt, 2d's platforms). The movement's numbers are data of each game (`movement`: walk, air control, jump with coyote time and buffer, turn); `dojo.air` changes the air control live (0: real physics, the jump's arc cannot be steered).
 - 🔒 **Where the art and the sound come from** (made in Blender, generated with code, or free-licensed packs; never copied) — at the start of the phase, together with the level format: if levels are made in Blender, they can come out of it too.
-- ⬜ Climbing, grabbing, gliding… as pieces that are turned on and off live.
-- ⬜ Moving and turning platforms that carry the character (in V1, the character controller got stuck on kinematic bodies).
-- ⬜ Models and animations (glTF), within what a modest integrated GPU can draw.
+- ⬜ **2c — Capabilities:** climbing, grabbing an edge, gliding… as pieces that come in where the mode is chosen, and are turned on and off live.
+- ⬜ **2d — Moving platforms:** moving and turning platforms that carry the character, through its `carry` (in V1, the character controller got stuck on kinematic bodies).
+- ⬜ **2e — Models and animations** (glTF), within what a modest integrated GPU can draw; the animations follow the character's mode.
 
 ## Phase 3 — A world that responds ⬜
 

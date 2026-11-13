@@ -9,5 +9,6 @@
  *   3  stage 1d: inputs as named values; the hash includes the id counter and the previous inputs
  *   4  stage 1e: who is in the match (`players`), in the hash and in snapshots
  *   5  stage 2a: zones (`sensor`) and a game's data on its entities (`game`)
+ *   6  stage 2b: a character's movement as data, its mode, and what it carries
  */
-export const SIMULATION_VERSION = 5;
+export const SIMULATION_VERSION = 6;

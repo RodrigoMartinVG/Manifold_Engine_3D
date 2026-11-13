@@ -1,13 +1,13 @@
 import { beforeAll, describe, expect, test } from 'vitest';
 import { quat, vec3, type Vec3 } from '@manifold/common';
 import type { Cartridge } from './cartridge';
-import { COYOTE_STEPS, turned } from './character';
+import { DEFAULT_MOVEMENT, turned } from './character';
 import { NO_INPUT } from './input';
 import { stateHash } from './hash';
 import { initPhysics } from './physics';
 import { Session } from './session';
 import type { Entity, GravityField, PlayerInput } from './types';
-import { World } from './world';
+import { STEP, World } from './world';
 
 beforeAll(initPhysics);
 
@@ -129,8 +129,8 @@ describe('the character (stage 1b)', () => {
       world.dispose();
       return { risen, highestCheck: risen };
     };
-    expect(jumpAfter(COYOTE_STEPS - 2).risen).toBe(true);
-    expect(jumpAfter(COYOTE_STEPS + 6).risen).toBe(false);
+    expect(jumpAfter(DEFAULT_MOVEMENT.jump.coyote - 2).risen).toBe(true);
+    expect(jumpAfter(DEFAULT_MOVEMENT.jump.coyote + 6).risen).toBe(false);
   });
 
   test('a jump asked for a few steps before landing is kept, and happens on landing', () => {
@@ -292,6 +292,64 @@ describe('the character (stage 1b)', () => {
     const { world, hero } = setUp();
     run(world, 30, () => ({ ...NO_INPUT, turn: 1, face: [0, 0, -1] }));
     expect(hero.character!.facing).toEqual([0, 0, -1]);
+    world.dispose();
+  });
+
+  test('modes (stage 2b): on the ground it walks, off it it is in the air; resolved on every step', () => {
+    const { world, hero } = setUp();
+    run(world, 1);
+    expect(hero.character!.mode).toBe('air'); // born above the floor
+    run(world, 60);
+    expect(hero.character!.mode).toBe('walk');
+    run(world, 5, (step) => input([0, 0, 0], step === 1));
+    expect(hero.character!.mode).toBe('air');
+    world.dispose();
+  });
+
+  test("air control is data: at 0 a jump's arc cannot be steered; with the ground's, it steers as on the ground", () => {
+    const sideways = (control: number) => {
+      const { world, hero } = setUp();
+      hero.character!.movement.air.control = control;
+      run(world, 60);
+      // A jump straight up, and only once in the air, the player asks to go to the side.
+      run(world, 2, (step) => input([0, 0, 0], step === 1));
+      run(world, 15, () => input([1, 0, 0]));
+      const vx = hero.character!.velocity[0];
+      world.dispose();
+      return vx;
+    };
+    expect(sideways(0)).toBe(0);
+    expect(sideways(14)).toBeCloseTo(15 * 14 * STEP, 6); // 14 m/s² for 15 steps
+    expect(sideways(50)).toBeCloseTo(4.5, 6); // as on the ground: the walking speed at once
+  });
+
+  test('what carries it moves it this step only, whatever its mode; its velocity does not keep it', () => {
+    const { world, hero } = setUp();
+    run(world, 60);
+    const x0 = hero.transform!.position[0];
+    for (let i = 0; i < 30; i++) {
+      hero.character!.carry = [2, 0, 0]; // the game says it on every step it applies (a wind, a belt…)
+      run(world, 1);
+    }
+    expect(hero.transform!.position[0] - x0).toBeCloseTo(1, 2); // 2 m/s for half a second
+    expect(hero.character!.velocity[0]).toBe(0);
+    run(world, 30);
+    expect(hero.transform!.position[0] - x0).toBeCloseTo(1, 2); // nothing carries it: it stays
+    world.dispose();
+  });
+
+  test("a character's movement as it is asked for: only what is said changes, the rest is the default", () => {
+    const world = new World({ seed: 1 });
+    const hero = world.createEntity({
+      transform: { position: [0, 1, 0], rotation: quat.identity() },
+      body: { type: 'character', shape: { kind: 'capsule', halfHeight: 0.5, radius: 0.3 } },
+      character: { player: 1, movement: { jump: { speed: 3 }, air: { control: 0 } } },
+    });
+    expect(hero.character!.movement).toEqual({
+      ...DEFAULT_MOVEMENT,
+      jump: { ...DEFAULT_MOVEMENT.jump, speed: 3 },
+      air: { control: 0 },
+    });
     world.dispose();
   });
 

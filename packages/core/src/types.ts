@@ -96,13 +96,40 @@ export type BodySpec = Pick<Body, 'type' | 'shape'> &
   Partial<Pick<Body, 'restitution' | 'friction' | 'linearDamping' | 'angularDamping' | 'linearVelocity' | 'angularVelocity'>>;
 
 /**
+ * HOW A CHARACTER MOVES (stage 2b): the numbers of each of its MODES, as data. A game decides them
+ * (a platformer's feel is not a shooter's), and being data, they can change at a step (`dojo.air`),
+ * travel in snapshots and play the same in replays.
+ */
+export interface Movement {
+  /** Walking, on the ground: its speeds (m/s, walking and running) and how fast it reaches them (m/s²). */
+  walk: { speed: number; run: number; acceleration: number };
+  /**
+   * In the air: how much it can still steer (m/s²). Real physics says 0: once in the air, there is
+   * nothing to push against. Platformers cheat on purpose, because a jump that cannot be steered
+   * feels stiff; how much is each game's choice.
+   */
+  air: { control: number };
+  /**
+   * The jump: its speed up (m/s: it rises v² / 2g, 6.5 m/s on Earth is about 2.15 m); how many steps
+   * after leaving an edge it still counts ("coyote time"); how many steps before landing it is kept
+   * ("jump buffering").
+   */
+  jump: { speed: number; coyote: number; buffer: number };
+  /** How fast it turns on its own axis when asked to (`turn` at 1), radians per second. */
+  turn: number;
+}
+
+/** The ways of moving (stage 2b): exactly one at each step. Climbing, gliding… come in with stage 2c. */
+export type ModeName = 'walk' | 'air';
+
+/**
  * A CHARACTER (stage 1b): something a player drives. Its body is a `character` body, a capsule; this
  * is the rest of its state, all data, part of the hash:
- * - how it moves: its speeds, and the velocity it has now;
- * - whether it stands on something, and how many steps it has been in the air (a jump is still
- *   allowed a few steps after leaving an edge: "coyote time");
- * - a jump asked for a little before landing is kept a few steps ("jump buffering"), so it is not lost;
- * - where it looks.
+ * - how it moves (its modes' numbers), the mode it is in, and the velocity it has now;
+ * - whether it stands on something, and how many steps it has been in the air;
+ * - a jump asked for a little before landing, kept a few steps, so it is not lost;
+ * - where it looks;
+ * - what the game makes it carry this step (`carry`).
  *
  * Its "up" is not stored: it is the opposite of the gravity where it stands (decision 0012). Today
  * that is always +Y; on the planets of phase 7 it will change from place to place.
@@ -110,10 +137,9 @@ export type BodySpec = Pick<Body, 'type' | 'shape'> &
 export interface Character {
   /** The player who drives it (the inputs carry this number). */
   player: number;
-  walkSpeed: number;
-  runSpeed: number;
-  /** The upward speed of a jump, m/s: it rises v² / 2g (6.5 m/s on Earth: about 2.15 m). */
-  jumpSpeed: number;
+  movement: Movement;
+  /** The mode it moved in at the last step. */
+  mode: ModeName;
   velocity: Vec3;
   grounded: boolean;
   stepsInAir: number;
@@ -123,13 +149,24 @@ export interface Character {
   jumpHeld: boolean;
   /** Where it looks: a unit vector perpendicular to its "up". */
   facing: Vec3;
-  /** How fast it turns on its own axis when asked to (`turn` at 1), radians per second. */
-  turnSpeed: number;
+  /**
+   * What the game makes it carry at the next step, m/s (stage 2b): the wind, a conveyor belt, and in
+   * stage 2d the platform it stands on. It moves it, whatever its mode, and it is emptied after the
+   * step: the game says it again on every step it applies.
+   */
+  carry: Vec3;
 }
 
-/** A character as it is asked for: its player; the rest has defaults. */
-export type CharacterSpec = Pick<Character, 'player'> &
-  Partial<Pick<Character, 'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'facing' | 'turnSpeed'>>;
+/** A character as it is asked for: its player; the rest has defaults (any of its movement's numbers too). */
+export type CharacterSpec = Pick<Character, 'player'> & {
+  facing?: Vec3;
+  movement?: {
+    walk?: Partial<Movement['walk']>;
+    air?: Partial<Movement['air']>;
+    jump?: Partial<Movement['jump']>;
+    turn?: number;
+  };
+};
 
 /**
  * WHAT A PLAYER ASKS FOR at a step: values with a name. It enters the world through the session, at a

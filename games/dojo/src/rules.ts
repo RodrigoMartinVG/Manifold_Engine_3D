@@ -1,5 +1,16 @@
 import { quat, vec3, type Vec3 } from '@manifold/common';
-import { buildLevel, pressed, STEP, upAt, type Cartridge, type Event, type Level, type World } from '@manifold/core';
+import {
+  buildLevel,
+  DEFAULT_MOVEMENT,
+  pressed,
+  STEP,
+  upAt,
+  type Cartridge,
+  type Event,
+  type Level,
+  type Movement,
+  type World,
+} from '@manifold/core';
 
 /** The big cube's spin at the start (a tilted axis: so it shows that it spins in 3D, not just "turns"). */
 const START_SPIN: Vec3 = [0.35, 0.9, 0.15];
@@ -25,12 +36,16 @@ function randomCube(world: World) {
   });
 }
 
+/** A copy of a movement's numbers. */
+const copyMovement = (m: Movement): Movement => ({ walk: { ...m.walk }, air: { ...m.air }, jump: { ...m.jump }, turn: m.turn });
+
 /** A character: a capsule 1.6 m tall, and its game data for the level's loop. */
-function character(world: World, player: number, at: Vec3, facing: Vec3, color: number) {
+function character(world: World, player: number, at: Vec3, facing: Vec3, color: number, movement?: Movement) {
   world.createEntity({
     transform: { position: [...at], rotation: quat.identity() },
     body: { type: 'character', shape: { kind: 'capsule', halfHeight: 0.5, radius: 0.3 } },
-    character: { player, facing: [...facing] },
+    // (A copy of the numbers it moves with, if given: each character has its own.)
+    character: { player, facing: [...facing], ...(movement ? { movement: copyMovement(movement) } : {}) },
     appearance: { shape: 'capsule', size: [0.6, 1.6, 0.6], color },
     // Where it comes back after falling, when it started, when it reached the goal (−1: not yet), its falls.
     game: { spawn: [...at], checkpoint: [...at], start: world.tick, finish: -1, falls: 0 },
@@ -131,6 +146,8 @@ function joinedPlayers(world: World) {
         [spawn[0] + 1.2 * (p - 1), spawn[1], spawn[2]],
         first.character!.facing,
         PLAYER_COLORS[(p - 2) % PLAYER_COLORS.length]!,
+        // It moves like the first one (whatever `dojo.air` and the rest made of it).
+        first.character!.movement,
       );
   for (const e of characters) if (e.character!.player !== 1 && !world.players.has(e.character!.player)) world.removeEntity(e.id);
 }
@@ -176,6 +193,17 @@ export function createDojo(levels: Readonly<Record<string, Level>>): Cartridge {
         scope: 'startup',
         type: { kind: 'option', options: ['empty', ...Object.keys(levels)] },
         default: 'empty',
+      });
+      registry.declareVariable({
+        name: 'dojo.air',
+        description:
+          "How much a character can steer in the air, in m/s² (stage 2b). 14 is a platformer's; 0, none at all, like real physics (once in the air, there is nothing to push against); 50, as much as on the ground. It changes at a step, for every character.",
+        scope: 'world',
+        type: { kind: 'number', min: 0, max: 60 },
+        default: DEFAULT_MOVEMENT.air.control,
+        onWorld(world, value) {
+          for (const e of world.entities.values()) if (e.character) e.character.movement.air.control = Number(value);
+        },
       });
       registry.declareVariable({
         name: 'dojo.spin',
