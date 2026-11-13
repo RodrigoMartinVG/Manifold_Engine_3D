@@ -1,20 +1,45 @@
 ---
 /**
- * THE DOJO'S SAVED ROOMS, as cards: each one opens its room's page, and shows the command that
- * loads it from the console. They are read from games/dojo/recipes/: a new room shows up by itself.
+ * THE DOJO'S SAVED ROOMS, as cards: each one opens its room's page. A room IS its recipe, so the card
+ * shows its lines (without the comments): what the Dojo is born with, as it would be typed in the
+ * console; and the command that loads it. The rooms with a character to drive go first, marked.
+ * They are read from games/dojo/recipes/: a new room shows up by itself.
  * (Rooms are in English, like everything in the console: decision 0011.)
  */
 import { ROOMS } from '@manifold/dojo/rooms';
 import { BASE } from '../sections';
+
+/** The lines that make a room: neither comments nor blank lines. */
+const linesOf = (text: string) =>
+  text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'));
+/** Whether the room has a character to drive. */
+const withCharacter = (text: string) => /^dojo\.level course$/m.test(text);
+
+const rooms = Object.entries(ROOMS).sort(
+  ([a, x], [b, y]) => Number(withCharacter(y.text)) - Number(withCharacter(x.text)) || a.localeCompare(b),
+);
 ---
 
 <ul class="mg-room-cards not-content">
   {
-    Object.entries(ROOMS).map(([name, room]) => (
+    rooms.map(([name, room]) => (
       <li>
         <a href={`${BASE}jugar/dojo/${name}/`}>
-          <span class="mg-room-title">{room.title}</span>
-          <code>load {name}</code>
+          <span class="mg-room-head">
+            <span class="mg-room-title">{room.title}</span>
+            {withCharacter(room.text) && <span class="mg-room-tag">con personaje</span>}
+          </span>
+          <span class="mg-room-lines">
+            {linesOf(room.text).map((line) => (
+              <code>{line}</code>
+            ))}
+          </span>
+          <span class="mg-room-load">
+            <code>load {name}</code>
+          </span>
         </a>
       </li>
     ))
@@ -24,7 +49,7 @@ import { BASE } from '../sections';
 <style>
   .mg-room-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
     gap: 0.9rem;
     margin: 1rem 0 0;
     padding: 0;
@@ -33,9 +58,9 @@ import { BASE } from '../sections';
   .mg-room-cards a {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 0.6rem;
+    gap: 0.7rem;
     height: 100%;
+    box-sizing: border-box;
     padding: 0.9rem 1rem;
     border: 1px solid var(--mg-bronze-line-strong);
     border-radius: 0.5rem;
@@ -45,13 +70,41 @@ import { BASE } from '../sections';
   .mg-room-cards a:hover {
     border-color: var(--sl-color-accent);
   }
+  .mg-room-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.3rem 0.6rem;
+  }
   .mg-room-title {
     color: var(--mg-title);
     font-family: var(--mg-font-title);
     font-weight: 600;
   }
-  .mg-room-cards code {
+  .mg-room-tag {
+    padding: 0.05rem 0.45rem;
+    border: 1px solid var(--sl-color-accent);
+    border-radius: 1rem;
+    color: var(--sl-color-accent-high);
+    font-size: var(--sl-text-xs);
+    white-space: nowrap;
+  }
+  /* What the room is born with: its recipe's lines, small and dim. */
+  .mg-room-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex: 1;
+  }
+  .mg-room-lines code {
     align-self: flex-start;
+    padding: 0;
+    background: none;
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-xs);
+  }
+  .mg-room-load code {
     color: var(--sl-color-accent-high);
     font-size: var(--sl-text-sm);
   }

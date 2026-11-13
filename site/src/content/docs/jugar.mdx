@@ -1,69 +1,128 @@
 ---
 title: Jugar
-description: El Dojo, el laboratorio del motor, y los juegos que vendrán.
+description: El Dojo, el laboratorio del motor, con sus salas; cómo se juega en él; y los juegos que vendrán.
 ---
 
-import { LinkButton } from '@astrojs/starlight/components';
+import { LinkButton, Tabs, TabItem } from '@astrojs/starlight/components';
 import RoomCards from '../../components/RoomCards.astro';
 
-El **Dojo** es el primer juego: el laboratorio del motor. Desde la etapa 1a tiene física: un cubo grande que gira y empuja lo que toca, cubos chicos que caen del azar del mundo, pelotas que se tiran desde la consola, y una gravedad que se puede cambiar. Con cada etapa del motor va a sumar salas (_rooms_) para probar lo nuevo.
+Hoy se juega en el **Dojo**, el laboratorio del motor: todo lo que el motor sabe hacer está ahí, para probarlo y romperlo. Los **juegos** de verdad vienen después, y se cuentan [al final](#los-juegos).
 
-<LinkButton href="dojo/" icon="right-arrow">
-  Entrar al Dojo
+## El Dojo
+
+Un piso, un cubo grande que gira y empuja lo que toca, cubos que caen del azar del mundo, y una consola para cambiarlo todo. En la sala **The course**, además, hay un personaje para manejar, en un nivel chico con escalones, una rampa y plataformas.
+
+<LinkButton href="dojo/course/" icon="right-arrow">
+  Manejar el personaje
+</LinkButton>
+<LinkButton href="dojo/" variant="secondary">
+  Entrar al Dojo vacío
 </LinkButton>
 
-## Sus salas
+### Sus salas
 
-Cada sala es una receta (_recipe_) guardada: el Dojo arranca ya preparado, y cada sala tiene su propia dirección. Como todo lo de la consola, sus nombres están en inglés.
+Cada sala es una **receta** (_recipe_) guardada: unas líneas de la consola con las que el Dojo arranca ya preparado. Cada tarjeta muestra esas líneas, y lleva a la sala. Desde la consola, `load` la carga.
 
 <RoomCards />
 
+## Cómo se juega
+
+<Tabs syncKey="dispositivo">
+  <TabItem label="Teclado y mouse">
+
+| Para…                      | En la sala con personaje                                       |
+| -------------------------- | -------------------------------------------------------------- |
+| caminar                    | **W A S D** o las flechas                                      |
+| saltar                     | **Espacio**                                                    |
+| correr                     | **Shift**                                                      |
+| tirar una pelota           | **F**                                                          |
+| girar la cámara            | arrastrar el mouse                                             |
+| acercar y alejar           | la rueda                                                       |
+| ver de qué está hecho algo | un clic sobre él (lo muestra en la consola)                    |
+| abrir la consola           | **º**, la tecla a la izquierda del 1, o el botón de abajo `›_` |
+
+  </TabItem>
+  <TabItem label="Mando">
+
+| Para…            | Con un mando              |
+| ---------------- | ------------------------- |
+| caminar          | el stick izquierdo        |
+| saltar           | **A**                     |
+| correr           | **B**, o apretar el stick |
+| tirar una pelota | **X**                     |
+| girar la cámara  | el stick derecho          |
+
+  </TabItem>
+  <TabItem label="Pantalla táctil">
+
+| Para…                      | Con el dedo   |
+| -------------------------- | ------------- |
+| girar la cámara            | arrastrar     |
+| acercar y alejar           | pellizcar     |
+| ver de qué está hecho algo | tocarlo       |
+| abrir la consola           | el botón `›_` |
+
+El personaje todavía no se maneja con el dedo: hace falta un teclado o un mando.
+
+  </TabItem>
+</Tabs>
+
+### Otras maneras de manejar y de mirar
+
+Se eligen en la consola, y se pueden combinar. **Las teclas** (`controls.scheme`):
+
+| Opción                      | "Adelante" es…                | A y D…                                                                                    |
+| --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `camera` (la de siempre)    | hacia donde mira la cámara    | van a sus costados; el personaje mira hacia donde camina, como en un juego de plataformas |
+| `tank`, controles de tanque | hacia donde mira el personaje | lo giran sobre su eje; **Q** y **E** (o A y D con **Alt**) lo llevan de costado sin girar |
+
+**La cámara** (`view.camera`):
+
+| Opción                   | Qué hace                                                                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `follow` (la de siempre) | lo sigue como atada con una correa: mantiene la distancia, y gira de a poco cuando el personaje va hacia un costado          |
+| `chase`                  | vuelve sola detrás del personaje; arrastrar mira alrededor, y al soltar vuelve. Va bien con `tank`                           |
+| `aim`                    | un clic toma el mouse: el mouse gira la cámara, y el personaje mira hacia donde mira ella, como en un shooter. Esc lo suelta |
+| `free`                   | se queda quieta                                                                                                              |
+
+## Grabar, volver y jugar con otros
+
+Todo lo que pasa en el Dojo queda grabado desde que nace el mundo. Desde la consola:
+
+| Escribí                      | Y pasa                                                                                                                           |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `replay export`              | un enlace con la partida: quien lo abre la ve igual, y al final comprueba que su mundo dio la misma huella que el tuyo           |
+| `replay play`                | la partida vuelve a mostrarse desde el principio                                                                                 |
+| `ghost`                      | el mundo empieza de nuevo, con un **fantasma** que repite lo que hiciste, para correr contra vos mismo                           |
+| `ghost export`               | un enlace para que otra persona corra contra tu fantasma                                                                         |
+| `snapshot` y `snapshot load` | guardar el mundo entero como está, física incluida, y volver a él, como el "guardar estado" de un emulador                       |
+| `net open` y `net join`      | jugar con otra pestaña del mismo navegador: `net open` en una; en la otra, la misma sala y `net join`. Cada una con su personaje |
+
+Aunque juegues solo, la página juega a través de un servidor propio, que vive en la misma página, y cada segundo comprueba que su copia del mundo es la misma. `net` dice cómo viene eso.
+
 ## La consola
 
-En la sala `course` hay un **personaje** para manejar, en un nivel chico con escalones, una rampa y plataformas: **WASD** o las flechas para caminar, **Espacio** para saltar, **Shift** para correr y **F** para tirar una pelota. Con un mando: el stick izquierdo camina, **A** salta, **B** corre, **X** tira y el stick derecho gira la cámara. `inputs`, en la consola, lista todo lo que se puede pedir y con qué.
+Con la tecla **º** (o el botón `›_`) se abre la consola, como la de los juegos de antes. Ahí se ve y se cambia todo lo que el Dojo deja tocar. Lo resaltado (los ejemplos de `help`, las salas, las sugerencias) se puede tocar: un clic lo pone en la línea, y Enter lo ejecuta. Tab completa los nombres, las flechas recorren lo que escribiste, y Esc la cierra.
 
-**Las teclas se pueden usar de dos maneras** (`controls.scheme`):
-
-- `camera` (la de siempre): "adelante" es hacia donde mira la cámara, A y D van a sus costados, y el personaje mira hacia donde camina, como en un juego de plataformas.
-- `tank`: "adelante" es hacia donde mira el personaje. W y S avanzan y retroceden, A y D lo giran sobre su eje, y Q y E (o A y D con Alt apretado, como en los shooters viejos) lo llevan de costado sin girar. Son los controles de tanque: con el teclado solo ya se puede ir hacia cualquier lado.
-
-**Y la cámara, de cuatro** (`view.camera`):
-
-- `follow` (la de siempre) lo sigue como atada con una correa: mantiene la distancia, y cuando el personaje va hacia un costado, gira de a poco. Arrastrar el mouse la gira alrededor.
-- `chase` vuelve sola detrás del personaje: arrastrar mira alrededor, y al soltar vuelve. Va bien con `tank`.
-- `aim`: un clic toma el mouse, el mouse gira la cámara y el personaje mira hacia donde mira ella, moviéndose de costado sin girar, como en un shooter (Esc suelta el mouse).
-- `free` la deja quieta.
-
-**Todo lo que pasa queda grabado** desde que nace el mundo: `replay export` arma un enlace con la corrida, y quien lo abre la ve igual. Al terminar, comprueba que su mundo dio la misma huella que el tuyo, en su máquina y en su navegador. `ghost` vuelve a empezar con un fantasma que repite lo que hiciste, para correr contra vos mismo, y `ghost export` arma el enlace para que otra persona corra contra él.
-
-**Un momento se puede guardar:** `snapshot` guarda el mundo entero tal como está, física incluida, y `snapshot load` vuelve a él, como el "guardar estado" de un emulador. Desde ahí, las mismas teclas dan la misma huella, y la repetición sigue valiendo.
-
-**Dos pestañas, una partida.** Aunque juegues solo, la página juega a través de un servidor propio, que vive en la misma página: cada segundo, su copia del mundo se compara con la del servidor. Para jugar con otra pestaña del mismo navegador, escribí `net open` en una; en la otra, abrí la misma sala y escribí `net join`: entrás con tu propio personaje, y cada una ve moverse al de la otra. `net` dice dónde estás y cuántas comprobaciones dieron igual, y `net leave` vuelve a jugar solo.
-
-Con el mouse se mira: **arrastrá** para girar alrededor de la escena, la **rueda** (o pellizcar) acerca y aleja, y un **clic** sobre un objeto lo inspecciona: muestra en la consola de qué está hecho, con sus números.
-
-Con la tecla **º** (la que está a la izquierda del 1), o con el botón de abajo a la izquierda, se abre la consola, como la de los juegos de antes. Ahí se ve y se cambia todo lo que el Dojo deja tocar. Lo que aparece resaltado en la consola (los ejemplos de `help`, las salas, las sugerencias) se puede tocar: un clic lo pone en la línea, y Enter lo ejecuta.
-
-La consola está **en inglés, y no se traduce**: sus nombres son como las palabras de un lenguaje de programación, que son las mismas en todo el mundo (`if` no se traduce por `si`). Así, una receta escrita por cualquiera funciona para todos. El [glosario](../tutorial/glosario/#la-consola-del-dojo) dice qué significa cada nombre.
+Está **en inglés, y no se traduce**: sus nombres son como las palabras de un lenguaje de programación, que son las mismas en todo el mundo (`if` no se traduce por `si`). Así, una receta escrita por cualquiera funciona para todos. El [glosario](../tutorial/glosario/#la-consola-del-dojo) dice qué significa cada nombre.
 
 ```
-] help                        cómo se usa
+] help                        cómo se usa, y ejemplos
+] vars                        todo lo que se puede cambiar, por alcance
+] inputs                      todo lo que puede pedir un jugador, y con qué tecla
 ] dojo.cubes 20               veinte cubos chicos (el mundo vuelve a empezar)
-] show.wireframe on           las mallas como alambre
 ] dojo.spawn 2 5 0            una pelota que cae desde (2, 5, 0)
 ] physics.gravity 0 -1.62 0   la gravedad de la Luna
 ] show.physics on             lo que ve el motor de física
-] load rain                   una sala guardada
+] show.contacts on            dónde se tocan los cuerpos
+] inspect 1                   de qué está hecho el cubo grande
 ] export                      un enlace para que otra persona vea lo mismo
 ] startup save                arrancar siempre así, en este navegador
 ] bind t toggle show.axes     la tecla t prende y apaga los ejes
-] inspect 1                   de qué está hecho el cubo grande
-] vars                        todo lo que se puede cambiar, por alcance
 ] reset                       todo vuelve a su valor de siempre
-] camera.reset                la cámara, a donde empezó
 ```
 
-Tab completa los nombres, las flechas recorren lo que escribiste, y Esc cierra. Cómo está pensada, en la [decisión 0010](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0010-the-console-and-recipes.md) (en inglés).
+Cómo está pensada, en la [decisión 0010](https://github.com/RodrigoMartinVG/Manifold_Gaming/blob/main/docs/decisions/0010-the-console-and-recipes.md) (en inglés).
 
 ## Los juegos
 
@@ -73,4 +132,4 @@ Tab completa los nombres, las flechas recorren lo que escribiste, y Esc cierra. 
 - **una aventura de acción**, en un mundo que responde: mecanismos, cosas que se rompen, enemigos que usan el mundo;
 - **un shooter**, en primera persona, que al final se juega en red.
 
-Van creciendo con las etapas del motor y se completan en la etapa 5. Después llega una segunda tanda, con lo más raro que sabe hacer el motor: planetas, paredes que se caminan, espacios que se pegan consigo mismos. Cada juego va a decidir si tiene consola, y qué deja tocar. Mientras tanto, la [bitácora](../bitacora/) cuenta cómo se acercan.
+Van creciendo con las etapas del motor y se completan en la etapa 5. Después llega una segunda tanda, con lo más raro que sabe hacer el motor: planetas, paredes que se caminan, espacios que se pegan consigo mismos. Cada juego va a decidir si tiene consola, y qué deja tocar. Mientras tanto, la [Bitácora](../bitacora/) cuenta cómo se acercan.

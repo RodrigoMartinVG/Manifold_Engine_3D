@@ -12,6 +12,8 @@ export function getStaticPaths() {
 }
 const { room } = Astro.params;
 const { title } = Astro.props;
+// A room with a character to drive: its hint says how to walk and jump.
+const character = /^dojo\.level course$/m.test(ROOMS[room]?.text ?? '');
 ---
 
-<DojoPage room={room} title={title} />
+<DojoPage room={room} title={title} character={character} />

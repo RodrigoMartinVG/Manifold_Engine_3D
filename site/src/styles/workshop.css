@@ -414,6 +414,20 @@ h1#_top {
 .sl-link-button.primary:hover {
   filter: brightness(1.08);
 }
+/* The secondary one: a patina plate, quieter than the bronze one (like the home page's). */
+.sl-link-button.secondary {
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent-high) 45%, transparent);
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--sl-color-accent) 10%, transparent);
+  color: var(--sl-color-accent-high);
+  font-family: var(--mg-font-title);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.sl-link-button.secondary:hover {
+  background: color-mix(in srgb, var(--sl-color-accent) 20%, transparent);
+  color: var(--sl-color-white);
+}
 
 /* ------------------------------------------------------------------ the rest */
 .pagination-links a {

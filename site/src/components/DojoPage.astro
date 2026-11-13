@@ -18,8 +18,10 @@ interface Props {
   room?: string;
   /** Its title, for the browser tab. */
   title?: string;
+  /** Whether it has a character to drive: then the hint also says how. */
+  character?: boolean;
 }
-const { room, title } = Astro.props;
+const { room, title, character = false } = Astro.props;
 const play = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}jugar/`;
 ---
 
@@ -124,11 +126,24 @@ const play = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}jugar/`;
   </head>
   <body>
     <div id="game" data-room={room}></div>
-    <p id="hint" role="note" hidden>
-      <span>
-        Arrastrá para mirar alrededor, y hacé clic en algo para inspeccionarlo. Lo demás se maneja desde la consola:
-        abrila con <kbd>º</kbd> o con el botón <code>›_</code>, y probá <code>help</code>.
-      </span>
+    <p id="hint" role="note" data-key={character ? 'mg-dojo-hint-character-seen' : 'mg-dojo-hint-seen'} hidden>
+      {
+        character ? (
+          <span>
+            <kbd>W</kbd>
+            <kbd>A</kbd>
+            <kbd>S</kbd>
+            <kbd>D</kbd> o las flechas para caminar, <kbd>Espacio</kbd> para saltar, <kbd>Shift</kbd> para correr y{' '}
+            <kbd>F</kbd> para tirar una pelota; arrastrá para girar la cámara. Lo demás, desde la consola: abrila con{' '}
+            <kbd>º</kbd> o con el botón <code>›_</code>, y probá <code>help</code>.
+          </span>
+        ) : (
+          <span>
+            Arrastrá para mirar alrededor, y hacé clic en algo para inspeccionarlo. Lo demás se maneja desde la consola:
+            abrila con <kbd>º</kbd> o con el botón <code>›_</code>, y probá <code>help</code>.
+          </span>
+        )
+      }
       <button type="button" aria-label="Cerrar la pista">✕</button>
     </p>
     <a id="back" href={play} style={`--rust: url(${rust.src})`}>← Salir del Dojo</a>
@@ -141,8 +156,9 @@ const play = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}jugar/`;
       window.addEventListener('hashchange', () => location.reload());
 
       // The first visit's hint (see above). Without storage (a private window), it shows every time.
-      const KEY = 'mg-dojo-hint-seen';
+      // The rooms with a character have their own (it says how to drive it): seen apart.
       const hint = document.getElementById('hint')!;
+      const KEY = hint.dataset.key ?? 'mg-dojo-hint-seen';
       const seen = () => {
         try {
           return localStorage.getItem(KEY) === '1';

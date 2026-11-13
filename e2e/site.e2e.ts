@@ -248,7 +248,8 @@ test('in the course, the keys drive the character: it walks where the camera loo
   expect((await position(page, 'camera'))[2]).toBeLessThan(camera0[2]! - 2);
   // Space, pressed and released at once (maybe between two frames): it jumps all the same.
   await page.keyboard.press('Space');
-  await expect.poll(async () => (await position(page, 'player'))[1]).toBeGreaterThan(y0! + 1);
+  // (With time: without a GPU and after many tests, a frame can take long.)
+  await expect.poll(async () => (await position(page, 'player'))[1], { timeout: 15_000 }).toBeGreaterThan(y0! + 1);
   expect(list).toEqual([]);
 });
 

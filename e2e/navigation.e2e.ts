@@ -148,6 +148,23 @@ test('the Dojo says how to start the first time, and only the first time', async
   await expect(page.locator('#back')).toHaveAttribute('href', /\/jugar\/$/);
 });
 
+test('a room with a character has its own hint, which says how to drive it', async ({ page }) => {
+  await page.goto('jugar/dojo/rain/');
+  await page.locator('#hint button').click();
+  // Seen in a room without a character; the course's is another one, and it says how to walk.
+  await page.goto('jugar/dojo/course/');
+  await expect(page.locator('#hint')).toBeVisible();
+  await expect(page.locator('#hint')).toContainText('para caminar');
+});
+
+test('the play page: the rooms as cards with their lines, the one with a character first', async ({ page }) => {
+  await page.goto('jugar/');
+  const cards = page.locator('.mg-room-cards li');
+  await expect(cards.first()).toContainText('con personaje');
+  await expect(cards.first()).toContainText('dojo.level course');
+  await expect(cards.first().locator('a')).toHaveAttribute('href', /jugar\/dojo\/course\/$/);
+});
+
 test("the Dojo's hint can be closed by hand, too", async ({ page }) => {
   await page.goto('jugar/dojo/rain/');
   await page.locator('#hint button').click();
